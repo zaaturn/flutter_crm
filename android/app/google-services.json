@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1016540886778",
+    "project_id": "crm-leave-management",
+    "storage_bucket": "crm-leave-management.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1016540886778:android:719fc5d64b1b44f22c7b43",
+        "android_client_info": {
+          "package_name": "com.example.my_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxnRCHN1BzhHPt6WEDYQWNCjy5MOezFoc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

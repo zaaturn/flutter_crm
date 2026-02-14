@@ -1,0 +1,22 @@
+import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
+
+/// Centered spinner with an optional label.
+class LoadingWidget extends StatelessWidget {
+  final String? message;
+  const LoadingWidget({super.key, this.message});
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const CircularProgressIndicator(color: AppColors.primary),
+        if (message != null) ...[
+          const SizedBox(height: 12),
+          Text(message!, style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
+        ],
+      ],
+    ),
+  );
+}
