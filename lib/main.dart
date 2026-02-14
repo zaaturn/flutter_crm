@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 
@@ -48,9 +47,6 @@ Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load ENV
-  await dotenv.load(fileName: ".env");
 
   // Firebase Init
   await Firebase.initializeApp(
@@ -102,7 +98,6 @@ Future<void> main() async {
               repository: context.read<AdminRepository>(),
             ),
           ),
-
           BlocProvider<EventBloc>(
             create: (context) => EventBloc(
               createEvent: CreateEvent(eventRepo),

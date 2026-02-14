@@ -50,6 +50,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - .env
     - assets/images/login_bg.jpeg
     - assets/images/daxarrow.png
