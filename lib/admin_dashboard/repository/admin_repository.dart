@@ -43,16 +43,9 @@ class AdminRepository {
   final SecureStorageService _storage = SecureStorageService();
   final NotificationService _notification = NotificationService();
 
-  // -----------------------------------------
-  // BASE URL HANDLING (WEB + MOBILE + DESKTOP)
-  // -----------------------------------------
-  static String get _base {
-    if (kIsWeb) {
-      return "http://localhost:8000";
-    } else {
-      return "http://192.168.1.13:8000";
-    }
-  }
+  // 🌍 UNIVERSAL BASE URL
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
 
   String get _crmBase => "$_base/api/employee/crm/";
   String get _accountsBase => "$_base/api/accounts/crm/";
@@ -108,7 +101,7 @@ class AdminRepository {
   }
 
   // -------------------------------------------------
-  // EVENTS (API CONNECTED)
+  // EVENTS
   // -------------------------------------------------
   Future<List<DashboardEvent>> fetchEvents() async {
     final token = await _storage.readToken();
@@ -125,7 +118,6 @@ class AdminRepository {
     if (response.statusCode == 200) {
       final decoded = json.decode(response.body);
 
-      // If paginated response
       if (decoded is Map<String, dynamic> &&
           decoded.containsKey("results")) {
         final List<dynamic> results = decoded["results"];
@@ -135,7 +127,6 @@ class AdminRepository {
             .toList();
       }
 
-      // If plain list response
       if (decoded is List) {
         return decoded
             .map((e) =>
@@ -145,12 +136,12 @@ class AdminRepository {
 
       return [];
     } else {
-      throw ApiException(response.statusCode, response.body);
+      throw Exception("API Error ${response.statusCode}");
     }
   }
 
   // -------------------------------------------------
-  // CREATE TASK (WEB + MOBILE + DESKTOP SAFE)
+  // CREATE TASK
   // -------------------------------------------------
   Future<void> createTask({
     required int assignedTo,
@@ -162,7 +153,7 @@ class AdminRepository {
   }) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
-      throw ApiException(401, "User not authenticated");
+      throw Exception("User not authenticated");
     }
 
     final uri = Uri.parse("${_taskBase}tasks/create/");
@@ -201,7 +192,7 @@ class AdminRepository {
     final body = await response.stream.bytesToString();
 
     if (response.statusCode != 201) {
-      throw ApiException(response.statusCode, body);
+      throw Exception("API Error ${response.statusCode}: $body");
     }
   }
 

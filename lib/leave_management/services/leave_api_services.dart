@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -15,18 +14,11 @@ import '../models/approver.dart';
 class LeaveApiService {
   final SecureStorageService _storage = SecureStorageService();
 
-  // ===============================
-  // BASE URL (WEB + ANDROID SAFE)
-  // ===============================
-  static String get baseUrl {
-    if (kIsWeb) {
-      return "http://localhost:8000/api";
-    }
-    if (Platform.isAndroid) {
-      return "http://10.0.2.2:8000/api";
-    }
-    return "http://localhost:8000/api";
-  }
+
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
+
+  static String get baseUrl => "$_base/api";
 
   // ===============================
   // HEADERS

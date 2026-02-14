@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
-        run: flutter build web --dart-define=API_URL=https://crm-application-zaaturn.up.railway.app
+        run: flutter build web --dart-define=BASE_URL=https://crm-application-zaaturn.up.railway.app
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools

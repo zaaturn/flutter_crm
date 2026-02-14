@@ -10,7 +10,7 @@ import '../models/invoice_model.dart';
 import '../models/invoice_review_model.dart';
 import '../models/invoice_pdf_response.dart';
 
-
+/* ================= EXCEPTIONS ================= */
 
 class ApiException implements Exception {
   final String message;
@@ -36,10 +36,14 @@ class NetworkException extends ApiException {
   NetworkException() : super("Network error");
 }
 
-
+/* ================= BILLING API ================= */
 
 class BillingApi {
-  static const String baseUrl = "http://192.168.1.13:8000/api/billing";
+  // 🌍 UNIVERSAL BASE URL
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
+
+  static String get baseUrl => "$_base/api/billing";
 
   /* ================= HEADERS ================= */
 
@@ -49,7 +53,6 @@ class BillingApi {
   };
 
   /* ================= RESPONSE HANDLER ================= */
-
 
   static dynamic _handleResponse(
       http.Response response, {
@@ -202,7 +205,6 @@ class BillingApi {
 
   /* ================= PDF GENERATION ================= */
 
-
   static Future<InvoicePdfResponse?> generatePdf(
       String token,
       String invoiceId,
@@ -222,7 +224,6 @@ class BillingApi {
   }
 
   /* ================= PDF DOWNLOAD ================= */
-
 
   static Future<File> downloadInvoicePdfInternal({
     required String token,

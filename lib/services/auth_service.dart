@@ -10,19 +10,11 @@ class AuthService {
   // =========================
   // BASE URL (WEB + MOBILE)
   // =========================
-  static String get _base {
-    if (kIsWeb) {
-      return "http://localhost:8000/api/accounts/crm";
-    }
-    return "http://192.168.1.13:8000/api/accounts/crm";
-  }
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
 
-  static String get _notificationBase {
-    if (kIsWeb) {
-      return "http://localhost:8000/api/leaves";
-    }
-    return "http://192.168.1.13:8000/api/leaves";
-  }
+  static String get _accountsBase => "$_base/api/accounts/crm";
+  static String get _notificationBase => "$_base/api/leaves";
 
   // =========================
   // LOGIN

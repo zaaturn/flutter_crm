@@ -14,13 +14,11 @@ class ApiClient {
   final SecureStorageService _storage = SecureStorageService();
   late final Dio _dio;
 
-  // Master CancelToken to kill all pending requests on logout
+
   CancelToken _masterCancelToken = CancelToken();
 
-  static String get _base {
-    if (kIsWeb) return "http://localhost:8000";
-    return "http://192.168.1.13:8000";
-  }
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
 
   String get baseAccounts => "$_base/api/accounts/crm";
   String get baseEmployee => "$_base/api/employee/crm";
@@ -41,8 +39,7 @@ class ApiClient {
         onRequest: (options, handler) async {
           final token = await _storage.readToken();
 
-          // 1. GATEKEEPER: Prevent calls if no token exists (except for public/login)
-          // Adjust 'public' or 'login' to match your auth endpoints
+
           if ((token == null || token.isEmpty) && !options.path.contains('login')) {
             return handler.reject(
               DioException(
@@ -64,7 +61,7 @@ class ApiClient {
           handler.next(options);
         },
         onError: (error, handler) async {
-          // 2. AUTO-CLEANUP: If server says 401, we stop everything
+
           if (error.response?.statusCode == 401) {
             debugPrint("⚠️ 401 Unauthorized detected. Wiping session...");
             await logout();
@@ -77,13 +74,10 @@ class ApiClient {
 
   /// Call this specifically when the user clicks the "Logout" button
   Future<void> logout() async {
-    // 1. Cancel all "in-flight" requests immediately
     _masterCancelToken.cancel("User logged out");
 
-    // 2. Reset the cancel token for the next login session
     _masterCancelToken = CancelToken();
 
-    // 3. Wipe local storage
     await _storage.clearTokens();
 
     debugPrint("🚫 All background API calls cancelled and tokens cleared.");
@@ -98,7 +92,7 @@ class ApiClient {
       final response = await _dio.get(
         url,
         queryParameters: queryParameters,
-        cancelToken: _masterCancelToken, // Attached to master switch
+        cancelToken: _masterCancelToken,
       );
       return _parseMap(response.data);
     } on DioException catch (e) {
@@ -111,7 +105,7 @@ class ApiClient {
       final response = await _dio.get(
         url,
         queryParameters: queryParameters,
-        cancelToken: _masterCancelToken, // Attached to master switch
+        cancelToken: _masterCancelToken,
       );
       if (response.data is List) return response.data as List<dynamic>;
       throw ApiException(500, "Expected list response");
@@ -132,8 +126,6 @@ class ApiClient {
       throw _handleError(e);
     }
   }
-
-  // ... (Keep patch, delete, postPublic similarly using _masterCancelToken)
 
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};

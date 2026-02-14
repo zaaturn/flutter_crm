@@ -4,11 +4,15 @@ import 'package:http/http.dart' as http;
 import '../model/lead_model.dart';
 
 class LeadRepository {
-  final String baseUrl = "http://192.168.1.13:8000/api";
+  // 🌍 Universal Base URL
+  static const String _base =
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
+
+  static String get baseUrl => "$_base/api";
 
   String? token;
 
-  LeadRepository([this.token]);  
+  LeadRepository([this.token]);
 
   void updateToken(String newToken) {
     token = newToken;
@@ -38,4 +42,3 @@ class LeadRepository {
     }
   }
 }
-
