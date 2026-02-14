@@ -4,8 +4,8 @@ class ApiConstants {
       defaultValue: 'http://localhost:8000/api');
 
   // ── Event endpoints ──
-  static String get eventsUrl => '$baseUrl/events/';
-  static String eventUrl(int id) => '$baseUrl/events/$id/';
+  static String get eventsUrl => '$baseUrl/api/events/';
+  static String eventUrl(int id) => '$baseUrl/api/events/$id/';
   static String get allUsersUrl =>
       '$baseUrl/accounts/crm/users/all/';
 }
