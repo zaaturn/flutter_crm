@@ -25,7 +25,6 @@ import 'admin_dashboard/repository/admin_repository.dart';
 
 // Calendar / Events
 import 'event_management/features/presentation/bloc/event_bloc.dart';
-import 'event_management/features/presentation/bloc/event_event.dart';
 import 'event_management/features/calendar/data/repositories/event_repository_impl.dart';
 import 'event_management/features/calendar/data/datasources/event_remote_datasource_impl.dart';
 import 'event_management/features/domain/usecases/create_event.dart';
@@ -40,9 +39,6 @@ import 'core/router/app_router.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-// ─────────────────────────────────────────────
-// BACKGROUND HANDLER (REQUIRED)
-// ─────────────────────────────────────────────
 @pragma('vm:entry-point')
 Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
@@ -53,45 +49,26 @@ Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ─────────────────────────────────────────────
-  // LOAD ENV
-  // ─────────────────────────────────────────────
-  try {
-    await dotenv.load(fileName: ".env");
-    debugPrint("✅ .env file loaded");
-  } catch (e) {
-    debugPrint("❌ .env load failed: $e");
-  }
+  // Load ENV
+  await dotenv.load(fileName: ".env");
 
-  // ─────────────────────────────────────────────
-  // FIREBASE INIT
-  // ─────────────────────────────────────────────
+  // Firebase Init
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
   FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
 
-  // ─────────────────────────────────────────────
-  // LOCAL NOTIFICATION INIT (ANDROID / IOS)
-  // ─────────────────────────────────────────────
   if (!kIsWeb) {
     await LocalNotificationService.initialize();
   }
 
-  // ─────────────────────────────────────────────
-  // 🔔 NOTIFICATION SERVICE (THIS WAS MISSING)
-  // ─────────────────────────────────────────────
   final notificationService = NotificationService();
-
   await notificationService.init();
   notificationService.listenForegroundMessages();
   notificationService.handleNotificationTap(navigatorKey);
   await notificationService.handleInitialMessage(navigatorKey);
 
-  // ─────────────────────────────────────────────
-  // EVENT REPOSITORY
-  // ─────────────────────────────────────────────
   final eventRepo = EventRepositoryImpl(
     EventRemoteDatasourceImpl(),
   );
@@ -126,22 +103,12 @@ Future<void> main() async {
             ),
           ),
 
-          // ─────────────────────────────────────
-          // EVENT BLOC
-          // ─────────────────────────────────────
           BlocProvider<EventBloc>(
             create: (context) => EventBloc(
               createEvent: CreateEvent(eventRepo),
               updateEvent: UpdateEvent(eventRepo),
               deleteEvent: DeleteEvent(eventRepo),
               getEvents: GetEvents(eventRepo),
-            )..add(
-              FetchEventsRequested(
-                start: DateTime.now()
-                    .subtract(const Duration(days: 30)),
-                end: DateTime.now()
-                    .add(const Duration(days: 30)),
-              ),
             ),
           ),
         ],
