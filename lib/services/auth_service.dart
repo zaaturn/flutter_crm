@@ -24,7 +24,7 @@ class AuthService {
       String password,
       ) async {
     final response = await http.post(
-      Uri.parse("$_base/login/"),
+      Uri.parse("$_accountsBase/login/"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "username": username,
@@ -67,7 +67,7 @@ class AuthService {
     if (refresh != null && refresh.isNotEmpty) {
       try {
         await http.post(
-          Uri.parse("$_base/logout/"),
+          Uri.parse("$_accountsBase/logout/"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"refresh": refresh}),
         );
