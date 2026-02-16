@@ -44,12 +44,18 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
 
-      final role = response["role"]?.toString().toLowerCase() ?? "employee";
+      final role =
+          response["role"]?.toString().toLowerCase() ?? "employee";
 
-      // ✅ REGISTER DEVICE HERE
       final notificationService = NotificationService();
-      await notificationService.registerDevice(owner: "login");
-      notificationService.listenForTokenRefresh(owner: "login");
+
+
+      try {
+        await notificationService.registerDevice(owner: "login");
+        notificationService.listenForTokenRefresh(owner: "login");
+      } catch (e) {
+        debugPrint("Push registration error: $e");
+      }
 
       if (!mounted) return;
 
@@ -63,11 +69,15 @@ class _LoginScreenState extends State<LoginScreen> {
             (_) => false,
       );
     } catch (e) {
-      setState(() => _errorMessage = "Invalid username or password");
+      debugPrint("LOGIN ERROR: $e");
+      setState(() {
+        _errorMessage = "Login failed. Please try again.";
+      });
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
 
   @override
