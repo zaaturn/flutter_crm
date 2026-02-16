@@ -4,6 +4,8 @@ import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
 import 'package:my_app/services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 
 
 class LoginScreen extends StatefulWidget {
@@ -49,10 +51,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final notificationService = NotificationService();
 
-
       try {
-        await notificationService.registerDevice(owner: "login");
-        notificationService.listenForTokenRefresh(owner: "login");
+
+        NotificationSettings settings =
+        await FirebaseMessaging.instance.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        debugPrint(
+            "Permission status: ${settings.authorizationStatus}");
+
+
+        if (settings.authorizationStatus ==
+            AuthorizationStatus.authorized) {
+          await notificationService.registerDevice(owner: "login");
+          notificationService.listenForTokenRefresh(owner: "login");
+        } else {
+          debugPrint("User did not grant notification permission.");
+        }
       } catch (e) {
         debugPrint("Push registration error: $e");
       }
@@ -77,8 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
