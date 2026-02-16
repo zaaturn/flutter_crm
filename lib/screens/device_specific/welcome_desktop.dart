@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
+import 'package:my_app/services/notification_service.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,6 +46,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final role = response["role"]?.toString().toLowerCase() ?? "employee";
 
+      // ✅ REGISTER DEVICE HERE
+      final notificationService = NotificationService();
+      await notificationService.registerDevice(owner: "login");
+      notificationService.listenForTokenRefresh(owner: "login");
+
       if (!mounted) return;
 
       Navigator.pushAndRemoveUntil(
@@ -61,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
