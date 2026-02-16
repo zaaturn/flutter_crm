@@ -7,7 +7,7 @@ class ApiConstants {
   static String get eventsUrl => '$baseUrl/api/events/';
   static String eventUrl(int id) => '$baseUrl/api/events/$id/';
   static String get allUsersUrl =>
-      '$baseUrl/accounts/crm/users/all/';
+      '$baseUrl/api/accounts/crm/users/all/';
 }
 
 
