@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+
 enum LiveStatus { working, breakTime, loggedOut }
 
 class Employee {
@@ -18,7 +18,6 @@ class Employee {
   final String? dateOfJoining;
   final bool isActive;
   final String? profilePhoto;
-
 
   final LiveStatus liveStatus;
   final String checkIn;
@@ -45,11 +44,7 @@ class Employee {
     this.checkOut = '-',
   });
 
-
-
-
   String get fullName => '$firstName $lastName'.trim();
-
 
   String get initials {
     final f = firstName.isNotEmpty ? firstName[0] : '';
@@ -57,9 +52,7 @@ class Employee {
     return '$f$l'.toUpperCase();
   }
 
-
   bool get isOnline => liveStatus != LiveStatus.loggedOut;
-
 
   String get statusText {
     switch (liveStatus) {
@@ -71,7 +64,6 @@ class Employee {
         return 'Logged Out';
     }
   }
-
 
   Color get statusColor {
     switch (liveStatus) {
@@ -95,8 +87,6 @@ class Employee {
     }
   }
 
-
-
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
       id: json['id'] ?? 0,
@@ -114,13 +104,11 @@ class Employee {
       dateOfJoining: json['date_of_joining'],
       isActive: json['is_active'] ?? true,
       profilePhoto: json['profile_photo'],
-      // live fields may or may not be present in list response
       liveStatus: _parseLiveStatus(json['status']),
-      checkIn: json['check_in'] ?? '-',
-      checkOut: json['check_out'] ?? '-',
+      checkIn: _convertUtcToIst(json['check_in']),
+      checkOut: _convertUtcToIst(json['check_out']),
     );
   }
-
 
   Employee copyWith({
     LiveStatus? liveStatus,
@@ -151,7 +139,6 @@ class Employee {
     );
   }
 
-
   static LiveStatus _parseLiveStatus(dynamic s) {
     switch (s) {
       case 'working':
@@ -164,6 +151,27 @@ class Employee {
   }
 
 
+  static String _convertUtcToIst(String? utcTime) {
+    if (utcTime == null || utcTime.isEmpty) return '-';
+
+    try {
+      final utcDateTime = DateTime.parse(utcTime).toUtc();
+
+      final istDateTime =
+      utcDateTime.add(const Duration(hours: 5, minutes: 30));
+
+      final day = istDateTime.day.toString().padLeft(2, '0');
+      final month = istDateTime.month.toString().padLeft(2, '0');
+      final year = istDateTime.year;
+
+      final hour = istDateTime.hour.toString().padLeft(2, '0');
+      final minute = istDateTime.minute.toString().padLeft(2, '0');
+
+      return "$day/$month/$year $hour:$minute";
+    } catch (e) {
+      return '-';
+    }
+  }
 
   @override
   bool operator ==(Object other) =>
