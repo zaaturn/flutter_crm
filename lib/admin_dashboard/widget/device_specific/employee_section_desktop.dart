@@ -403,7 +403,7 @@ class _DesktopEmployeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final card = Semantics(
       button: true,
-      label: 'Employee: ${employee.username}, ${employee.designation}, ${employee.statusText}',
+      label: 'Employee: ${employee.name}, ${employee.designation}, ${employee.statusText}',
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF334155) : const Color(0xFFF8F9FA),
@@ -480,7 +480,7 @@ class _EmployeeInfo extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                employee.username,
+                employee.name,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -700,7 +700,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Avatar for ${employee.username}',
+      label: 'Avatar for ${employee.name}',
       child: Stack(
         children: [
           Container(

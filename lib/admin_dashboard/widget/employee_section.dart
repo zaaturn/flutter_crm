@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../model/employee.dart';
 
-/// Production-ready Employee Section Widget - Light Theme
-/// Optimized for handling large datasets (100+ employees)
-/// with proper error handling, accessibility, and performance optimizations
+
 class EmployeeSection extends StatefulWidget {
   final List<Employee> employees;
   final VoidCallback? onViewAll;
@@ -390,7 +388,7 @@ class _EmployeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final card = Semantics(
       button: true,
-      label: 'Employee: ${employee.username}, ${employee.designation}, ${employee.statusText}',
+      label: 'Employee: ${employee.name}, ${employee.designation}, ${employee.statusText}',
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF9FAFB),
@@ -468,7 +466,7 @@ class _EmployeeInfo extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                employee.username,
+                employee.name,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -657,7 +655,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Avatar for ${employee.username}',
+      label: 'Avatar for ${employee.name}',
       child: Stack(
         children: [
           Container(
@@ -725,7 +723,7 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-/// Status pill widgets - Light theme
+
 class _StatusPill extends StatelessWidget {
   final Employee employee;
 

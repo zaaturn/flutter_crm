@@ -4,7 +4,7 @@ enum LiveStatus { working, breakTime, loggedOut }
 
 class Employee {
   final int id;
-  final String username;
+  final String name;
   final String firstName;
   final String lastName;
   final String email;
@@ -26,7 +26,7 @@ class Employee {
 
   const Employee({
     required this.id,
-    required this.username,
+    required this.name,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -100,7 +100,7 @@ class Employee {
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
       id: json['id'] ?? 0,
-      username: json['username'] ?? '',
+      name: json['name'] ?? '',
       firstName: json['first_name'] ?? '',
       lastName: json['last_name'] ?? '',
       email: json['email'] ?? '',
@@ -131,7 +131,7 @@ class Employee {
   }) {
     return Employee(
       id: id,
-      username: username,
+      name: name,
       firstName: firstName,
       lastName: lastName,
       email: email,
