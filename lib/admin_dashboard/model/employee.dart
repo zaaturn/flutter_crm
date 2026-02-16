@@ -105,8 +105,8 @@ class Employee {
       isActive: json['is_active'] ?? true,
       profilePhoto: json['profile_photo'],
       liveStatus: _parseLiveStatus(json['status']),
-      checkIn: _convertUtcToIst(json['check_in']),
-      checkOut: _convertUtcToIst(json['check_out']),
+      checkIn: _formatToLocalTime(json['check_in']),
+      checkOut: _formatToLocalTime(json['check_out']),
     );
   }
 
@@ -151,23 +151,17 @@ class Employee {
   }
 
 
-  static String _convertUtcToIst(String? utcTime) {
-    if (utcTime == null || utcTime.isEmpty) return '-';
+  static String _formatToLocalTime(String? dateTimeString) {
+    if (dateTimeString == null || dateTimeString.isEmpty) return '-';
 
     try {
-      final utcDateTime = DateTime.parse(utcTime).toUtc();
+      final parsed = DateTime.parse(dateTimeString);
+      final localTime = parsed.toLocal();
 
-      final istDateTime =
-      utcDateTime.add(const Duration(hours: 5, minutes: 30));
+      final hour = localTime.hour.toString().padLeft(2, '0');
+      final minute = localTime.minute.toString().padLeft(2, '0');
 
-      final day = istDateTime.day.toString().padLeft(2, '0');
-      final month = istDateTime.month.toString().padLeft(2, '0');
-      final year = istDateTime.year;
-
-      final hour = istDateTime.hour.toString().padLeft(2, '0');
-      final minute = istDateTime.minute.toString().padLeft(2, '0');
-
-      return "$day/$month/$year $hour:$minute";
+      return "$hour:$minute";
     } catch (e) {
       return '-';
     }
