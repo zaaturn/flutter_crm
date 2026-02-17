@@ -154,8 +154,7 @@ class Employee {
   static String _formatToLocalTime(String? dateTimeString) {
     if (dateTimeString == null || dateTimeString.isEmpty) return '-';
 
-
-    if (dateTimeString.contains(':') && dateTimeString.length <= 5) {
+    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(dateTimeString)) {
       return dateTimeString;
     }
 
@@ -171,6 +170,7 @@ class Employee {
       return '-';
     }
   }
+
 
   @override
   bool operator ==(Object other) =>

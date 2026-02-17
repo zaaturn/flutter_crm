@@ -73,6 +73,7 @@ class AdminRepository {
   // -------------------------------------------------
   Future<List<Employee>> fetchLiveEmployees() async {
     final raw = await _api.getList("${_crmBase}live-status/");
+    print("LIVE STATUS RAW: $raw");
     return raw
         .map((e) => Employee.fromJson(Map<String, dynamic>.from(e)))
         .toList();
