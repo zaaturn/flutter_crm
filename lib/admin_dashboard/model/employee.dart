@@ -154,6 +154,11 @@ class Employee {
   static String _formatToLocalTime(String? dateTimeString) {
     if (dateTimeString == null || dateTimeString.isEmpty) return '-';
 
+
+    if (dateTimeString.contains(':') && dateTimeString.length <= 5) {
+      return dateTimeString;
+    }
+
     try {
       final parsed = DateTime.parse(dateTimeString);
       final localTime = parsed.toLocal();
