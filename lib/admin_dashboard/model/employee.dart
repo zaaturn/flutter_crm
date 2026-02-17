@@ -105,8 +105,9 @@ class Employee {
       isActive: json['is_active'] ?? true,
       profilePhoto: json['profile_photo'],
       liveStatus: _parseLiveStatus(json['status']),
-      checkIn: _formatToLocalTime(json['check_in']),
-      checkOut: _formatToLocalTime(json['check_out']),
+      checkIn: json['check_in']?.toString() ?? '-',
+      checkOut: json['check_out']?.toString() ?? '-',
+
     );
   }
 
@@ -149,28 +150,6 @@ class Employee {
         return LiveStatus.loggedOut;
     }
   }
-
-
-  static String _formatToLocalTime(String? dateTimeString) {
-    if (dateTimeString == null || dateTimeString.isEmpty) return '-';
-
-    if (RegExp(r'^\d{2}:\d{2}$').hasMatch(dateTimeString)) {
-      return dateTimeString;
-    }
-
-    try {
-      final parsed = DateTime.parse(dateTimeString);
-      final localTime = parsed.toLocal();
-
-      final hour = localTime.hour.toString().padLeft(2, '0');
-      final minute = localTime.minute.toString().padLeft(2, '0');
-
-      return "$hour:$minute";
-    } catch (e) {
-      return '-';
-    }
-  }
-
 
   @override
   bool operator ==(Object other) =>
