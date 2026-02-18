@@ -40,6 +40,7 @@ class LeaveApiService {
   // ===============================
   dynamic _handleResponse(http.Response response, String endpoint) {
     debugPrint('📡 API Response [$endpoint]: ${response.statusCode}');
+    debugPrint('📦 Response Body: ${response.body}');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return null;
