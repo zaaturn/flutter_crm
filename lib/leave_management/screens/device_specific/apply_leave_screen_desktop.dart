@@ -195,7 +195,6 @@ class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
         children: [
           Row(
             children: [
-              // Leave Type
               Expanded(
                 child: _buildFieldLabelWrapper(
                   'Leave Type',

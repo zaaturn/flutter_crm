@@ -135,9 +135,11 @@ class LeaveApiService {
         "start_date": startDate.toIso8601String().split('T')[0],
         "end_date": endDate.toIso8601String().split('T')[0],
         "reason": reason,
-        "approver_id": approverId,
+        "approver": approverId,
       }),
     );
+    print("BODY BEING SENT:");
+
 
     _handleResponse(res, "/leaves/apply/");
   }
