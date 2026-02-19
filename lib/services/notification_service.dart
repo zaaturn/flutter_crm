@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:html' as html;
+import 'dart:js' as js;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,17 +26,15 @@ class NotificationService {
   // INIT (CALL ON APP START)
   // ─────────────────────────────────────────────
   Future<void> init() async {
-    if (kIsWeb) return; // local notifications not used on web
+    if (kIsWeb) return;
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-
     const settings = InitializationSettings(android: android);
 
     await _local.initialize(
       settings,
       onDidReceiveNotificationResponse: (response) {
-        final payload = response.payload;
-        if (payload == null) return;
+        // Handle Android/iOS tap logic here
       },
     );
   }
@@ -63,18 +61,23 @@ class NotificationService {
     }
 
     debugPrint("🔥 FCM TOKEN [$owner]: $token");
-
     await _sendTokenToBackend(token);
   }
 
   // ─────────────────────────────────────────────
-  // TOKEN REFRESH
+  // TOKEN REFRESH (FIXED ERROR)
   // ─────────────────────────────────────────────
   void listenForTokenRefresh({required String owner}) {
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-      debugPrint("🔁 FCM TOKEN REFRESHED [$owner]: $newToken");
-      await _sendTokenToBackend(newToken);
-    });
+    try {
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+        debugPrint("🔁 FCM TOKEN REFRESHED [$owner]: $newToken");
+        await _sendTokenToBackend(newToken);
+      }, onError: (err) {
+        debugPrint("❌ Token Refresh Stream Error: $err");
+      });
+    } catch (e) {
+      debugPrint("⚠️ Messaging Instance not ready for refresh listener: $e");
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -85,17 +88,13 @@ class NotificationService {
       "$_base/notifications/register-device/",
       body: {
         "fcm_token": token,
-        "platform": kIsWeb
-            ? "web"
-            : Platform.isAndroid
-            ? "android"
-            : "ios",
+        "platform": kIsWeb ? "web" : (Platform.isAndroid ? "android" : "ios"),
       },
     );
   }
 
   // ─────────────────────────────────────────────
-  //  FOREGROUND NOTIFICATIONS (FULL FIX)
+  // FOREGROUND NOTIFICATIONS (FIXED FOR MOBILE CHROME)
   // ─────────────────────────────────────────────
   void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
@@ -105,29 +104,31 @@ class NotificationService {
       debugPrint("📩 Foreground push received");
 
       if (kIsWeb) {
-        if (html.Notification.permission == 'granted') {
-          html.Notification(
-            notification.title ?? 'Notification',
-            body: notification.body,
-          );
-        } else {
-          debugPrint("⚠️ Web notification permission not granted");
-        }
-
         final context = navigatorKey.currentContext;
         if (context != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                notification.title ?? 'New notification',
+              content: Text("${notification.title}"),
+              action: SnackBarAction(
+                label: "View",
+                onPressed: () => _navigateFromMessage(message, navigatorKey),
               ),
-              duration: const Duration(seconds: 3),
             ),
           );
         }
 
+
+        try {
+          js.context.callMethod('showWebNotification', [
+            notification.title,
+            notification.body,
+          ]);
+        } catch (e) {
+          debugPrint("⚠️ JS Bridge failed: $e");
+        }
         return;
       }
+
 
       const androidDetails = AndroidNotificationDetails(
         'general_notifications',
@@ -136,65 +137,40 @@ class NotificationService {
         priority: Priority.high,
       );
 
-      const details = NotificationDetails(android: androidDetails);
-
       await _local.show(
         message.hashCode,
         notification.title,
         notification.body,
-        details,
+        const NotificationDetails(android: androidDetails),
         payload: message.data['event_id'],
       );
     });
   }
 
   // ─────────────────────────────────────────────
-  // NOTIFICATION TAP (BACKGROUND / FOREGROUND)
+  // NOTIFICATION TAP & COLD START
   // ─────────────────────────────────────────────
-  void handleNotificationTap(
-      GlobalKey<NavigatorState> navigatorKey,
-      ) {
+  void handleNotificationTap(GlobalKey<NavigatorState> navigatorKey) {
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       _navigateFromMessage(message, navigatorKey);
     });
   }
 
-  // ─────────────────────────────────────────────
-  // COLD START (APP KILLED)
-  // ─────────────────────────────────────────────
-  Future<void> handleInitialMessage(
-      GlobalKey<NavigatorState> navigatorKey,
-      ) async {
-    final message =
-    await FirebaseMessaging.instance.getInitialMessage();
-
-    if (message != null) {
-      _navigateFromMessage(message, navigatorKey);
-    }
+  Future<void> handleInitialMessage(GlobalKey<NavigatorState> navigatorKey) async {
+    final message = await FirebaseMessaging.instance.getInitialMessage();
+    if (message != null) _navigateFromMessage(message, navigatorKey);
   }
 
-  // ─────────────────────────────────────────────
-  // COMMON NAVIGATION
-  // ─────────────────────────────────────────────
-  void _navigateFromMessage(
-      RemoteMessage message,
-      GlobalKey<NavigatorState> navigatorKey,
-      ) {
+  void _navigateFromMessage(RemoteMessage message, GlobalKey<NavigatorState> navigatorKey) {
     final data = message.data;
-
     if (!data.containsKey('event_id')) return;
 
-    final int eventId =
-        int.tryParse(data['event_id'].toString()) ?? -1;
-
+    final int eventId = int.tryParse(data['event_id'].toString()) ?? -1;
     if (eventId == -1) return;
 
     navigatorKey.currentState?.pushNamed(
       '/employeeDashboard',
-      arguments: {
-        'openCalendar': true,
-        'eventId': eventId,
-      },
+      arguments: {'openCalendar': true, 'eventId': eventId},
     );
   }
 }
