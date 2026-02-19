@@ -19,11 +19,41 @@
 
 <body>
 
+<script>
+    // This function is called from your Flutter NotificationService
+    window.showWebNotification = function(title, body) {
+      console.log("Triggering Foreground Notification Bridge...");
+
+      if (!('serviceWorker' in navigator)) {
+        console.warn("Service Workers are not supported in this browser.");
+        return;
+      }
+      navigator.serviceWorker.ready.then(function(registration) {
+        registration.showNotification(title, {
+          body: body,
+          icon: '/icons/Icon-192.png',
+          badge: '/icons/Icon-192.png', // The small icon in the Android status bar
+          vibrate: [200, 100, 200],      // Essential for mobile user attention
+          tag: 'foreground-alert',       // Prevents notification spamming by replacing existing ones
+          renotify: true                 // Re-vibrate even if the tag is the same
+        });
+      }).catch(function(err) {
+        console.error("Service Worker was not ready for notification:", err);
+      });
+    };
+</script>
 
 <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        // Register the Firebase Messaging service worker
+        navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/'
+        }).then(function(reg) {
+            console.log('Firebase Service Worker registered with scope:', reg.scope);
+        }).catch(function(err) {
+            console.error('Firebase Service Worker registration failed:', err);
+        });
       });
     }
 </script>
