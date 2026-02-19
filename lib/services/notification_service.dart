@@ -97,13 +97,12 @@ class NotificationService {
   // ─────────────────────────────────────────────
   //  FOREGROUND NOTIFICATIONS (FULL FIX)
   // ─────────────────────────────────────────────
-  void listenForegroundMessages() {
+  void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final notification = message.notification;
       if (notification == null) return;
 
       debugPrint("📩 Foreground push received");
-
 
       if (kIsWeb) {
         if (html.Notification.permission == 'granted') {
@@ -114,9 +113,21 @@ class NotificationService {
         } else {
           debugPrint("⚠️ Web notification permission not granted");
         }
+
+        final context = navigatorKey.currentContext;
+        if (context != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                notification.title ?? 'New notification',
+              ),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+
         return;
       }
-
 
       const androidDetails = AndroidNotificationDetails(
         'general_notifications',
