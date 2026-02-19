@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:html' as html;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,8 @@ class NotificationService {
   // INIT (CALL ON APP START)
   // ─────────────────────────────────────────────
   Future<void> init() async {
+    if (kIsWeb) return; // local notifications not used on web
+
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const settings = InitializationSettings(android: android);
@@ -34,7 +37,6 @@ class NotificationService {
       onDidReceiveNotificationResponse: (response) {
         final payload = response.payload;
         if (payload == null) return;
-        // handled in tap handler
       },
     );
   }
@@ -93,16 +95,32 @@ class NotificationService {
   }
 
   // ─────────────────────────────────────────────
-  // FOREGROUND NOTIFICATION (IMPORTANT)
+  //  FOREGROUND NOTIFICATIONS (FULL FIX)
   // ─────────────────────────────────────────────
   void listenForegroundMessages() {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final notification = message.notification;
       if (notification == null) return;
 
+      debugPrint("📩 Foreground push received");
+
+
+      if (kIsWeb) {
+        if (html.Notification.permission == 'granted') {
+          html.Notification(
+            notification.title ?? 'Notification',
+            body: notification.body,
+          );
+        } else {
+          debugPrint("⚠️ Web notification permission not granted");
+        }
+        return;
+      }
+
+
       const androidDetails = AndroidNotificationDetails(
-        'meeting_reminders',
-        'Meeting Reminders',
+        'general_notifications',
+        'General Notifications',
         importance: Importance.max,
         priority: Priority.high,
       );
@@ -161,7 +179,7 @@ class NotificationService {
     if (eventId == -1) return;
 
     navigatorKey.currentState?.pushNamed(
-      '/employeeDashboard', // change if admin
+      '/employeeDashboard',
       arguments: {
         'openCalendar': true,
         'eventId': eventId,
