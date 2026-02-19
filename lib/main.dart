@@ -61,7 +61,7 @@ Future<void> main() async {
 
   final notificationService = NotificationService();
   await notificationService.init();
-  notificationService.listenForegroundMessages();
+  notificationService.listenForegroundMessages(navigatorKey);
   notificationService.handleNotificationTap(navigatorKey);
   await notificationService.handleInitialMessage(navigatorKey);
 
