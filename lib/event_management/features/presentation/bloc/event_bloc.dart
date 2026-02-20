@@ -45,7 +45,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
         calendarFormat: state.calendarFormat
     ));
 
-    // FIX: Converting DateTime to String to match GetEventsParams
+
     final result = await _getEvents(GetEventsParams(
       start: DateFormat('yyyy-MM-dd').format(event.start),
       end: DateFormat('yyyy-MM-dd').format(event.end),
@@ -82,7 +82,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     ));
   }
 
-  // CRUD Operations with proper type handling
+
   Future<void> _onCreate(CreateEventRequested event, Emitter<EventState> emit) async {
     emit(EventLoading(events: state.events, focusedDay: state.focusedDay, calendarFormat: state.calendarFormat));
     final result = await _createEvent(event.event);

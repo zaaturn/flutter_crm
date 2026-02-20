@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:my_app/admin_dashboard/model/events.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
+import 'package:my_app/services/api_client.dart';
 
 class DashboardCalendar extends StatefulWidget {
   const DashboardCalendar({super.key});
@@ -11,12 +12,13 @@ class DashboardCalendar extends StatefulWidget {
   State<DashboardCalendar> createState() => _DashboardCalendarState();
 }
 
-class _DashboardCalendarState extends State<DashboardCalendar> {
+class _DashboardCalendarState extends State<DashboardCalendar>
+    with WidgetsBindingObserver {
   final AdminRepository _repository = AdminRepository();
 
   // Polling State
   Timer? _pollingTimer;
-  bool _isSyncing = false; // For the subtle "Live" indicator
+  bool _isSyncing = false;
 
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -26,30 +28,72 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _selectedDay = _focusedDay;
 
-    // Initial data fetch
+
     _loadEvents();
 
-    // Initialize short-polling every 20 seconds
+
     _startPolling();
   }
 
   @override
   void dispose() {
-    // IMPORTANT: Cancel timer to prevent memory leaks and unnecessary API hits
+    WidgetsBinding.instance.removeObserver(this);
     _pollingTimer?.cancel();
     super.dispose();
   }
 
-  void _startPolling() {
-    _pollingTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
-      _loadEvents(isPolling: true);
-    });
+  // =========================================================
+  // APP LIFECYCLE HANDLING (PRODUCTION SAFE)
+  // =========================================================
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _pollingTimer?.cancel();
+      _pollingTimer = null;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      if (ApiClient().isAuthenticated) {
+        _startPolling();
+      }
+    }
   }
 
+  // =========================================================
+  // START POLLING (HARDENED)
+  // =========================================================
+  void _startPolling() {
+
+    _pollingTimer?.cancel();
+
+    _pollingTimer = Timer.periodic(
+      const Duration(seconds: 20),
+          (_) async {
+
+        if (!ApiClient().isAuthenticated) {
+          _pollingTimer?.cancel();
+          _pollingTimer = null;
+          return;
+        }
+
+        await _loadEvents(isPolling: true);
+      },
+    );
+  }
+
+  // =========================================================
+  // LOAD EVENTS (HARDENED)
+  // =========================================================
   Future<void> _loadEvents({bool isPolling = false}) async {
     if (!mounted) return;
+
+
+    if (!ApiClient().isAuthenticated) return;
 
     setState(() {
       if (isPolling) {
@@ -61,25 +105,26 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
 
     try {
       final data = await _repository.fetchEvents();
-      if (mounted) {
-        setState(() {
-          _events = data;
-          _isLoading = false;
-          _isSyncing = false;
-        });
-      }
+
+
+      if (!mounted || !ApiClient().isAuthenticated) return;
+
+      setState(() {
+        _events = data;
+        _isLoading = false;
+        _isSyncing = false;
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isSyncing = false;
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _isSyncing = false;
+      });
     }
   }
 
   List<DashboardEvent> _getEventsForDay(DateTime day) {
-    // Strict comparison ensures event on 5th doesn't show on 12th
     return _events.where((e) => isSameDay(e.start, day)).toList();
   }
 
@@ -100,7 +145,7 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
       color: Colors.white,
       child: Column(
         children: [
-          _buildCalendarHeader(), // New: Header with "Live" indicator
+          _buildCalendarHeader(),
           _buildCalendar(),
           const Divider(height: 1, thickness: 1, color: Color(0xFFEDF2F7)),
           Expanded(
@@ -119,7 +164,8 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
     );
   }
 
-  // SaaS header with a status indicator for the polling
+  // ================= UI (UNCHANGED) =================
+
   Widget _buildCalendarHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -142,7 +188,8 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: _isSyncing ? const Color(0xFF0D3199) : Colors.grey,
+                    color:
+                    _isSyncing ? const Color(0xFF0D3199) : Colors.grey,
                   ),
                 ),
               ],
@@ -165,28 +212,38 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
       headerStyle: const HeaderStyle(
         formatButtonVisible: false,
         titleCentered: false,
-        titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
-        leftChevronIcon: Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 20),
-        rightChevronIcon: Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 20),
+        titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B)),
+        leftChevronIcon:
+        Icon(Icons.chevron_left, color: Color(0xFF64748B), size: 20),
+        rightChevronIcon:
+        Icon(Icons.chevron_right, color: Color(0xFF64748B), size: 20),
         headerPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       ),
       daysOfWeekStyle: const DaysOfWeekStyle(
-        weekdayStyle: TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.w600, fontSize: 12),
-        weekendStyle: TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.w600, fontSize: 12),
+        weekdayStyle: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontWeight: FontWeight.w600,
+            fontSize: 12),
+        weekendStyle: TextStyle(
+            color: Color(0xFF94A3B8),
+            fontWeight: FontWeight.w600,
+            fontSize: 12),
       ),
       calendarStyle: const CalendarStyle(
         outsideDaysVisible: false,
-        markerDecoration: BoxDecoration(color: Color(0xFF0D3199), shape: BoxShape.circle),
-        todayDecoration: BoxDecoration(
-          color: Color(0xFFE2E8F0),
-          shape: BoxShape.circle,
-        ),
-        todayTextStyle: TextStyle(color: Color(0xFF0D3199), fontWeight: FontWeight.bold),
-        selectedDecoration: BoxDecoration(
-          color: Color(0xFF0D3199),
-          shape: BoxShape.circle,
-        ),
-        defaultTextStyle: TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w500),
+        markerDecoration:
+        BoxDecoration(color: Color(0xFF0D3199), shape: BoxShape.circle),
+        todayDecoration:
+        BoxDecoration(color: Color(0xFFE2E8F0), shape: BoxShape.circle),
+        todayTextStyle:
+        TextStyle(color: Color(0xFF0D3199), fontWeight: FontWeight.bold),
+        selectedDecoration:
+        BoxDecoration(color: Color(0xFF0D3199), shape: BoxShape.circle),
+        defaultTextStyle: TextStyle(
+            color: Color(0xFF334155), fontWeight: FontWeight.w500),
       ),
       onDaySelected: (selectedDay, focusedDay) {
         setState(() {
@@ -214,7 +271,8 @@ class _DashboardCalendarState extends State<DashboardCalendar> {
             ),
             const Spacer(),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: const Color(0xFF0D3199).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),

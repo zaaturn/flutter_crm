@@ -9,8 +9,7 @@ abstract class EventEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Initial fetch of events
-/// Removed 'const' because it takes dynamic DateTime values at runtime
+
 class FetchEventsRequested extends EventEvent {
   final DateTime start;
   final DateTime end;
@@ -21,7 +20,6 @@ class FetchEventsRequested extends EventEvent {
   List<Object?> get props => [start, end];
 }
 
-/// Changes the focused date (for Today, Back, Forward buttons)
 class NavigateCalendar extends EventEvent {
   final DateTime newDate;
   NavigateCalendar(this.newDate);
@@ -30,7 +28,7 @@ class NavigateCalendar extends EventEvent {
   List<Object?> get props => [newDate];
 }
 
-/// Changes the view format (Month, Week, Day)
+
 class FormatChanged extends EventEvent {
   final CalendarFormat format;
   FormatChanged(this.format);
@@ -39,7 +37,7 @@ class FormatChanged extends EventEvent {
   List<Object?> get props => [format];
 }
 
-/// UI Interaction events
+
 class SlotTapped extends EventEvent {
   final DateTime dateTime;
   SlotTapped(this.dateTime);
@@ -56,7 +54,7 @@ class EventTapped extends EventEvent {
   List<Object?> get props => [event];
 }
 
-/// Removed 'const' to prevent "Const class cannot become non-const" error
+
 class ModalDismissed extends EventEvent {
   ModalDismissed();
 }
