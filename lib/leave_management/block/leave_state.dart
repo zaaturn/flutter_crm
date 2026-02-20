@@ -19,7 +19,7 @@ class MyLeavesLoading extends LeaveState {}
 
 class PendingLeavesLoading extends LeaveState {}
 
-class LeaveSubmitting extends LeaveState {} // 👈 APPLY / APPROVE / REJECT / CANCEL
+class LeaveSubmitting extends LeaveState {}
 
 /// ================= ERROR =================
 

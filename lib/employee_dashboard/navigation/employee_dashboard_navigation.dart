@@ -21,6 +21,7 @@ import 'package:my_app/leave_management/screens/device_specific/employee_leave_s
 import 'package:my_app/leave_management/screens/device_specific/public_holiday_desktop.dart';
 import 'package:my_app/event_management/features/presentation/screen/calendar_screen.dart';
 import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
+import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 
 
 
@@ -40,6 +41,25 @@ class EmployeeDashboardNavigator {
       ),
     );
   }
+
+  // ================= TASK TRACKER =================
+  static void tasks(BuildContext context) {
+    _safeCloseDrawer(context);
+
+    if (!_isDesktop(context)) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const EmployeeTaskTrackerScreen(),
+      ),
+    );
+  }
+
+
+
+
+
 
   // ================= LEAVE DASHBOARD =================
   static void leaveDashboard(BuildContext context) {
@@ -124,3 +144,4 @@ class EmployeeDashboardNavigator {
     }
   }
 }
+

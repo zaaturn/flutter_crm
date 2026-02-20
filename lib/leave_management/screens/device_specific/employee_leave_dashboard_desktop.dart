@@ -177,7 +177,7 @@ class _EmployeeLeaveDashboardScreenState
     );
   }
 
-  // ================= APP BAR (FIXED BACK BUTTON) =================
+  // ================= APP BAR  =================
   Widget _buildDesktopAppBar() {
     return SliverAppBar(
       pinned: true,
