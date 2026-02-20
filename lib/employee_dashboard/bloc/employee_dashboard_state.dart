@@ -12,7 +12,7 @@ class EmployeeState {
   final List<EventModel> events;
   final String? error;
 
-  final EmployeeModel? employee;   // <-- ADD THIS LINE
+  final EmployeeModel? employee;
 
   EmployeeState({
     this.loading = false,
@@ -21,7 +21,7 @@ class EmployeeState {
     this.sharedItems = const [],
     this.events = const [],
     this.error,
-    this.employee,                 // <-- ADD THIS
+    this.employee,
   });
 
   EmployeeState copyWith({
@@ -31,7 +31,7 @@ class EmployeeState {
     List<SharedItemModel>? sharedItems,
     List<EventModel>? events,
     String? error,
-    EmployeeModel? employee,       // <-- ADD THIS
+    EmployeeModel? employee,
   }) {
     return EmployeeState(
       loading: loading ?? this.loading,
@@ -40,7 +40,7 @@ class EmployeeState {
       sharedItems: sharedItems ?? this.sharedItems,
       events: events ?? this.events,
       error: error ?? this.error,
-      employee: employee ?? this.employee,  // <-- ADD THIS
+      employee: employee ?? this.employee,
     );
   }
 }

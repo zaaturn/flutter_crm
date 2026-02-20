@@ -6,16 +6,15 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'employee_dashboard_event.dart';
 import 'employee_dashboard_state.dart';
 import '../repository/employee_dashboard_repository.dart';
+import 'package:my_app/services/api_client.dart';
 
 class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repo;
 
   Timer? _pollingTimer;
-  bool _isLoggedOut = false;
 
   EmployeeBloc({required this.repo})
       : super(EmployeeState(loading: true)) {
-
     // Dashboard
     on<LoadDashboard>(_onLoadDashboard);
 
@@ -35,13 +34,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<LogoutEvent>(_onLogout);
   }
 
-  /* ---------------- LOAD DASHBOARD ---------------- */
+  // =========================================================
+  // LOAD DASHBOARD
+  // =========================================================
   Future<void> _onLoadDashboard(
       LoadDashboard event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (_isLoggedOut) return;
+    if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
 
@@ -52,7 +52,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       final sharedItems = await repo.fetchSharedItems();
       final events = await repo.fetchEvents();
 
-      if (_isLoggedOut) return;
+      if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
@@ -63,7 +63,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         events: events,
       ));
     } catch (err) {
-      if (_isLoggedOut) return;
+      if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
@@ -72,13 +72,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  /* ---------------- CHECK IN / OUT ---------------- */
+  // =========================================================
+  // CHECK IN / OUT
+  // =========================================================
   Future<void> _onToggleCheckIn(
       ToggleCheckInEvent event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (_isLoggedOut) return;
+    if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
 
@@ -86,6 +87,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       await repo.toggleCheckIn();
       final attendance = await repo.fetchAttendance();
 
+      if (!ApiClient().isAuthenticated) return;
+
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
@@ -98,13 +101,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  /* ---------------- BREAK ---------------- */
+  // =========================================================
+  // BREAK
+  // =========================================================
   Future<void> _onToggleBreak(
       ToggleBreakEvent event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (_isLoggedOut) return;
+    if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
 
@@ -112,6 +116,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       await repo.toggleBreak();
       final attendance = await repo.fetchAttendance();
 
+      if (!ApiClient().isAuthenticated) return;
+
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
@@ -124,7 +130,9 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  /* ---------------- TASK POLLING ---------------- */
+  // =========================================================
+  // TASK POLLING (ENTERPRISE SAFE)
+  // =========================================================
   void _onStartPolling(
       StartTaskPolling event,
       Emitter<EmployeeState> emit,
@@ -136,22 +144,31 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       const Duration(seconds: 12),
           (_) async {
 
-        if (_isLoggedOut) {
+        if (!ApiClient().isAuthenticated) {
           _pollingTimer?.cancel();
+          _pollingTimer = null;
           return;
         }
 
         try {
           final tasks = await repo.fetchTasks();
 
-          if (_isLoggedOut) return;
+
+          if (!ApiClient().isAuthenticated) return;
 
           emit(state.copyWith(tasks: tasks));
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(" Polling error: $e");
+          }
+        }
       },
     );
   }
 
+  // =========================================================
+  // STOP POLLING
+  // =========================================================
   void _onStopPolling(
       StopTaskPolling event,
       Emitter<EmployeeState> emit,
@@ -160,13 +177,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     _pollingTimer = null;
   }
 
-  /* ---------------- UPDATE TASK ---------------- */
+  // =========================================================
+  // UPDATE TASK (OPTIMISTIC)
+  // =========================================================
   Future<void> _onUpdateTaskStatus(
       UpdateTaskStatus event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (_isLoggedOut) return;
+    if (!ApiClient().isAuthenticated) return;
 
     final optimisticTasks = state.tasks.map((task) {
       if (task.id == event.taskId) {
@@ -180,19 +198,21 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       await repo.updateTaskStatus(event.taskId, event.status);
     } catch (err) {
-      if (_isLoggedOut) return;
+      if (!ApiClient().isAuthenticated) return;
+
       emit(state.copyWith(error: err.toString()));
       add(LoadDashboard());
     }
   }
 
-  /* ---------------- REGISTER DEVICE ---------------- */
+  // =========================================================
+  // REGISTER DEVICE
+  // =========================================================
   Future<void> _onRegisterNotificationDevice(
       RegisterNotificationDevice event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (_isLoggedOut) return;
+    if (!ApiClient().isAuthenticated) return;
 
     try {
       final messaging = FirebaseMessaging.instance;
@@ -207,28 +227,31 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
       if (token != null) {
         await repo.registerDeviceToken();
-        debugPrint("✅ Notification device registered");
+        debugPrint(" Notification device registered");
       }
     } catch (err) {
-      debugPrint("❌ Notification registration failed: $err");
+      debugPrint("Notification registration failed: $err");
     }
   }
 
-  /* ---------------- LOGOUT ---------------- */
+  // =========================================================
+  // LOGOUT (HARD STOP)
+  // =========================================================
   Future<void> _onLogout(
       LogoutEvent event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    _isLoggedOut = true;
     _pollingTimer?.cancel();
     _pollingTimer = null;
 
-    await repo.logout();
+    await repo.logout(); // this should call ApiClient.logout()
 
     emit(EmployeeState(loading: false));
   }
 
+  // =========================================================
+  // BLOC DISPOSE SAFETY (CRITICAL)
+  // =========================================================
   @override
   Future<void> close() {
     _pollingTimer?.cancel();
