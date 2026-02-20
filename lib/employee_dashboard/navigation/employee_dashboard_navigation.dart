@@ -23,7 +23,8 @@ import 'package:my_app/event_management/features/presentation/screen/calendar_sc
 import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 
-
+// Import your model
+import '../model/task_model.dart';
 
 class EmployeeDashboardNavigator {
   // ================= DEVICE CHECK =================
@@ -42,7 +43,7 @@ class EmployeeDashboardNavigator {
     );
   }
 
-  // ================= TASK TRACKER =================
+  // ================= TASK TRACKER (MODIFIED) =================
   static void tasks(BuildContext context) {
     _safeCloseDrawer(context);
 
@@ -51,15 +52,11 @@ class EmployeeDashboardNavigator {
     Navigator.push(
       context,
       MaterialPageRoute(
+
         builder: (_) => const EmployeeTaskTrackerScreen(),
       ),
     );
   }
-
-
-
-
-
 
   // ================= LEAVE DASHBOARD =================
   static void leaveDashboard(BuildContext context) {
@@ -69,8 +66,7 @@ class EmployeeDashboardNavigator {
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider(
-          create: (_) =>
-          LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
+          create: (_) => LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
           child: _isDesktop(context)
               ? const EmployeeLeaveDashboardScreenDesktop()
               : const EmployeeLeaveDashboardScreen(),
@@ -87,8 +83,7 @@ class EmployeeDashboardNavigator {
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider(
-          create: (_) =>
-          LeaveBloc(LeaveApiService())..add(const LoadLeaveTypes()),
+          create: (_) => LeaveBloc(LeaveApiService())..add(const LoadLeaveTypes()),
           child: _isDesktop(context)
               ? const ApplyLeaveScreenDesktop()
               : const ApplyLeaveScreen(),
@@ -105,8 +100,7 @@ class EmployeeDashboardNavigator {
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider(
-          create: (_) =>
-          LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
+          create: (_) => LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
           child: _isDesktop(context)
               ? const EmployeeLeaveStatusScreenDesktop()
               : const EmployeeLeaveStatusScreen(),
@@ -128,13 +122,12 @@ class EmployeeDashboardNavigator {
       ),
     );
   }
+
   // ================= EVENTS =================
   static void events(BuildContext context) {
     _safeCloseDrawer(context);
     Navigator.pushNamed(context, '/calendar');
   }
-
-
 
   // ================= SAFE DRAWER CLOSE =================
   static void _safeCloseDrawer(BuildContext context) {
@@ -144,4 +137,3 @@ class EmployeeDashboardNavigator {
     }
   }
 }
-

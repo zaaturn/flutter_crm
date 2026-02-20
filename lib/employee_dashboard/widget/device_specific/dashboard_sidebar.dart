@@ -113,7 +113,12 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
               child: Column(
                 children: [
                   _buildNavItem("Dashboard", Icons.grid_view_rounded, 0, () {}),
-                  _buildNavItem("My Tasks", Icons.task_alt_rounded, 1, () => widget.onNavigateTask?.call()),
+                  _buildNavItem(
+                    "My Tasks",
+                    Icons.task_alt_rounded,
+                    1,
+                        () => EmployeeDashboardNavigator.tasks(context),
+                  ),
                   _buildNavItem("Time Logs", Icons.schedule_rounded, 2, () {}),
                   _buildNavItem("Leave", Icons.calendar_month_rounded, 3, () => widget.onNavigateLeave?.call()),
                   _buildNavItem("Events", Icons.event_rounded, 4, () => EmployeeDashboardNavigator.events(context)),
