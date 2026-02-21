@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/screens/device_specific/welcome_desktop.dart';
 
 class StartupGate extends StatefulWidget {
   const StartupGate({super.key});
@@ -9,29 +10,39 @@ class StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<StartupGate> {
-  bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuth();
+    });
   }
 
   Future<void> _checkAuth() async {
     final storage = SecureStorageService();
+
     final token = await storage.readToken();
     final role = await storage.readRole();
 
     if (!mounted) return;
 
+
     if (token == null) {
-      Navigator.pushReplacementNamed(context, '/');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+      );
+      return;
+    }
+
+    if (role == "admin") {
+      Navigator.pushReplacementNamed(context, '/adminDashboard');
     } else {
-      if (role == "admin") {
-        Navigator.pushReplacementNamed(context, '/adminDashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/employeeDashboard');
-      }
+      Navigator.pushReplacementNamed(context, '/employeeDashboard');
     }
   }
 

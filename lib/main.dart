@@ -125,7 +125,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'CRM App',
-      home: const StartupGate(),
+      home: StartupGate(),
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
