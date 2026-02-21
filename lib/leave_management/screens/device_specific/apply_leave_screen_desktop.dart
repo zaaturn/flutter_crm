@@ -6,6 +6,7 @@ import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/leave_management/models/leave_type.dart';
 
 import 'apply_leave_form.dart';
 
@@ -54,10 +55,12 @@ class _ApplyLeaveScreenDesktopState extends State<ApplyLeaveScreenDesktop> {
             children: [
               const Icon(Icons.lock_person_outlined, size: 64, color: Colors.grey),
               const SizedBox(height: 16),
-              const Text("Session Expired", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Session Expired",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 24),
               ElevatedButton(
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
+                style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16)),
                 onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
                 child: const Text('Back to Login'),
               ),
@@ -83,11 +86,12 @@ class _ApplyLeaveDesktopView extends StatefulWidget {
 
 class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
   String? _errorMessage;
+  List<LeaveType>? _cachedLeaveTypes; // Cache the data locally
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Modern light-gray background
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
@@ -106,13 +110,24 @@ class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
       ),
       body: BlocConsumer<LeaveBloc, LeaveState>(
         listener: (context, state) {
+          if (state is LeaveTypesLoaded) {
+            // Store the leave types in state when they arrive
+            setState(() {
+              _cachedLeaveTypes = state.leaveTypes;
+            });
+          }
+
           if (state is LeaveActionSuccess) {
             setState(() => _errorMessage = null);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 behavior: SnackBarBehavior.floating,
                 width: 400,
-                content: Row(children: [const Icon(Icons.check_circle, color: Colors.white), const SizedBox(width: 12), Text(state.message)]),
+                content: Row(children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(state.message)
+                ]),
                 backgroundColor: const Color(0xFF059669),
               ),
             );
@@ -122,7 +137,8 @@ class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
           }
         },
         builder: (context, state) {
-          if (state is LeaveTypesLoading || state is LeaveInitial) {
+          // Only show loading if we don't have cached data yet
+          if ((state is LeaveTypesLoading || state is LeaveInitial) && _cachedLeaveTypes == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
@@ -148,13 +164,23 @@ class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 4))
+                          BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4)
+                          )
                         ],
                       ),
                       padding: const EdgeInsets.all(32),
-                      child: (state is LeaveTypesLoaded)
-                          ? ApplyLeaveForm(leaveTypes: state.leaveTypes)
-                          : const Center(child: Text("Error loading form components.")),
+                      // USE THE CACHE: This prevents the "Error loading form components"
+                      child: (_cachedLeaveTypes != null)
+                          ? ApplyLeaveForm(leaveTypes: _cachedLeaveTypes!)
+                          : const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),
