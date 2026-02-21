@@ -15,7 +15,7 @@ import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_greet
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_task_section.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_share_item_section.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_workstatus_card.dart';
-import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_event_section.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.dart';
 
 // ======================= SERVICES & SCREENS =======================
 import 'package:my_app/screens/welcome_screen.dart';
@@ -27,10 +27,12 @@ class EmployeeDashboardDesktop extends StatefulWidget {
   const EmployeeDashboardDesktop({super.key});
 
   @override
-  State<EmployeeDashboardDesktop> createState() => _EmployeeDashboardDesktopState();
+  State<EmployeeDashboardDesktop> createState() =>
+      _EmployeeDashboardDesktopState();
 }
 
-class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
+class _EmployeeDashboardDesktopState
+    extends State<EmployeeDashboardDesktop> {
   Timer? _autoCheckoutTimer;
   StreamSubscription<RemoteMessage>? _fcmSubscription;
   late EmployeeBloc _employeeBloc;
@@ -43,11 +45,12 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     _employeeBloc.add(LoadDashboard());
     _employeeBloc.add(StartTaskPolling());
 
-    _fcmSubscription = FirebaseMessaging.onMessage.listen((message) {
-      if (message.data['type'] == 'TASK_ASSIGNED') {
-        _employeeBloc.add(LoadDashboard());
-      }
-    });
+    _fcmSubscription =
+        FirebaseMessaging.onMessage.listen((message) {
+          if (message.data['type'] == 'TASK_ASSIGNED') {
+            _employeeBloc.add(LoadDashboard());
+          }
+        });
   }
 
   @override
@@ -85,28 +88,26 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const EmployeeLeaveDashboardScreenDesktop(),
+                    builder: (_) =>
+                    const EmployeeLeaveDashboardScreenDesktop(),
                   ),
                 );
               },
-              onNavigateTask: () {
-                // Navigate to tasks
-              },
+              onNavigateTask: () {},
             ),
 
             // Main Content Area
             Expanded(
               child: Column(
                 children: [
-                  // Top Bar
                   const DashboardTopBar(),
 
-                  // Dashboard Content
                   Expanded(
                     child: BlocBuilder<EmployeeBloc, EmployeeState>(
                       builder: (context, state) {
                         if (state.loading) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                              child: CircularProgressIndicator());
                         }
 
                         return RefreshIndicator(
@@ -114,40 +115,37 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                             _employeeBloc.add(LoadDashboard());
                           },
                           child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
+                            physics:
+                            const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.all(24),
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
-                                // LEFT COLUMN - Main Content (70%)
+                                // LEFT COLUMN (UNCHANGED)
                                 Expanded(
                                   flex: 7,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     children: [
-                                      // Greeting Banner
                                       const DashboardGreeting(),
                                       const SizedBox(height: 24),
 
-                                      // Work Status Card
                                       DashboardWorkStatusCard(),
                                       const SizedBox(height: 24),
 
-                                      // Active Tasks Section
                                       DashboardTasksSection(
                                         tasks: state.tasks,
-                                        onUpdateStatus: (taskId, status) {
-                                          _employeeBloc.add(UpdateTaskStatus(
-                                            taskId: taskId,
-                                            status: status,
-                                          ));
+                                        onUpdateStatus:
+                                            (taskId, status) {
+                                          _employeeBloc.add(
+                                            UpdateTaskStatus(
+                                              taskId: taskId,
+                                              status: status,
+                                            ),
+                                          );
                                         },
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      // Calendar/Events Section
-                                      DashboardEventsSection(
-                                        events: state.events,
                                       ),
                                       const SizedBox(height: 24),
                                     ],
@@ -156,51 +154,21 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
 
                                 const SizedBox(width: 24),
 
-                                // RIGHT COLUMN - Sidebar (30%)
+                                // RIGHT COLUMN (ONLY THIS CHANGED)
                                 Expanded(
                                   flex: 3,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Quick Stats Cards
-                                      _buildQuickStatsCard(
-                                        count: state.tasks
-                                            .where((t) => t.status != 'completed')
-                                            .length,
-                                        label: 'ACTIVE',
-                                        subtitle: 'Your current assigned tasks',
-                                        icon: Icons.assignment,
-                                        color: const Color(0xFF4F46E5),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      _buildQuickStatsCard(
-                                        count: state.events.length,
-                                        label: 'EVENTS',
-                                        subtitle: 'Upcoming calendar events',
-                                        icon: Icons.calendar_today,
-                                        color: const Color(0xFF10B981),
-                                      ),
-                                      const SizedBox(height: 16),
-
-                                      _buildQuickStatsCard(
-                                        count: state.sharedItems.length,
-                                        label: 'SHARED',
-                                        subtitle: 'Shared with you recently',
-                                        icon: Icons.folder_shared,
-                                        color: const Color(0xFFF59E0B),
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      // Recent Shared Items Section
-                                      DashboardSharedItemsSection(
-                                        items: state.sharedItems,
-                                      ),
-                                      const SizedBox(height: 24),
-
-                                      // Quick Actions (optional)
-                                      _buildQuickActions(),
-                                    ],
+                                  child: Container(
+                                    height: 700,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius:
+                                      BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color:
+                                          const Color(0xFFE5E7EB),
+                                          width: 1),
+                                    ),
+                                    child: const DashboardCalendar(),
                                   ),
                                 ),
                               ],
@@ -211,156 +179,6 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Quick Stats Card Widget
-  Widget _buildQuickStatsCard({
-    required int count,
-    required String label,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      '$count',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1F2937),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[500],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Quick Actions Widget (Optional)
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'QUICK ACTIONS',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[600],
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.add_circle_outline,
-                  label: 'New Task',
-                  onTap: () {
-                    // Navigate to create task
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.access_time,
-                  label: 'Log Time',
-                  onTap: () {
-                    // Navigate to time log
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 24, color: const Color(0xFF1F2937)),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF1F2937),
               ),
             ),
           ],
