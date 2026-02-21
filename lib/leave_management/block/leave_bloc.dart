@@ -18,6 +18,17 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     on<CancelLeaveEvent>(_onCancelLeave);
   }
 
+  // ================= COMMON ERROR HANDLER =================
+  String _extractErrorMessage(Object error) {
+    final message = error.toString();
+
+    if (message.startsWith("Exception: ")) {
+      return message.replaceFirst("Exception: ", "");
+    }
+
+    return message;
+  }
+
   // ================= LEAVE TYPES =================
   Future<void> _onLoadLeaveTypes(
       LoadLeaveTypes event,
@@ -28,7 +39,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       final leaveTypes = await apiService.getLeaveTypes();
       emit(LeaveTypesLoaded(leaveTypes));
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -42,7 +53,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       final balances = await apiService.getMyLeaveBalances();
       emit(LeaveBalancesLoaded(balances));
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -60,7 +71,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       );
       emit(MyLeavesLoaded(leaves));
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -74,7 +85,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       final leaves = await apiService.getPendingLeaves();
       emit(PendingLeavesLoaded(leaves));
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -93,12 +104,11 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         reason: event.reason,
       );
 
-      emit(LeaveActionSuccess('Leave applied successfully'));
+      emit( LeaveActionSuccess('Leave applied successfully'));
 
-      // Optional refresh
       add(const LoadMyLeaves());
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -114,11 +124,11 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         comment: event.comment,
       );
 
-      emit(LeaveActionSuccess('Leave approved successfully'));
+      emit( LeaveActionSuccess('Leave approved successfully'));
 
       add(const LoadPendingLeaves());
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -134,11 +144,11 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         comment: event.comment,
       );
 
-      emit(LeaveActionSuccess('Leave rejected successfully'));
+      emit( LeaveActionSuccess('Leave rejected successfully'));
 
       add(const LoadPendingLeaves());
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
@@ -151,11 +161,11 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     try {
       await apiService.cancelLeave(event.leaveId);
 
-      emit(LeaveActionSuccess('Leave cancelled successfully'));
+      emit( LeaveActionSuccess('Leave cancelled successfully'));
 
       add(const LoadMyLeaves());
     } catch (e) {
-      emit(LeaveError(e.toString()));
+      emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 }
