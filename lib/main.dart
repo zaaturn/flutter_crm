@@ -48,7 +48,7 @@ Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiClient().initializeAuth();
+
 
   // Firebase Init
   await Firebase.initializeApp(

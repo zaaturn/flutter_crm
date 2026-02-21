@@ -16,17 +16,6 @@ class ApiClient {
 
   CancelToken _masterCancelToken = CancelToken();
 
-  /// ================= AUTH STATE =================
-  bool _isLoggedOut = false;
-  bool _isRefreshing = false;
-  Future<String?>? _refreshFuture;
-
-
-  bool _hasValidSession = false;
-
-
-  bool get isAuthenticated => _hasValidSession;
-
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
 
@@ -35,19 +24,9 @@ class ApiClient {
   String get baseLeaves => "$_base/api/leaves";
 
   // =========================================================
-  // NEW: INITIALIZE AUTH
+  // SIMPLE AUTH FLAG (NO ASYNC)
   // =========================================================
-  Future<void> initializeAuth() async {
-    final token = await _storage.readToken();
-
-    if (token != null && token.isNotEmpty) {
-      _hasValidSession = true;
-      _isLoggedOut = false;
-    } else {
-      _hasValidSession = false;
-      _isLoggedOut = true;
-    }
-  }
+  bool get isAuthenticated => true;
 
   // =========================================================
   // INIT
@@ -64,18 +43,9 @@ class ApiClient {
 
     _dio.interceptors.add(
       InterceptorsWrapper(
+        // ================= REQUEST =================
         onRequest: (options, handler) async {
           try {
-            if (_isLoggedOut) {
-              return handler.reject(
-                DioException(
-                  requestOptions: options,
-                  error: "Blocked: user logged out",
-                  type: DioExceptionType.cancel,
-                ),
-              );
-            }
-
             final token = await _storage.readToken();
 
             final isAuthFree =
@@ -98,7 +68,7 @@ class ApiClient {
             }
 
             if (kDebugMode) {
-              debugPrint(" ${options.method} ${options.uri}");
+              debugPrint("${options.method} ${options.uri}");
             }
 
             handler.next(options);
@@ -112,6 +82,7 @@ class ApiClient {
           }
         },
 
+        // ================= ERROR =================
         onError: (error, handler) async {
           final statusCode = error.response?.statusCode;
 
@@ -119,7 +90,7 @@ class ApiClient {
               error.requestOptions.path.contains('login') ||
                   error.requestOptions.path.contains('refresh');
 
-          if (statusCode == 401 && !_isLoggedOut && !isAuthFree) {
+          if (statusCode == 401 && !isAuthFree) {
             final newToken = await _refreshAccessToken();
 
             if (newToken != null) {
@@ -129,10 +100,6 @@ class ApiClient {
                 final cloneResponse = await _dio.fetch(opts);
                 return handler.resolve(cloneResponse);
               } catch (_) {}
-            }
-
-            if (kDebugMode) {
-              debugPrint(" Refresh failed. Forcing logout.");
             }
 
             await logout();
@@ -148,32 +115,9 @@ class ApiClient {
   // REFRESH FLOW
   // =========================================================
   Future<String?> _refreshAccessToken() async {
-    if (_isLoggedOut) return null;
-
-    if (_isRefreshing) {
-      return _refreshFuture;
-    }
-
-    _isRefreshing = true;
-    _refreshFuture = _performTokenRefresh();
-
-    final token = await _refreshFuture;
-    _isRefreshing = false;
-
-    return token;
-  }
-
-  Future<String?> _performTokenRefresh() async {
     try {
       final refresh = await _storage.readRefreshToken();
-
-      if (refresh == null || refresh.isEmpty) {
-        return null;
-      }
-
-      if (kDebugMode) {
-        debugPrint(" Attempting token refresh...");
-      }
+      if (refresh == null || refresh.isEmpty) return null;
 
       final response = await Dio().post(
         "$baseAccounts/token/refresh/",
@@ -184,18 +128,8 @@ class ApiClient {
       if (newAccess == null) return null;
 
       await _storage.saveToken(newAccess);
-
-      _hasValidSession = true;
-
-      if (kDebugMode) {
-        debugPrint(" Token refreshed");
-      }
-
       return newAccess;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint(" Refresh error: $e");
-      }
+    } catch (_) {
       return null;
     }
   }
@@ -204,19 +138,9 @@ class ApiClient {
   // LOGOUT
   // =========================================================
   Future<void> logout() async {
-    if (_isLoggedOut) return;
-
-    _isLoggedOut = true;
-    _hasValidSession = false;
-
     _masterCancelToken.cancel("User logged out");
     _masterCancelToken = CancelToken();
-
     await _storage.clearTokens();
-
-    if (kDebugMode) {
-      debugPrint(" Session destroyed. All calls blocked.");
-    }
   }
 
   // =========================================================
@@ -227,10 +151,6 @@ class ApiClient {
         Map<String, dynamic>? queryParameters,
       }) async {
     try {
-      if (_isLoggedOut) {
-        throw ApiException(401, "User logged out");
-      }
-
       final response = await _dio.get(
         url,
         queryParameters: queryParameters,
@@ -251,10 +171,6 @@ class ApiClient {
         Map<String, dynamic>? queryParameters,
       }) async {
     try {
-      if (_isLoggedOut) {
-        throw ApiException(401, "User logged out");
-      }
-
       final response = await _dio.get(
         url,
         queryParameters: queryParameters,
@@ -262,7 +178,6 @@ class ApiClient {
       );
 
       if (response.data is List) return response.data as List<dynamic>;
-
       throw ApiException(500, "Expected list response");
     } on DioException catch (e) {
       throw _handleError(e);
@@ -277,10 +192,6 @@ class ApiClient {
         Object? body,
       }) async {
     try {
-      if (_isLoggedOut) {
-        throw ApiException(401, "User logged out");
-      }
-
       final response = await _dio.post(
         url,
         data: body ?? {},
@@ -293,6 +204,9 @@ class ApiClient {
     }
   }
 
+  // =========================================================
+  // HELPERS
+  // =========================================================
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
