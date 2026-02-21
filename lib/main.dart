@@ -35,6 +35,7 @@ import 'event_management/features/domain/usecases/get_events.dart';
 import 'services/flutter_local_notification_service.dart';
 import 'services/notification_service.dart';
 import 'core/router/app_router.dart';
+import 'services/api_client.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -47,6 +48,7 @@ Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ApiClient().initializeAuth();
 
   // Firebase Init
   await Firebase.initializeApp(

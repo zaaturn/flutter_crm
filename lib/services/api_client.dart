@@ -21,7 +21,11 @@ class ApiClient {
   bool _isRefreshing = false;
   Future<String?>? _refreshFuture;
 
-  bool get isAuthenticated => !_isLoggedOut;
+
+  bool _hasValidSession = false;
+
+
+  bool get isAuthenticated => _hasValidSession;
 
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
@@ -29,6 +33,21 @@ class ApiClient {
   String get baseAccounts => "$_base/api/accounts/crm";
   String get baseEmployee => "$_base/api/employee/crm";
   String get baseLeaves => "$_base/api/leaves";
+
+  // =========================================================
+  // NEW: INITIALIZE AUTH
+  // =========================================================
+  Future<void> initializeAuth() async {
+    final token = await _storage.readToken();
+
+    if (token != null && token.isNotEmpty) {
+      _hasValidSession = true;
+      _isLoggedOut = false;
+    } else {
+      _hasValidSession = false;
+      _isLoggedOut = true;
+    }
+  }
 
   // =========================================================
   // INIT
@@ -45,12 +64,8 @@ class ApiClient {
 
     _dio.interceptors.add(
       InterceptorsWrapper(
-        // =====================================================
-        // REQUEST
-        // =====================================================
         onRequest: (options, handler) async {
           try {
-            // hard block after logout
             if (_isLoggedOut) {
               return handler.reject(
                 DioException(
@@ -68,7 +83,6 @@ class ApiClient {
                     options.path.contains('refresh') ||
                     options.path.contains('register');
 
-            //  block protected routes without token
             if (!isAuthFree && (token == null || token.isEmpty)) {
               return handler.reject(
                 DioException(
@@ -79,7 +93,6 @@ class ApiClient {
               );
             }
 
-            // attach token
             if (token != null && token.isNotEmpty) {
               options.headers["Authorization"] = "Bearer $token";
             }
@@ -99,9 +112,6 @@ class ApiClient {
           }
         },
 
-        // =====================================================
-        // ERROR
-        // =====================================================
         onError: (error, handler) async {
           final statusCode = error.response?.statusCode;
 
@@ -109,27 +119,22 @@ class ApiClient {
               error.requestOptions.path.contains('login') ||
                   error.requestOptions.path.contains('refresh');
 
-          //  try refresh only for protected calls
           if (statusCode == 401 && !_isLoggedOut && !isAuthFree) {
             final newToken = await _refreshAccessToken();
 
-            //  retry original request
             if (newToken != null) {
               try {
                 final opts = error.requestOptions;
                 opts.headers["Authorization"] = "Bearer $newToken";
-
                 final cloneResponse = await _dio.fetch(opts);
                 return handler.resolve(cloneResponse);
-              } catch (_) {
-                // fall through to logout
-              }
+              } catch (_) {}
             }
 
-            //  refresh failed → hard logout
             if (kDebugMode) {
               debugPrint(" Refresh failed. Forcing logout.");
             }
+
             await logout();
           }
 
@@ -140,7 +145,7 @@ class ApiClient {
   }
 
   // =========================================================
-  // REFRESH FLOW (single-flight safe)
+  // REFRESH FLOW
   // =========================================================
   Future<String?> _refreshAccessToken() async {
     if (_isLoggedOut) return null;
@@ -176,13 +181,14 @@ class ApiClient {
       );
 
       final newAccess = response.data["access"];
-
       if (newAccess == null) return null;
 
       await _storage.saveToken(newAccess);
 
+      _hasValidSession = true;
+
       if (kDebugMode) {
-        debugPrint("Token refreshed");
+        debugPrint(" Token refreshed");
       }
 
       return newAccess;
@@ -195,12 +201,13 @@ class ApiClient {
   }
 
   // =========================================================
-  // LOGOUT (MASTER KILL SWITCH)
+  // LOGOUT
   // =========================================================
   Future<void> logout() async {
     if (_isLoggedOut) return;
 
     _isLoggedOut = true;
+    _hasValidSession = false;
 
     _masterCancelToken.cancel("User logged out");
     _masterCancelToken = CancelToken();
@@ -286,9 +293,6 @@ class ApiClient {
     }
   }
 
-  // =========================================================
-  // HELPERS
-  // =========================================================
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
@@ -312,9 +316,6 @@ class ApiClient {
   }
 }
 
-// =========================================================
-// EXCEPTION
-// =========================================================
 class ApiException implements Exception {
   final int code;
   final String message;
