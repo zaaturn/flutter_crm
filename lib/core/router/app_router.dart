@@ -25,7 +25,7 @@ import 'package:my_app/event_management/features/presentation/screen/calendar_sc
 
 // Core
 import 'package:my_app/core/layout/adaptive_layout.dart';
-import 'package:my_app/core/router/startup_gate.dart';
+
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -36,7 +36,7 @@ class AppRouter {
     // =====================
       case '/':
         return MaterialPageRoute(
-          builder: (_) => const StartupGate(),
+          builder: (_) => const WelcomePage(),
         );
 
     // =====================

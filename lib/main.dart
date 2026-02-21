@@ -36,6 +36,7 @@ import 'services/flutter_local_notification_service.dart';
 import 'services/notification_service.dart';
 import 'core/router/app_router.dart';
 import 'services/api_client.dart';
+import 'package:my_app/core/router/startup_gate.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -124,7 +125,7 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'CRM App',
-      initialRoute: '/',
+      home: const StartupGate(),
       onGenerateRoute: AppRouter.generateRoute,
     );
   }
