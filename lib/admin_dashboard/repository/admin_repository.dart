@@ -43,7 +43,7 @@ class AdminRepository {
   final SecureStorageService _storage = SecureStorageService();
   final NotificationService _notification = NotificationService();
 
-  // 🌍 UNIVERSAL BASE URL
+
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
 

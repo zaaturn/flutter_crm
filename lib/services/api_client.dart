@@ -50,7 +50,7 @@ class ApiClient {
         // =====================================================
         onRequest: (options, handler) async {
           try {
-            // 🚫 hard block after logout
+            // hard block after logout
             if (_isLoggedOut) {
               return handler.reject(
                 DioException(
@@ -68,7 +68,7 @@ class ApiClient {
                     options.path.contains('refresh') ||
                     options.path.contains('register');
 
-            // 🚫 block protected routes without token
+            //  block protected routes without token
             if (!isAuthFree && (token == null || token.isEmpty)) {
               return handler.reject(
                 DioException(
@@ -79,13 +79,13 @@ class ApiClient {
               );
             }
 
-            // ✅ attach token
+            // attach token
             if (token != null && token.isNotEmpty) {
               options.headers["Authorization"] = "Bearer $token";
             }
 
             if (kDebugMode) {
-              debugPrint("➡️ ${options.method} ${options.uri}");
+              debugPrint(" ${options.method} ${options.uri}");
             }
 
             handler.next(options);
@@ -109,11 +109,11 @@ class ApiClient {
               error.requestOptions.path.contains('login') ||
                   error.requestOptions.path.contains('refresh');
 
-          // 🔐 try refresh only for protected calls
+          //  try refresh only for protected calls
           if (statusCode == 401 && !_isLoggedOut && !isAuthFree) {
             final newToken = await _refreshAccessToken();
 
-            // ✅ retry original request
+            //  retry original request
             if (newToken != null) {
               try {
                 final opts = error.requestOptions;
@@ -126,9 +126,9 @@ class ApiClient {
               }
             }
 
-            // ❌ refresh failed → hard logout
+            //  refresh failed → hard logout
             if (kDebugMode) {
-              debugPrint("🚨 Refresh failed. Forcing logout.");
+              debugPrint(" Refresh failed. Forcing logout.");
             }
             await logout();
           }
@@ -167,7 +167,7 @@ class ApiClient {
       }
 
       if (kDebugMode) {
-        debugPrint("🔄 Attempting token refresh...");
+        debugPrint(" Attempting token refresh...");
       }
 
       final response = await Dio().post(
@@ -182,13 +182,13 @@ class ApiClient {
       await _storage.saveToken(newAccess);
 
       if (kDebugMode) {
-        debugPrint("✅ Token refreshed");
+        debugPrint("Token refreshed");
       }
 
       return newAccess;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint("❌ Refresh error: $e");
+        debugPrint(" Refresh error: $e");
       }
       return null;
     }
@@ -208,7 +208,7 @@ class ApiClient {
     await _storage.clearTokens();
 
     if (kDebugMode) {
-      debugPrint("🚫 Session destroyed. All calls blocked.");
+      debugPrint(" Session destroyed. All calls blocked.");
     }
   }
 
