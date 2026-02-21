@@ -130,9 +130,7 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                                       const SizedBox(height: 24),
 
                                       // Work Status Card
-                                      DashboardWorkStatusCard(
-                                        attendance: state.attendance,
-                                      ),
+                                      DashboardWorkStatusCard(),
                                       const SizedBox(height: 24),
 
                                       // Active Tasks Section
