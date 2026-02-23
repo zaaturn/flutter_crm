@@ -114,6 +114,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
     try {
       await repo.toggleBreak();
+    } catch (err) {
+
+      //sync attendance state
+    }
+
+    try {
       final attendance = await repo.fetchAttendance();
 
       if (!ApiClient().isAuthenticated) return;
@@ -121,6 +127,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
+        error: null,
       ));
     } catch (err) {
       emit(state.copyWith(
