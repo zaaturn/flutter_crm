@@ -37,7 +37,7 @@ class _EmployeeDashboardScreenState
     // Start polling
     bloc.add(StartTaskPolling());
 
-    // 🔔 Register notification device (clean call)
+    //  Register notification device (clean call)
     bloc.add(RegisterNotificationDevice());
   }
 

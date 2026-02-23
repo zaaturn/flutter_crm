@@ -150,9 +150,17 @@ class ApiClient {
       );
 
       final newAccess = response.data["access"];
+      final newRefresh = response.data["refresh"]; // 👈 important
+
       if (newAccess == null) return null;
 
       await _storage.saveToken(newAccess);
+
+
+      if (newRefresh != null) {
+        await _storage.saveRefreshToken(newRefresh);
+      }
+
       return newAccess;
     } catch (_) {
       return null;
