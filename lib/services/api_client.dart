@@ -87,7 +87,7 @@ class ApiClient {
 
           if (statusCode == 401 && !isAuthFree) {
 
-            // If refresh already running → wait
+
             if (_isRefreshing) {
               while (_isRefreshing) {
                 await Future.delayed(const Duration(milliseconds: 100));
@@ -239,7 +239,7 @@ class ApiClient {
     if (e.response != null) {
       return ApiException(
         e.response!.statusCode ?? 500,
-        e.response!.data.toString(),
+        e.response!.data,
       );
     }
 
@@ -249,10 +249,29 @@ class ApiClient {
 
 class ApiException implements Exception {
   final int code;
-  final String message;
+  final dynamic data;
 
-  ApiException(this.code, this.message);
+  ApiException(this.code, this.data);
+
+  String get message {
+    if (data is Map<String, dynamic>) {
+      final map = data as Map<String, dynamic>;
+
+      if (map["detail"] != null) return map["detail"].toString();
+      if (map["message"] != null) return map["message"].toString();
+      if (map["error"] != null) return map["error"].toString();
+    }
+
+    if (data is String) {
+      return data
+          .replaceAll("{detail: ", "")
+          .replaceAll("}", "")
+          .trim();
+    }
+
+    return "Something went wrong.";
+  }
 
   @override
-  String toString() => "ApiException($code): $message";
+  String toString() => message;
 }
