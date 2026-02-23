@@ -7,6 +7,7 @@ import 'employee_dashboard_event.dart';
 import 'employee_dashboard_state.dart';
 import '../repository/employee_dashboard_repository.dart';
 import 'package:my_app/services/api_client.dart';
+import 'package:my_app/core/error_handler/error_handler.dart';
 
 class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repo;
@@ -15,22 +16,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
   EmployeeBloc({required this.repo})
       : super(EmployeeState(loading: true)) {
-    // Dashboard
-    on<LoadDashboard>(_onLoadDashboard);
 
-    // Attendance
+    on<LoadDashboard>(_onLoadDashboard);
     on<ToggleCheckInEvent>(_onToggleCheckIn);
     on<ToggleBreakEvent>(_onToggleBreak);
-
-    // Tasks
     on<StartTaskPolling>(_onStartPolling);
     on<StopTaskPolling>(_onStopPolling);
     on<UpdateTaskStatus>(_onUpdateTaskStatus);
-
-    // Notifications
     on<RegisterNotificationDevice>(_onRegisterNotificationDevice);
-
-    // Logout
     on<LogoutEvent>(_onLogout);
   }
 
@@ -41,6 +34,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       LoadDashboard event,
       Emitter<EmployeeState> emit,
       ) async {
+
     if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
@@ -61,13 +55,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         tasks: tasks,
         sharedItems: sharedItems,
         events: events,
+        error: null,
       ));
     } catch (err) {
       if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
-        error: err.toString(),
+        error: ErrorHandler.format(err),
       ));
     }
   }
@@ -79,6 +74,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ToggleCheckInEvent event,
       Emitter<EmployeeState> emit,
       ) async {
+
     if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
@@ -92,11 +88,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
+        error: null,
       ));
     } catch (err) {
       emit(state.copyWith(
         loading: false,
-        error: err.toString(),
+        error: ErrorHandler.format(err),
       ));
     }
   }
@@ -108,18 +105,13 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ToggleBreakEvent event,
       Emitter<EmployeeState> emit,
       ) async {
+
     if (!ApiClient().isAuthenticated) return;
 
     emit(state.copyWith(loading: true, error: null));
 
     try {
       await repo.toggleBreak();
-    } catch (err) {
-
-      //sync attendance state
-    }
-
-    try {
       final attendance = await repo.fetchAttendance();
 
       if (!ApiClient().isAuthenticated) return;
@@ -132,13 +124,13 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     } catch (err) {
       emit(state.copyWith(
         loading: false,
-        error: err.toString(),
+        error: ErrorHandler.format(err),
       ));
     }
   }
 
   // =========================================================
-  // TASK POLLING (ENTERPRISE SAFE)
+  // TASK POLLING
   // =========================================================
   void _onStartPolling(
       StartTaskPolling event,
@@ -160,13 +152,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         try {
           final tasks = await repo.fetchTasks();
 
-
           if (!ApiClient().isAuthenticated) return;
 
           emit(state.copyWith(tasks: tasks));
-        } catch (e) {
+        } catch (err) {
           if (kDebugMode) {
-            debugPrint(" Polling error: $e");
+            debugPrint("Polling error: ${ErrorHandler.format(err)}");
           }
         }
       },
@@ -191,6 +182,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       UpdateTaskStatus event,
       Emitter<EmployeeState> emit,
       ) async {
+
     if (!ApiClient().isAuthenticated) return;
 
     final optimisticTasks = state.tasks.map((task) {
@@ -207,7 +199,10 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     } catch (err) {
       if (!ApiClient().isAuthenticated) return;
 
-      emit(state.copyWith(error: err.toString()));
+      emit(state.copyWith(
+        error: ErrorHandler.format(err),
+      ));
+
       add(LoadDashboard());
     }
   }
@@ -219,6 +214,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       RegisterNotificationDevice event,
       Emitter<EmployeeState> emit,
       ) async {
+
     if (!ApiClient().isAuthenticated) return;
 
     try {
@@ -234,31 +230,31 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
       if (token != null) {
         await repo.registerDeviceToken();
-        debugPrint(" Notification device registered");
+        debugPrint("Notification device registered");
       }
     } catch (err) {
-      debugPrint("Notification registration failed: $err");
+      if (kDebugMode) {
+        debugPrint("Notification registration failed: ${ErrorHandler.format(err)}");
+      }
     }
   }
 
   // =========================================================
-  // LOGOUT (HARD STOP)
+  // LOGOUT
   // =========================================================
   Future<void> _onLogout(
       LogoutEvent event,
       Emitter<EmployeeState> emit,
       ) async {
+
     _pollingTimer?.cancel();
     _pollingTimer = null;
 
-    await repo.logout(); // this should call ApiClient.logout()
+    await repo.logout();
 
     emit(EmployeeState(loading: false));
   }
 
-  // =========================================================
-  // BLOC DISPOSE SAFETY (CRITICAL)
-  // =========================================================
   @override
   Future<void> close() {
     _pollingTimer?.cancel();

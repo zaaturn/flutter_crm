@@ -44,19 +44,23 @@ class EmployeeRepository {
   }
 
   Future<AttendanceModel> toggleCheckIn() async {
-    final today = await _attendanceService.getTodayStatus();
-    final bool isCheckedIn = today['is_checked_in'] ?? false;
+    try {
+      final today = await _attendanceService.getTodayStatus();
+      final bool isCheckedIn = today['is_checked_in'] ?? false;
 
-    if (!isCheckedIn) {
-      await _attendanceService.checkIn();
-    } else {
-      await _attendanceService.checkOut();
+      if (!isCheckedIn) {
+        await _attendanceService.checkIn();
+      } else {
+        await _attendanceService.checkOut();
+      }
+
+      final updated = await _attendanceService.getTodayStatus();
+      return AttendanceModel.fromMap(
+        Map<String, dynamic>.from(updated),
+      );
+    } catch (e) {
+      rethrow;
     }
-
-    final updated = await _attendanceService.getTodayStatus();
-    return AttendanceModel.fromMap(
-      Map<String, dynamic>.from(updated),
-    );
   }
 
   Future<AttendanceModel> toggleBreak() async {
@@ -97,18 +101,16 @@ class EmployeeRepository {
   //  NOTIFICATIONS (WEB + MOBILE)
   // ----------------------------
 
-  /// Get FCM token for web or mobile
   Future<String?> getFcmToken() async {
     final messaging = FirebaseMessaging.instance;
 
     await messaging.requestPermission();
 
     return await messaging.getToken(
-      vapidKey: kIsWeb ? "YOUR_WEB_VAPID_KEY" : null,
+      vapidKey: kIsWeb ? "BDl2RpvxVJ442k-TJpCoAFHH3SLFxClV7Zy71uNq_MfRJPWTzi5qRkCPztfD2sIq--7LHESRCHbIVZO1ACehWhM" : null,
     );
   }
 
-  /// Send token to backend so admin can push notifications
   Future<void> registerDeviceToken() async {
     await _notificationService.registerDevice(
       owner: "EMPLOYEE",
