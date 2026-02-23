@@ -24,14 +24,8 @@ class ApiClient {
   String get baseEmployee => "$_base/api/employee/crm";
   String get baseLeaves => "$_base/api/leaves";
 
-  // =========================================================
-  // SIMPLE AUTH FLAG
-  // =========================================================
   bool get isAuthenticated => true;
 
-  // =========================================================
-  // INIT
-  // =========================================================
   void _init() {
     _dio = Dio(
       BaseOptions(
@@ -93,9 +87,21 @@ class ApiClient {
 
           if (statusCode == 401 && !isAuthFree) {
 
-            // If already refreshing, avoid duplicate calls
+            // If refresh already running → wait
             if (_isRefreshing) {
-              return handler.next(error);
+              while (_isRefreshing) {
+                await Future.delayed(const Duration(milliseconds: 100));
+              }
+
+              final token = await _storage.readToken();
+              if (token != null) {
+                final opts = error.requestOptions;
+                opts.headers["Authorization"] = "Bearer $token";
+                final response = await _dio.fetch(opts);
+                return handler.resolve(response);
+              }
+
+              return handler.reject(error);
             }
 
             _isRefreshing = true;
@@ -107,26 +113,14 @@ class ApiClient {
             if (newToken != null) {
               try {
                 final opts = error.requestOptions;
-
-                // Update header with new token
                 opts.headers["Authorization"] = "Bearer $newToken";
-
-                final response = await _dio.request(
-                  opts.path,
-                  data: opts.data,
-                  queryParameters: opts.queryParameters,
-                  options: Options(
-                    method: opts.method,
-                    headers: opts.headers,
-                  ),
-                );
-
+                final response = await _dio.fetch(opts);
                 return handler.resolve(response);
               } catch (_) {
-                await logout();
+                return handler.reject(error);
               }
             } else {
-              await logout();
+              return handler.reject(error);
             }
           }
 
@@ -136,9 +130,7 @@ class ApiClient {
     );
   }
 
-  // =========================================================
-  // REFRESH FLOW
-  // =========================================================
+  // ================= REFRESH =================
   Future<String?> _refreshAccessToken() async {
     try {
       final refresh = await _storage.readRefreshToken();
@@ -150,12 +142,11 @@ class ApiClient {
       );
 
       final newAccess = response.data["access"];
-      final newRefresh = response.data["refresh"]; // 👈 important
+      final newRefresh = response.data["refresh"];
 
       if (newAccess == null) return null;
 
       await _storage.saveToken(newAccess);
-
 
       if (newRefresh != null) {
         await _storage.saveRefreshToken(newRefresh);
@@ -167,18 +158,14 @@ class ApiClient {
     }
   }
 
-  // =========================================================
-  // LOGOUT
-  // =========================================================
+  // ================= LOGOUT =================
   Future<void> logout() async {
     _masterCancelToken.cancel("User logged out");
     _masterCancelToken = CancelToken();
     await _storage.clearTokens();
   }
 
-  // =========================================================
-  // GET MAP
-  // =========================================================
+  // ================= GET MAP =================
   Future<Map<String, dynamic>> get(
       String url, {
         Map<String, dynamic>? queryParameters,
@@ -189,16 +176,13 @@ class ApiClient {
         queryParameters: queryParameters,
         cancelToken: _masterCancelToken,
       );
-
       return _parseMap(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // =========================================================
-  // GET LIST
-  // =========================================================
+  // ================= GET LIST =================
   Future<List<dynamic>> getList(
       String url, {
         Map<String, dynamic>? queryParameters,
@@ -210,16 +194,17 @@ class ApiClient {
         cancelToken: _masterCancelToken,
       );
 
-      if (response.data is List) return response.data as List<dynamic>;
+      if (response.data is List) {
+        return response.data as List<dynamic>;
+      }
+
       throw ApiException(500, "Expected list response");
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // =========================================================
-  // POST
-  // =========================================================
+  // ================= POST =================
   Future<Map<String, dynamic>> post(
       String url, {
         Object? body,
@@ -230,16 +215,13 @@ class ApiClient {
         data: body ?? {},
         cancelToken: _masterCancelToken,
       );
-
       return _parseMap(response.data);
     } on DioException catch (e) {
       throw _handleError(e);
     }
   }
 
-  // =========================================================
-  // HELPERS
-  // =========================================================
+  // ================= HELPERS =================
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
@@ -248,8 +230,10 @@ class ApiClient {
   }
 
   ApiException _handleError(DioException e) {
-    if (CancelToken.isCancel(e)) {
-      return ApiException(499, "Request cancelled");
+
+    if (CancelToken.isCancel(e) ||
+        e.type == DioExceptionType.cancel) {
+      throw e;
     }
 
     if (e.response != null) {
