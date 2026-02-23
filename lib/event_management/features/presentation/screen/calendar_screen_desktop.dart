@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 // Bloc and Shared Imports
 import '../bloc/event_bloc.dart';
@@ -225,6 +226,23 @@ class _TopBar extends StatelessWidget {
           ),
           child: Row(
             children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  final storage = SecureStorageService();
+                  final role = await storage.readRole();
+
+                  if (!context.mounted) return;
+
+                  if (role == "employee") {
+                    Navigator.pushReplacementNamed(context, '/employeeDashboard');
+                  } else {
+                    Navigator.pushReplacementNamed(context, '/adminDashboard');
+                  }
+                },
+              ),
+
+              const SizedBox(width: 12),
               const Text(
                 'CRM Calendar',
                 style: TextStyle(

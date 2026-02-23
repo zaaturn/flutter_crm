@@ -15,6 +15,7 @@ class ApiClient {
   late final Dio _dio;
 
   CancelToken _masterCancelToken = CancelToken();
+  bool _isRefreshing = false;
 
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
@@ -24,7 +25,7 @@ class ApiClient {
   String get baseLeaves => "$_base/api/leaves";
 
   // =========================================================
-  // SIMPLE AUTH FLAG (NO ASYNC)
+  // SIMPLE AUTH FLAG
   // =========================================================
   bool get isAuthenticated => true;
 
@@ -91,18 +92,42 @@ class ApiClient {
                   error.requestOptions.path.contains('refresh');
 
           if (statusCode == 401 && !isAuthFree) {
+
+            // If already refreshing, avoid duplicate calls
+            if (_isRefreshing) {
+              return handler.next(error);
+            }
+
+            _isRefreshing = true;
+
             final newToken = await _refreshAccessToken();
+
+            _isRefreshing = false;
 
             if (newToken != null) {
               try {
                 final opts = error.requestOptions;
-                opts.headers["Authorization"] = "Bearer $newToken";
-                final cloneResponse = await _dio.fetch(opts);
-                return handler.resolve(cloneResponse);
-              } catch (_) {}
-            }
 
-            await logout();
+                // Update header with new token
+                opts.headers["Authorization"] = "Bearer $newToken";
+
+                final response = await _dio.request(
+                  opts.path,
+                  data: opts.data,
+                  queryParameters: opts.queryParameters,
+                  options: Options(
+                    method: opts.method,
+                    headers: opts.headers,
+                  ),
+                );
+
+                return handler.resolve(response);
+              } catch (_) {
+                await logout();
+              }
+            } else {
+              await logout();
+            }
           }
 
           handler.next(error);

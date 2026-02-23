@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Desktop-optimized Section Card Widget - Promove Design Style
-/// Production-ready reusable container with clean, modern UI
 class DesktopSectionCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets? padding;
@@ -61,8 +59,6 @@ class DesktopSectionCard extends StatelessWidget {
   }
 }
 
-/// Desktop Section Card with Header
-/// Includes built-in header with icon, title, subtitle, and optional action button
 class DesktopSectionCardWithHeader extends StatelessWidget {
   final String title;
   final String? subtitle;

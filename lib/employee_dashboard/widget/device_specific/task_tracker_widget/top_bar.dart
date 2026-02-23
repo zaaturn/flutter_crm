@@ -35,6 +35,14 @@ class TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, size: 20, color: _textPrimary),
+            tooltip: 'Back',
+            onPressed: () {
+              Navigator.pushNamed(context, '/employeeDashboard');
+            },
+          ),
+          const SizedBox(width: 8),
           // Logo
           Container(
             width: 32,
@@ -68,7 +76,7 @@ class TopBar extends StatelessWidget {
 
           const Spacer(),
 
-          // ✅ Using shared widget
+
           ViewToggle(
             isBoardView: isBoardView,
             onToggle: onToggleView,
