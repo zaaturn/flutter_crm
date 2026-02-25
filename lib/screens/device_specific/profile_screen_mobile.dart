@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:my_app/services/api_services.dart';
@@ -14,7 +13,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? profile;
 
-  final ProfileService profileService = ProfileService();   // NEW
+  final ProfileService profileService = ProfileService();
 
   @override
   void initState() {
@@ -37,11 +36,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    // picked is already an XFile?
+    final XFile? picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
 
     try {
-      final result = await profileService.uploadProfilePhoto(picked.path);
+      // Pass the XFile 'picked' directly instead of 'picked.path'
+      final result = await profileService.uploadProfilePhoto(picked);
 
       if (result["profile_photo"] != null) {
         setState(() {
@@ -212,7 +213,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (photo == null || photo == "") {
       return "https://i.pravatar.cc/200";
     }
-    return "http://192.168.1.10:8000$photo";
+
+    // Use the baseUrl from the service to avoid hardcoded IP issues
+    final base = profileService.baseUrl.replaceAll('/api/v1', '');
+    return photo.toString().startsWith('http') ? photo : "$base$photo";
   }
 
   // ------------------- Glass Card -------------------
@@ -266,6 +270,3 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
-
-
-

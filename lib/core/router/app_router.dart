@@ -8,7 +8,7 @@ import 'package:my_app/screens/device_specific/login_mobile.dart';
 import 'package:my_app/screens/device_specific/welcome_desktop.dart';
 
 // Profile
-import 'package:my_app/screens/profile_screen.dart';
+import 'package:my_app/screens/device_specific/profile_screen_mobile.dart';
 import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 
 // Dashboard
@@ -96,12 +96,12 @@ class AppRouter {
           builder: (_) => AdaptiveLayout(
             mobile: const ProfileScreen(),
             tablet: const ProfileScreen(),
-            webDesktop: const ProfileDesktop(),
+            webDesktop: const ProfileScreenDesktop(),
           ),
         );
 
     // =====================
-    // CALENDAR  ✅ UPDATED
+    // CALENDAR
     // =====================
       case '/calendar':
         return MaterialPageRoute(

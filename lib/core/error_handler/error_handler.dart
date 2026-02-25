@@ -41,7 +41,6 @@ class ErrorHandler {
       }
     }
 
-    // Non-Dio errors
     String message = err.toString();
     message = message
         .replaceAll("Exception: ", "")

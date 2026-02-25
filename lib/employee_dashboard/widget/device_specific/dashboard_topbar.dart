@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class DashboardTopBar extends StatelessWidget {
-  const DashboardTopBar({super.key});
+  final VoidCallback onProfileClick;
+
+  const DashboardTopBar({
+    super.key,
+    required this.onProfileClick,
+  });
 
   // SaaS CRM Design Constants
   static const Color _slate900 = Color(0xFF1E293B);
@@ -13,7 +18,6 @@ class DashboardTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Background white to separate from slate dashboard body
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
       child: Row(
@@ -23,8 +27,8 @@ class DashboardTopBar extends StatelessWidget {
             flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   "Welcome Back,",
                   style: TextStyle(
                     fontSize: 24,
@@ -33,7 +37,7 @@ class DashboardTopBar extends StatelessWidget {
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   "Check your progress today",
                   style: TextStyle(
@@ -46,7 +50,7 @@ class DashboardTopBar extends StatelessWidget {
             ),
           ),
 
-          // 2. SEARCH BAR (Center Focal Point)
+          // 2. SEARCH BAR
           Expanded(
             flex: 4,
             child: _buildSearchBar(),
@@ -57,11 +61,13 @@ class DashboardTopBar extends StatelessWidget {
           // 3. ACTION ICONS & PROFILE
           Row(
             children: [
-              // Notification remains as it's standard for dashboards
-              const _TopBarIcon(icon: Icons.notifications_none_rounded, badge: 2),
+              const _TopBarIcon(
+                icon: Icons.notifications_none_rounded,
+                badge: 2,
+              ),
               const SizedBox(width: 24),
 
-              // NEW PROFILE UPLOAD/DISPLAY CIRCLE
+              // PROFILE CIRCLE
               _buildProfileCircle(),
             ],
           ),
@@ -78,13 +84,14 @@ class DashboardTopBar extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _borderSlate.withOpacity(0.5)),
       ),
-      child: TextField(
+      child: const TextField(
         decoration: InputDecoration(
           hintText: "Search anything...",
-          hintStyle: const TextStyle(color: _slate500, fontSize: 13),
-          prefixIcon: const Icon(Icons.search_rounded, color: _slate500, size: 18),
+          hintStyle: TextStyle(color: _slate500, fontSize: 13),
+          prefixIcon:
+          Icon(Icons.search_rounded, color: _slate500, size: 18),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          contentPadding: EdgeInsets.symmetric(vertical: 10),
         ),
       ),
     );
@@ -94,10 +101,7 @@ class DashboardTopBar extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () {
-          // Trigger Image Picker logic here
-          print("Upload Profile Photo");
-        },
+        onTap: onProfileClick,
         child: Stack(
           alignment: Alignment.bottomRight,
           children: [
@@ -108,19 +112,24 @@ class DashboardTopBar extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: _primaryBlue, width: 2),
                 image: const DecorationImage(
-                  image: NetworkImage("https://ui-avatars.com/api/?name=User&background=137FEC&color=fff"),
+                  image: NetworkImage(
+                    "https://ui-avatars.com/api/?name=User&background=137FEC&color=fff",
+                  ),
                   fit: BoxFit.cover,
                 ),
               ),
             ),
-            // Tiny "Upload/Edit" Indicator
             Container(
               padding: const EdgeInsets.all(2),
               decoration: const BoxDecoration(
                 color: _primaryBlue,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.add, size: 10, color: Colors.white),
+              child: const Icon(
+                Icons.add,
+                size: 10,
+                color: Colors.white,
+              ),
             )
           ],
         ),
@@ -133,14 +142,21 @@ class _TopBarIcon extends StatelessWidget {
   final IconData icon;
   final int badge;
 
-  const _TopBarIcon({required this.icon, this.badge = 0});
+  const _TopBarIcon({
+    required this.icon,
+    this.badge = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Icon(icon, color: const Color(0xFF64748B), size: 24),
+        Icon(
+          icon,
+          color: const Color(0xFF64748B),
+          size: 24,
+        ),
         if (badge > 0)
           Positioned(
             top: -2,

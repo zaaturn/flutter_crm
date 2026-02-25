@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:my_app/services/api_services.dart';
 
-class ProfileDesktop extends StatefulWidget {
-  const ProfileDesktop({super.key});
+class ProfileScreenDesktop extends StatefulWidget {
+  const ProfileScreenDesktop({super.key});
 
   @override
-  State<ProfileDesktop> createState() => _ProfileDesktopState();
+  State<ProfileScreenDesktop> createState() => _ProfileScreenDesktopState();
 }
 
-class _ProfileDesktopState extends State<ProfileDesktop> {
+class _ProfileScreenDesktopState extends State<ProfileScreenDesktop> {
   Map<String, dynamic>? profile;
   final ProfileService profileService = ProfileService();
-  bool _isLoading = true;
-  bool _isUploadingPhoto = false;
-  String? _errorMessage;
+  bool isUploading = false;
 
   @override
   void initState() {
@@ -22,438 +22,123 @@ class _ProfileDesktopState extends State<ProfileDesktop> {
     loadProfile();
   }
 
-  Future<void> loadProfile() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+  void loadProfile() async {
     try {
       final data = await profileService.getProfile();
-      if (mounted) {
-        setState(() {
-          profile = data;
-          _isLoading = false;
-        });
-      }
+      setState(() => profile = data);
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = "Failed to load profile";
-          _isLoading = false;
-        });
-      }
-      print("PROFILE LOAD ERROR: $e");
+      debugPrint("PROFILE LOAD ERROR: $e");
     }
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      imageQuality: 85,
-    );
-    if (picked == null) return;
+  String _getFormattedImageUrl() {
+    final photo = profile?["profile_photo"];
 
-    setState(() => _isUploadingPhoto = true);
+    if (photo == null || photo.toString().isEmpty) {
+      return "https://ui-avatars.com/api/?name=${profile?['username'] ?? 'User'}&background=7B52EF&color=fff";
+    }
+
+    // Extract root domain from API base
+    final apiBase = profileService.baseUrl;
+    final uri = Uri.parse(apiBase);
+
+    final root =
+        "${uri.scheme}://${uri.host}${uri.hasPort ? ":${uri.port}" : ""}";
+
+    final cleanPath = photo.toString().startsWith('/')
+        ? photo.toString()
+        : "/${photo.toString()}";
+
+    return "$root$cleanPath";
+  }
+
+
+  Future<void> _handleImagePick() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+    );
+
+    if (result == null) return;
+
+    setState(() => isUploading = true);
 
     try {
-      final result = await profileService.uploadProfilePhoto(picked.path);
+      final platformFile = result.files.single;
 
-      if (result["profile_photo"] != null && mounted) {
+      if (platformFile.bytes == null) {
+        throw Exception("No file bytes received.");
+      }
+
+      final xFile = XFile.fromData(
+        platformFile.bytes!,
+        name: platformFile.name,
+        mimeType: 'image/jpeg',
+      );
+
+      final uploadResult =
+      await profileService.uploadProfilePhoto(xFile);
+
+      if (uploadResult["profile_photo"] != null) {
         setState(() {
-          profile!["profile_photo"] = result["profile_photo"];
-          _isUploadingPhoto = false;
+          profile!["profile_photo"] =
+          uploadResult["profile_photo"];
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Profile photo updated successfully"),
-            backgroundColor: Colors.green,
-          ),
-        );
+        _showSnackBar("Success", "Profile photo updated!", Colors.green);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() => _isUploadingPhoto = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Failed to upload photo: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      print("PHOTO UPLOAD ERROR: $e");
+      debugPrint("UPLOAD ERROR: $e");
+      _showSnackBar(
+          "Upload Failed", "Could not update photo.", Colors.redAccent);
+    } finally {
+      setState(() => isUploading = false);
     }
+  }
+
+  void _showSnackBar(String title, String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$title: $message"),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Icon(Icons.business, size: 28, color: Colors.blue[700]),
-            const SizedBox(width: 12),
-            const Text(
-              "Dax Arrow - My Profile",
-              style: TextStyle(
-                color: Color(0xFF333333),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ],
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black87),
-            onPressed: loadProfile,
-            tooltip: 'Refresh Profile',
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-          ? _buildErrorState()
-          : _buildContent(),
-    );
-  }
+    if (profile == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-  // ---------------- ERROR STATE ----------------
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-          const SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: const TextStyle(fontSize: 18, color: Colors.black54),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: loadProfile,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Retry'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------- MAIN CONTENT ----------------
-
-  Widget _buildContent() {
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        padding: const EdgeInsets.all(40),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // LEFT PANEL
-            _leftPanel(),
-
-            const SizedBox(width: 40),
-
-            // RIGHT PANEL
-            Expanded(child: _rightPanel()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ---------------- LEFT PANEL ----------------
-
-  Widget _leftPanel() {
     return Container(
-      width: 350,
-      padding: const EdgeInsets.all(40),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          // Profile Photo with Upload Indicator
-          Stack(
-            children: [
-              GestureDetector(
-                onTap: _isUploadingPhoto ? null : _pickImage,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.blue.withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 70,
-                    backgroundColor: Colors.grey[200],
-                    backgroundImage: NetworkImage(_profilePhotoUrl()),
-                    child: _isUploadingPhoto
-                        ? Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                    )
-                        : null,
-                  ),
-                ),
-              ),
-              if (!_isUploadingPhoto)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: _pickImage,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[700],
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 30),
-
-          // Name
-          Text(
-            profile!["username"] ?? "—",
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF333333),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Email
-          Text(
-            profile!["email"] ?? "—",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-
-          const SizedBox(height: 30),
-          Divider(color: Colors.grey[300]),
-          const SizedBox(height: 30),
-
-          // Company Info
-          Icon(Icons.business, size: 40, color: Colors.blue[700]),
-          const SizedBox(height: 12),
-          const Text(
-            "Dax Arrow",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF333333),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "CRM Platform",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-
-          const SizedBox(height: 30),
-          Divider(color: Colors.grey[300]),
-          const SizedBox(height: 20),
-
-          // Quick Info
-          _miniInfo("Employee ID", profile!["employee_id"]),
-          _miniInfo("Role", profile!["role"] ?? "Employee"),
-          _miniInfo("Status", "Active"),
-        ],
-      ),
-    );
-  }
-
-  Widget _miniInfo(String label, dynamic value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      width: 380,
       decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.white,
+        border: Border(left: BorderSide(color: Colors.grey.shade100)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          Text(
-            value?.toString() ?? "—",
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF333333),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------- RIGHT PANEL ----------------
-
-  Widget _rightPanel() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: _cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.person_outline, size: 28, color: Colors.blue[700]),
-              const SizedBox(width: 12),
-              const Text(
-                "Personal Information",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF333333),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 40),
-
-          _infoSection("Contact Details", [
-            _infoRow(Icons.phone_outlined, "Phone", profile!["phone_number"]),
-            _infoRow(Icons.email_outlined, "Email", profile!["email"]),
-            _infoRow(Icons.location_on_outlined, "Address", profile!["address"]),
-          ]),
-
-          const SizedBox(height: 30),
-
-          _infoSection("Employment Details", [
-            _infoRow(Icons.badge_outlined, "Employee ID", profile!["employee_id"]),
-            _infoRow(Icons.calendar_today_outlined, "Date of Birth",
-                profile!["date_of_birth"]),
-            _infoRow(Icons.work_outline, "Joining Date",
-                profile!["date_of_joining"]),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
-          ),
-        ),
-        const SizedBox(height: 20),
-        ...children,
-      ],
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, dynamic value) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: Colors.blue[700], size: 24),
-          ),
-          const SizedBox(width: 20),
+          _buildBanner(),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  value?.toString() ?? "Not provided",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                  ),
-                ),
+                const SizedBox(height: 50),
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _infoTile("Email Address", profile!["email"],
+                    Icons.alternate_email),
+                _infoTile("Phone Number", profile!["phone_number"],
+                    Icons.phone_iphone),
+                _infoTile("Employee ID", profile!["employee_id"],
+                    Icons.badge_outlined),
+                _infoTile("Address", profile!["address"],
+                    Icons.map_outlined),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -462,27 +147,128 @@ class _ProfileDesktopState extends State<ProfileDesktop> {
     );
   }
 
-  // ---------------- COMMON ----------------
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 30,
-          offset: const Offset(0, 10),
+  Widget _buildBanner() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          height: 110,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF5C35C9), Color(0xFF7B52EF)],
+            ),
+          ),
+        ),
+        Positioned(bottom: -40, left: 24, child: _avatarWidget()),
+        Positioned(
+          bottom: 12,
+          left: 125,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                profile!["username"] ?? "User",
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+              ),
+              const Text(
+                "Active Employee",
+                style: TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  String _profilePhotoUrl() {
-    final photo = profile!["profile_photo"];
-    if (photo == null || photo.toString().isEmpty) {
-      return "https://i.pravatar.cc/300";
-    }
-    return "http://192.168.1.10:8000$photo";
+  Widget _avatarWidget() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3)),
+          child: CircleAvatar(
+            radius: 42,
+            backgroundColor: Colors.grey[100],
+            backgroundImage: NetworkImage(_getFormattedImageUrl()),
+          ),
+        ),
+        if (isUploading)
+          const CircularProgressIndicator(
+              color: Color(0xFF5C35C9)),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: GestureDetector(
+            onTap: isUploading ? null : _handleImagePick,
+            child: CircleAvatar(
+              radius: 14,
+              backgroundColor: isUploading
+                  ? Colors.grey
+                  : const Color(0xFF5C35C9),
+              child: const Icon(Icons.edit,
+                  size: 14, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        const Text("Details",
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF1A1A2E))),
+        TextButton(onPressed: () {}, child: const Text("Edit")),
+      ],
+    );
+  }
+
+  Widget _infoTile(String label, dynamic value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: const Color(0xFFF8F8FC),
+            borderRadius: BorderRadius.circular(10)),
+        child: Row(
+          children: [
+            Icon(icon, size: 18,
+                color: const Color(0xFF5C35C9)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                          fontWeight:
+                          FontWeight.bold)),
+                  Text(value?.toString() ?? "—",
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

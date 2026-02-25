@@ -19,6 +19,7 @@ import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.d
 
 // ======================= SERVICES & SCREENS =======================
 import 'package:my_app/screens/welcome_screen.dart';
+import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 import 'package:my_app/leave_management/screens/device_specific/employee_leave_dashboard_desktop.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/services/api_client.dart';
@@ -33,9 +34,18 @@ class EmployeeDashboardDesktop extends StatefulWidget {
 
 class _EmployeeDashboardDesktopState
     extends State<EmployeeDashboardDesktop> {
+
   Timer? _autoCheckoutTimer;
   StreamSubscription<RemoteMessage>? _fcmSubscription;
   late EmployeeBloc _employeeBloc;
+
+  bool _showProfilePanel = false;
+
+  void _toggleProfilePanel() {
+    setState(() {
+      _showProfilePanel = !_showProfilePanel;
+    });
+  }
 
   @override
   void initState() {
@@ -79,106 +89,141 @@ class _EmployeeDashboardDesktopState
     return Material(
       child: Scaffold(
         backgroundColor: const Color(0xFFF5F7FA),
-        body: Row(
+        body: Stack(
           children: [
-            // Sidebar Navigation
-            DashboardSidebar(
-              onLogout: _logout,
-              onNavigateLeave: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                    const EmployeeLeaveDashboardScreenDesktop(),
+
+            // ================= MAIN DASHBOARD =================
+            Row(
+              children: [
+                DashboardSidebar(
+                  onLogout: _logout,
+                  onNavigateLeave: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                        const EmployeeLeaveDashboardScreenDesktop(),
+                      ),
+                    );
+                  },
+                  onNavigateTask: () {},
+                ),
+
+                Expanded(
+                  child: Column(
+                    children: [
+                      DashboardTopBar(
+                        onProfileClick: _toggleProfilePanel,
+                      ),
+
+                      Expanded(
+                        child: BlocBuilder<EmployeeBloc, EmployeeState>(
+                          builder: (context, state) {
+                            if (state.loading) {
+                              return const Center(
+                                  child: CircularProgressIndicator());
+                            }
+
+                            return RefreshIndicator(
+                              onRefresh: () async {
+                                _employeeBloc.add(LoadDashboard());
+                              },
+                              child: SingleChildScrollView(
+                                physics:
+                                const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.all(24),
+                                child: Row(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 7,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          const DashboardGreeting(),
+                                          const SizedBox(height: 24),
+
+                                          DashboardWorkStatusCard(),
+                                          const SizedBox(height: 24),
+
+                                          DashboardTasksSection(
+                                            tasks: state.tasks,
+                                            onUpdateStatus:
+                                                (taskId, status) {
+                                              _employeeBloc.add(
+                                                UpdateTaskStatus(
+                                                  taskId: taskId,
+                                                  status: status,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 24),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 24),
+
+                                    Expanded(
+                                      flex: 3,
+                                      child: Container(
+                                        height: 700,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                          BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color:
+                                              const Color(0xFFE5E7EB),
+                                              width: 1),
+                                        ),
+                                        child: const DashboardCalendar(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-              onNavigateTask: () {},
+                ),
+              ],
             ),
 
-            // Main Content Area
-            Expanded(
-              child: Column(
-                children: [
-                  const DashboardTopBar(),
+            // ================= DIM BACKGROUND =================
+            if (_showProfilePanel)
+              GestureDetector(
+                onTap: _toggleProfilePanel,
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                ),
+              ),
 
-                  Expanded(
-                    child: BlocBuilder<EmployeeBloc, EmployeeState>(
-                      builder: (context, state) {
-                        if (state.loading) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-
-                        return RefreshIndicator(
-                          onRefresh: () async {
-                            _employeeBloc.add(LoadDashboard());
-                          },
-                          child: SingleChildScrollView(
-                            physics:
-                            const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(24),
-                            child: Row(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                // LEFT COLUMN (UNCHANGED)
-                                Expanded(
-                                  flex: 7,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      const DashboardGreeting(),
-                                      const SizedBox(height: 24),
-
-                                      DashboardWorkStatusCard(),
-                                      const SizedBox(height: 24),
-
-                                      DashboardTasksSection(
-                                        tasks: state.tasks,
-                                        onUpdateStatus:
-                                            (taskId, status) {
-                                          _employeeBloc.add(
-                                            UpdateTaskStatus(
-                                              taskId: taskId,
-                                              status: status,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(height: 24),
-                                    ],
-                                  ),
-                                ),
-
-                                const SizedBox(width: 24),
-
-                                // RIGHT COLUMN (ONLY THIS CHANGED)
-                                Expanded(
-                                  flex: 3,
-                                  child: Container(
-                                    height: 700,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius:
-                                      BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color:
-                                          const Color(0xFFE5E7EB),
-                                          width: 1),
-                                    ),
-                                    child: const DashboardCalendar(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+            // ================= SLIDE PANEL =================
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              right: _showProfilePanel ? 0 : -420,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 420,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 20,
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: const ProfileScreenDesktop(),
               ),
             ),
           ],
