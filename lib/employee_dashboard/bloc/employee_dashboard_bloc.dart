@@ -111,7 +111,19 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
+
+      final currentAttendance = state.attendance;
+
+      if (currentAttendance != null) {
+        emit(state.copyWith(
+          attendance: currentAttendance.copyWith(
+            onBreak: !currentAttendance.onBreak,
+          ),
+        ));
+      }
+
       await repo.toggleBreak();
+
       final attendance = await repo.fetchAttendance();
 
       if (!ApiClient().isAuthenticated) return;
@@ -121,11 +133,15 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         attendance: attendance,
         error: null,
       ));
+
     } catch (err) {
+
       emit(state.copyWith(
         loading: false,
         error: ErrorHandler.format(err),
       ));
+
+      add(LoadDashboard());
     }
   }
 

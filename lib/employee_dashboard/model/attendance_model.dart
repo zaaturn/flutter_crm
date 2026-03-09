@@ -13,6 +13,23 @@ class AttendanceModel {
     this.totalHours,
   });
 
+  /// ADD THIS METHOD
+  AttendanceModel copyWith({
+    bool? isCheckedIn,
+    bool? onBreak,
+    DateTime? checkInTime,
+    DateTime? checkOutTime,
+    Duration? totalHours,
+  }) {
+    return AttendanceModel(
+      isCheckedIn: isCheckedIn ?? this.isCheckedIn,
+      onBreak: onBreak ?? this.onBreak,
+      checkInTime: checkInTime ?? this.checkInTime,
+      checkOutTime: checkOutTime ?? this.checkOutTime,
+      totalHours: totalHours ?? this.totalHours,
+    );
+  }
+
   factory AttendanceModel.fromMap(Map<String, dynamic> m) {
     DateTime? parseDate(dynamic v) {
       if (v == null) return null;
@@ -28,12 +45,12 @@ class AttendanceModel {
     Duration? parseDuration(dynamic v) {
       if (v == null) return null;
 
-      // If backend sends minutes (int)
+      // If backend sends minutes
       if (v is int) {
         return Duration(minutes: v);
       }
 
-      // If backend sends decimal hours (double/string)
+      // If backend sends decimal hours
       final d = double.tryParse(v.toString());
       if (d != null) {
         final hours = d.floor();
