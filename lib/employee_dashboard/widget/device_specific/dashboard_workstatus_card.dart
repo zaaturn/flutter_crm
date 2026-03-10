@@ -128,6 +128,25 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
 
   Widget _buildWide(BuildContext context, AttendanceModel? a,
       bool isCheckedIn, bool isOnBreak, bool loading) {
+
+    final width = MediaQuery.of(context).size.width;
+
+    if (width < 1300) {
+      return Wrap(
+        spacing: 24,
+        runSpacing: 16,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          _timerBlock(isCheckedIn, isOnBreak),
+          _totalWorked(a),
+          _statusBadge(isCheckedIn, isOnBreak),
+          if (isCheckedIn)
+            _breakBtn(context, isOnBreak, loading),
+          _checkInOutBtn(context, isCheckedIn, loading),
+        ],
+      );
+    }
+
     return Row(
       children: [
         _timerBlock(isCheckedIn, isOnBreak),
@@ -235,7 +254,43 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
       ElevatedButton.icon(
         onPressed: loading
             ? null
-            : () => context.read<EmployeeBloc>().add(ToggleCheckInEvent()),
+            : () async {
+
+          if (isCheckedIn) {
+            final confirm = await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text("Punch Out"),
+                content: const Text(
+                    "Are you sure you want to logout for today?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Cancel"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text("Yes, Punch Out"),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm != true) return;
+
+            context.read<EmployeeBloc>().add(ToggleCheckInEvent());
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                    "Work completed. Great job today. Have a wonderful day!"),
+              ),
+            );
+
+          } else {
+            context.read<EmployeeBloc>().add(ToggleCheckInEvent());
+          }
+        },
         icon: loading
             ? const SizedBox(
           width: 16,
@@ -261,27 +316,30 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
     children: [
       _label("TODAY'S LOG"),
       const SizedBox(height: 12),
-      Container(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _border),
-        ),
-        child: Row(children: [
-          _logCell('Check In', _fmtTime(a.checkInTime), _green),
-          _logDivider(),
-          _logCell('Check Out', _fmtTime(a.checkOutTime), _red),
-          _logDivider(),
-          _logCell('Total Worked', _fmtDur(a.totalHours), _blue),
-          _logDivider(),
-          _logCell(
-            'Status',
-            a.onBreak ? 'On Break' : a.isCheckedIn ? 'Active' : 'Done',
-            a.onBreak ? _amber : a.isCheckedIn ? _green : _textMuted,
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          padding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _border),
           ),
-        ]),
+          child: Row(children: [
+            _logCell('Check In', _fmtTime(a.checkInTime), _green),
+            _logDivider(),
+            _logCell('Check Out', _fmtTime(a.checkOutTime), _red),
+            _logDivider(),
+            _logCell('Total Worked', _fmtDur(a.totalHours), _blue),
+            _logDivider(),
+            _logCell(
+              'Status',
+              a.onBreak ? 'On Break' : a.isCheckedIn ? 'Active' : 'Done',
+              a.onBreak ? _amber : a.isCheckedIn ? _green : _textMuted,
+            ),
+          ]),
+        ),
       ),
     ],
   );
@@ -340,7 +398,8 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
       margin: const EdgeInsets.symmetric(horizontal: 12));
 
   Widget _logCell(String label, String value, Color accent) =>
-      Expanded(
+      SizedBox(
+        width: 140,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
