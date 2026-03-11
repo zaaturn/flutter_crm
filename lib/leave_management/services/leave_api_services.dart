@@ -133,8 +133,20 @@ class LeaveApiService {
       ),
     );
 
+    print("Raw Response Status: ${res.statusCode}");
+    print("Raw Response Body: ${res.body}");
+
     final data = _handleResponse(res, "/leave-types/");
-    return _extractResults(data)
+
+    print("After handleResponse:");
+    print(data);
+
+    final results = _extractResults(data);
+
+    print("After extractResults:");
+    print(results);
+
+    return results
         .map((e) => LeaveType.fromJson(e))
         .toList();
   }
@@ -194,7 +206,6 @@ class LeaveApiService {
     required int leaveTypeId,
     required DateTime startDate,
     required DateTime endDate,
-    required int approverId,
     String? reason,
   }) async {
     final res = await _safeRequest(
@@ -206,7 +217,6 @@ class LeaveApiService {
           "start_date": startDate.toIso8601String().split('T')[0],
           "end_date": endDate.toIso8601String().split('T')[0],
           "reason": reason,
-          "approver": approverId,
         }),
       ),
     );

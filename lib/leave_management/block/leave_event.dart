@@ -36,20 +36,18 @@ class LoadPendingLeaves extends LeaveEvent {
   const LoadPendingLeaves();
 }
 
-// ================= APPLY LEAVE (UPDATED) =================
+// ================= APPLY LEAVE =================
 
 class ApplyLeave extends LeaveEvent {
   final int leaveTypeId;
   final DateTime startDate;
   final DateTime endDate;
-  final int approverId;
   final String? reason;
 
   const ApplyLeave({
     required this.leaveTypeId,
     required this.startDate,
     required this.endDate,
-    required this.approverId,
     this.reason,
   });
 
@@ -58,7 +56,6 @@ class ApplyLeave extends LeaveEvent {
     leaveTypeId,
     startDate,
     endDate,
-    approverId,
     reason,
   ];
 }

@@ -100,7 +100,6 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         leaveTypeId: event.leaveTypeId,
         startDate: event.startDate,
         endDate: event.endDate,
-        approverId: event.approverId,
         reason: event.reason,
       );
 
