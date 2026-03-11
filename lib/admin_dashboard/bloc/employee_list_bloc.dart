@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/repository/employee_list_repository.dart';
+import 'package:my_app/admin_dashboard/model/employee.dart';
 
 import 'employee_list_event.dart';
 import 'employee_list_state.dart';
@@ -193,9 +194,11 @@ class EmployeeListBloc extends Bloc<EmployeeListEvent, EmployeeListState> {
       final boolMap = statusMap.map(
             (key, value) => MapEntry(
           key,
-          value['liveStatus'] as bool? ?? false,
+          value['liveStatus'] == LiveStatus.working,
         ),
       );
+
+
 
       emit(state.copyWith(liveStatusMap: boolMap));
     } catch (_) {}

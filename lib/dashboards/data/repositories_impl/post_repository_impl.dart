@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';   // ADD THIS
 import '../../domain/models/post_model.dart';
 import 'package:my_app/dashboards/domain/repository/post_repository.dart';
 import 'package:my_app/dashboards/data/datasource/post_remote_datasource.dart';
@@ -26,11 +27,18 @@ class PostRepositoryImpl implements PostRepository {
     required String caption,
     String? link,
     required String category,
+    MultipartFile? file,
+    List<int>? userIds,
+    List<int>? departmentIds,
+    List<int>? designationIds,
   }) async {
     await remoteDataSource.createPost(
       caption: caption,
       link: link,
       category: category,
+      file: file,
+      userIds: userIds,
+      departmentIds: departmentIds,
+      designationIds: designationIds,
     );
-  }
-}
+  }}

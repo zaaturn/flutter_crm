@@ -26,19 +26,47 @@ class PostRemoteDataSource {
     String? link,
     required String category,
     MultipartFile? file,
+    List<int>? userIds,
+    List<int>? departmentIds,
+    List<int>? designationIds,
   }) async {
 
-    Map<String, dynamic> formMap = {
-      "title": "Shared item",
-      "content": "${caption.trim()}\n${link ?? ""}",
-      "category": category,
-    };
+    FormData form = FormData();
 
-    if (file != null) {
-      formMap["attachments"] = [file];
+    form.fields.add(MapEntry("title", "Shared item"));
+    form.fields.add(MapEntry("content", "${caption.trim()}\n${link ?? ""}"));
+    form.fields.add(MapEntry("category", category));
+
+    /// USERS
+    if (userIds != null) {
+      for (var id in userIds) {
+        form.fields.add(MapEntry("target_users", id.toString()));
+      }
     }
 
-    final form = FormData.fromMap(formMap);
+    /// DEPARTMENTS
+    if (departmentIds != null) {
+      for (var id in departmentIds) {
+        form.fields.add(MapEntry("target_departments", id.toString()));
+      }
+    }
+
+    /// DESIGNATIONS
+    if (designationIds != null) {
+      for (var id in designationIds) {
+        form.fields.add(MapEntry("target_designations", id.toString()));
+      }
+    }
+
+    /// FILE
+    if (file != null) {
+      form.files.add(
+        MapEntry(
+          "attachments",
+          file,
+        ),
+      );
+    }
 
     await apiClient.post(
       "/api/posts/",

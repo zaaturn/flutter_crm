@@ -32,7 +32,7 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
-  Future<List<DepartmentModel>> getDepartments({String? search}) async { // ← NEW
+  Future<List<DepartmentModel>> getDepartments({String? search}) async {
     final response = await remote.getDepartments(search: search);
 
     final list = response is Map && response.containsKey('results')
@@ -40,15 +40,17 @@ class UserRepositoryImpl implements UserRepository {
         : response as List;
 
     return list.map((e) {
-      if (e is Map<String, dynamic>) {
-        return DepartmentModel(e['name']?.toString() ?? e.toString());
-      }
-      return DepartmentModel(e.toString());
+      final map = e as Map<String, dynamic>;
+
+      return DepartmentModel(
+        id: map["id"],     // ← keep the ID
+        name: map["name"], // ← keep the name
+      );
     }).toList();
   }
 
   @override
-  Future<List<DesignationModel>> getDesignations({String? search}) async { // ← NEW
+  Future<List<DesignationModel>> getDesignations({String? search}) async {
     final response = await remote.getDesignations(search: search);
 
     final list = response is Map && response.containsKey('results')
@@ -56,10 +58,12 @@ class UserRepositoryImpl implements UserRepository {
         : response as List;
 
     return list.map((e) {
-      if (e is Map<String, dynamic>) {
-        return DesignationModel(e['name']?.toString() ?? e.toString());
-      }
-      return DesignationModel(e.toString());
+      final map = e as Map<String, dynamic>;
+
+      return DesignationModel(
+        id: map["id"],
+        name: map["name"],
+      );
     }).toList();
   }
 }

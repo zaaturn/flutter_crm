@@ -1,4 +1,6 @@
 import 'package:my_app/dashboards/domain/models/post_model.dart';
+import 'package:dio/dio.dart';
+
 
 abstract class PostRepository {
 
@@ -10,6 +12,10 @@ abstract class PostRepository {
     required String caption,
     String? link,
     required String category,
+    MultipartFile? file,
+    List<int>? userIds,
+    List<int>? departmentIds,
+    List<int>? designationIds,
   });
 
 }

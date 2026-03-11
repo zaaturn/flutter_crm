@@ -30,15 +30,17 @@ class ApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: _base,
-        connectTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 20),
         receiveTimeout: const Duration(seconds: 15),
-        headers: {"Content-Type": "application/json"},
+        responseType: ResponseType.json,
+        headers: {
+          "Accept": "*/*",
+        },
       ),
     );
 
     _dio.interceptors.add(
       InterceptorsWrapper(
-        // ================= REQUEST =================
         onRequest: (options, handler) async {
           try {
             final token = await _storage.readToken();
@@ -62,6 +64,11 @@ class ApiClient {
               options.headers["Authorization"] = "Bearer $token";
             }
 
+            // Automatically set multipart header when uploading files
+            if (options.data is FormData) {
+              options.headers["Content-Type"] = "multipart/form-data";
+            }
+
             if (kDebugMode) {
               debugPrint("${options.method} ${options.uri}");
             }
@@ -77,7 +84,6 @@ class ApiClient {
           }
         },
 
-        // ================= ERROR =================
         onError: (error, handler) async {
           final statusCode = error.response?.statusCode;
 
@@ -86,8 +92,6 @@ class ApiClient {
                   error.requestOptions.path.contains('refresh');
 
           if (statusCode == 401 && !isAuthFree) {
-
-
             if (_isRefreshing) {
               while (_isRefreshing) {
                 await Future.delayed(const Duration(milliseconds: 100));
@@ -106,7 +110,7 @@ class ApiClient {
 
             _isRefreshing = true;
 
-            final newToken = await _refreshAccessToken();
+            final newToken = await _performTokenRefresh();
 
             _isRefreshing = false;
 
@@ -130,21 +134,36 @@ class ApiClient {
     );
   }
 
-  // ================= REFRESH =================
-  Future<String?> _refreshAccessToken() async {
+  Future<String?> _performTokenRefresh() async {
     try {
-      final refresh = await _storage.readRefreshToken();
-      if (refresh == null || refresh.isEmpty) return null;
+      final refreshToken = await _storage.readRefreshToken();
 
-      final response = await Dio().post(
+      if (refreshToken == null || refreshToken.isEmpty) {
+        return null;
+      }
+
+      final dio = Dio();
+
+      final response = await dio.post(
         "$baseAccounts/token/refresh/",
-        data: {"refresh": refresh},
+        data: {
+          "refresh": refreshToken,
+        },
+        options: Options(
+          headers: {
+            "Content-Type": "application/json",
+          },
+        ),
       );
 
-      final newAccess = response.data["access"];
-      final newRefresh = response.data["refresh"];
+      final data = response.data;
 
-      if (newAccess == null) return null;
+      if (data == null || data["access"] == null) {
+        return null;
+      }
+
+      final newAccess = data["access"];
+      final newRefresh = data["refresh"];
 
       await _storage.saveToken(newAccess);
 
@@ -153,19 +172,27 @@ class ApiClient {
       }
 
       return newAccess;
-    } catch (_) {
+    } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint("Token refresh failed: ${e.response?.data}");
+      }
+
+      return null;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint("Unexpected refresh error: $e");
+      }
+
       return null;
     }
   }
 
-  // ================= LOGOUT =================
   Future<void> logout() async {
     _masterCancelToken.cancel("User logged out");
     _masterCancelToken = CancelToken();
     await _storage.clearTokens();
   }
 
-  // ================= GET MAP =================
   Future<Map<String, dynamic>> get(
       String url, {
         Map<String, dynamic>? queryParameters,
@@ -182,7 +209,6 @@ class ApiClient {
     }
   }
 
-  // ================= GET LIST =================
   Future<List<dynamic>> getList(
       String url, {
         Map<String, dynamic>? queryParameters,
@@ -204,7 +230,6 @@ class ApiClient {
     }
   }
 
-  // ================= POST =================
   Future<Map<String, dynamic>> post(
       String url, {
         Object? body,
@@ -221,7 +246,6 @@ class ApiClient {
     }
   }
 
-  // ================= HELPERS =================
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
@@ -230,9 +254,7 @@ class ApiClient {
   }
 
   ApiException _handleError(DioException e) {
-
-    if (CancelToken.isCancel(e) ||
-        e.type == DioExceptionType.cancel) {
+    if (CancelToken.isCancel(e) || e.type == DioExceptionType.cancel) {
       throw e;
     }
 
@@ -263,10 +285,7 @@ class ApiException implements Exception {
     }
 
     if (data is String) {
-      return data
-          .replaceAll("{detail: ", "")
-          .replaceAll("}", "")
-          .trim();
+      return data.replaceAll("{detail: ", "").replaceAll("}", "").trim();
     }
 
     return "Something went wrong.";

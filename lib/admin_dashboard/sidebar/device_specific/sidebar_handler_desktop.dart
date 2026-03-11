@@ -29,6 +29,7 @@ import 'package:my_app/admin_dashboard/screen/device_specific/employee_list_scre
 import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_event.dart';
 import 'package:my_app/admin_dashboard/repository/employee_list_repository.dart';
+import 'package:my_app/dashboards/presentations/screens/content_management_page.dart';
 
 class SidebarHandler {
   static Future<void> handle(
@@ -88,7 +89,12 @@ class SidebarHandler {
           );
           break;
 
-        case SidebarAction.meetings:
+        case SidebarAction.share:
+          _push(
+            parentContext,
+            const ContentManagementPage(),
+          );
+          break;
         case SidebarAction.credentials:
         case SidebarAction.assets:
           break;

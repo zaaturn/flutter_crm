@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
+
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
+
+import 'package:my_app/dashboards/presentations/bloc/audience_bloc.dart';
+import 'package:my_app/dashboards/presentations/bloc/audience_state.dart';
+import 'package:my_app/dashboards/widgets/audience_tab.dart';
 
 class SharedItemsScreen extends StatefulWidget {
   const SharedItemsScreen({super.key});
@@ -15,6 +21,8 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
   final _linkCtrl = TextEditingController();
   final _captionCtrl = TextEditingController();
 
+  MultipartFile? _selectedMultipartFile;
+
   @override
   void dispose() {
     _linkCtrl.dispose();
@@ -26,18 +34,40 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
     final link = _linkCtrl.text.trim();
     final caption = _captionCtrl.text.trim();
 
-    if (link.isEmpty && caption.isEmpty) {
+    if (link.isEmpty && caption.isEmpty && _selectedMultipartFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please add a link or caption")),
+        const SnackBar(content: Text("Please add a link, caption or file")),
       );
       return;
     }
 
+    /// ───── GET AUDIENCE SELECTION ─────
+    final audienceBloc = context.read<AudienceBloc>();
+    final audienceState = audienceBloc.state;
+    final selectedIds = audienceBloc.getSelectedIds();
+
+    List<int>? departmentIds;
+    List<int>? designationIds;
+    List<int>? userIds;
+
+    if (audienceState.activeTab == AudienceTab.byDepartment) {
+      departmentIds = selectedIds;
+    } else if (audienceState.activeTab == AudienceTab.byDesignation) {
+      designationIds = selectedIds;
+    } else if (audienceState.activeTab == AudienceTab.specificUsers) {
+      userIds = selectedIds;
+    }
+
+    /// ───── CREATE POST ─────
     context.read<PostBloc>().add(
       CreatePostEvent(
         title: caption,
         description: link,
         category: "shared",
+        file: _selectedMultipartFile,
+        departmentIds: departmentIds ?? [],
+        designationIds: designationIds ?? [],
+        userIds: userIds ?? [],
       ),
     );
 
@@ -47,6 +77,16 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
 
     _linkCtrl.clear();
     _captionCtrl.clear();
+
+    setState(() {
+      _selectedMultipartFile = null;
+    });
+  }
+
+  void _setFile(MultipartFile file) {
+    setState(() {
+      _selectedMultipartFile = file;
+    });
   }
 
   @override
@@ -76,7 +116,7 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
             ),
             const SizedBox(height: 28),
 
-            const _DropZone(),
+            _DropZone(onFileSelected: _setFile),
 
             const SizedBox(height: 24),
 
@@ -173,7 +213,9 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
 }
 
 class _DropZone extends StatefulWidget {
-  const _DropZone();
+  final Function(MultipartFile) onFileSelected;
+
+  const _DropZone({required this.onFileSelected});
 
   @override
   State<_DropZone> createState() => _DropZoneState();
@@ -192,6 +234,13 @@ class _DropZoneState extends State<_DropZone> {
 
     if (result != null) {
       PlatformFile file = result.files.first;
+
+      final multipart = MultipartFile.fromBytes(
+        file.bytes!,
+        filename: file.name,
+      );
+
+      widget.onFileSelected(multipart);
 
       setState(() {
         _selectedFile = file.name;

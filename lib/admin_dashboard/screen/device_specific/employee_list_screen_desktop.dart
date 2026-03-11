@@ -267,9 +267,14 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
         }
 
         final employee = employees[index];
+        print("EMPLOYEE ID: ${employee.id}");
+        print("LIVE STATUS MAP: ${state.liveStatusMap}");
+
+        final isOnline = state.liveStatusMap[employee.id] ?? false;
 
         return EmployeeCard(
           employee: employee,
+          isOnline: isOnline,
           onViewProfile: () => _goToProfile(employee),
           onEmail: () => _emailSnack(employee.email),
         );

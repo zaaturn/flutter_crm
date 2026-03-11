@@ -73,6 +73,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         caption: event.title,
         link: event.description,
         category: event.category,
+        file: event.file,
+        departmentIds: event.departmentIds,
+        designationIds: event.designationIds,
       );
 
       add(FetchPosts()); // refresh posts after creating

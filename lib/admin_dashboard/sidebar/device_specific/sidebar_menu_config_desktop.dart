@@ -9,7 +9,7 @@ enum SidebarAction {
   assignTasks,
 
   // Management
-  meetings,
+  share,
   credentials,
   assets,
   leaveManagement,
@@ -83,9 +83,9 @@ const sidebarMenuConfig = [
 
   // ================= MANAGEMENT =================
   SidebarMenuItem(
-    title: "Meetings",
+    title: "Share",
     icon: Icons.video_camera_front_outlined,
-    action: SidebarAction.meetings,
+    action: SidebarAction.share,
   ),
 
   SidebarMenuItem(

@@ -5,12 +5,14 @@ import 'package:my_app/admin_dashboard/utils/app_theme.dart';
 
 class EmployeeCard extends StatelessWidget {
   final Employee employee;
+  final bool isOnline;
   final VoidCallback? onViewProfile;
   final VoidCallback? onEmail;
 
   const EmployeeCard({
     super.key,
     required this.employee,
+    required this.isOnline,
     this.onViewProfile,
     this.onEmail,
   });
@@ -93,7 +95,7 @@ class EmployeeCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: employee.statusColor.withOpacity(0.12),
+              color: (isOnline ? Colors.green : Colors.red).withOpacity(0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -109,13 +111,13 @@ class EmployeeCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  employee.statusText,
+                  isOnline ? "Active" : "Logged Out",
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: employee.statusColor,
+                    color: isOnline ? Colors.green : Colors.red,
                   ),
-                ),
+                )
               ],
             ),
           ),
