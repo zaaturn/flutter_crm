@@ -196,6 +196,12 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'DaxarrowTeams',
+
+      theme: ThemeData(
+        fontFamily: 'PlusJakartaSans',
+        fontFamilyFallback: const ['NotoSans'],
+      ),
+
       home: LoaderWrapper(
         child: StartupGate(),
       ),
