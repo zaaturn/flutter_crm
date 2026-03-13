@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 
@@ -52,6 +53,10 @@ import 'core/router/app_router.dart';
 import 'services/api_client.dart';
 import 'package:my_app/core/router/startup_gate.dart';
 
+//client
+import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
+import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
+
 final GlobalKey<NavigatorState> navigatorKey =
 GlobalKey<NavigatorState>();
 
@@ -64,6 +69,8 @@ Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // Firebase Init
   await Firebase.initializeApp(
@@ -113,6 +120,7 @@ Future<void> main() async {
         RepositoryProvider(create: (_) => LeaveApiService()),
         RepositoryProvider(create: (_) => AdminRepository()),
         RepositoryProvider<EventRepositoryImpl>.value(value: eventRepo),
+        RepositoryProvider(create: (_) => ClientRepository()),
 
         // Dashboards Repositories
         RepositoryProvider<PostRepository>.value(
@@ -155,6 +163,12 @@ Future<void> main() async {
             ),
           ),
 
+          // client
+          BlocProvider<ClientBloc>(
+            create: (context) =>
+                ClientBloc(context.read<ClientRepository>()),
+          ),
+
           // Dashboards Blocs
           BlocProvider<PostBloc>(
             create: (context) =>
@@ -182,8 +196,37 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'DaxarrowTeams',
-      home: StartupGate(),
+      home: LoaderWrapper(
+        child: StartupGate(),
+      ),
       onGenerateRoute: AppRouter.generateRoute,
+    );
+  }
+}
+
+class LoaderWrapper extends StatelessWidget {
+  final Widget child;
+
+  const LoaderWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: ApiClient.loader,
+      builder: (_, loading, __) {
+        return Stack(
+          children: [
+            child,
+            if (loading)
+              Container(
+                color: Colors.black26,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

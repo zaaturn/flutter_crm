@@ -2,32 +2,47 @@ import 'package:dio/dio.dart';
 
 class ErrorHandler {
   static String format(Object err) {
+
     if (err is DioException) {
       final response = err.response;
 
-      // If backend sends structured JSON
+      // Status code handling
+      if (response != null) {
+        switch (response.statusCode) {
+          case 500:
+            return "Server error occurred. Please refresh the page.";
+
+          case 404:
+            return "Requested data not found.";
+
+          case 401:
+            return "Session expired. Please login again.";
+
+          case 403:
+            return "You don't have permission to perform this action.";
+        }
+      }
+
+      // JSON response
       if (response?.data is Map<String, dynamic>) {
         final data = response!.data as Map<String, dynamic>;
 
-        if (data["message"] != null) {
-          return data["message"].toString();
-        }
-
-        if (data["error"] != null) {
-          return data["error"].toString();
-        }
-
-        if (data["detail"] != null) {
-          return data["detail"].toString();
-        }
+        if (data["message"] != null) return data["message"].toString();
+        if (data["error"] != null) return data["error"].toString();
+        if (data["detail"] != null) return data["detail"].toString();
       }
 
-      // If backend sends plain text
+      // Plain text / HTML response
       if (response?.data is String) {
-        return response!.data.toString();
+        final text = response!.data.toString();
+
+        if (text.contains("<html") || text.contains("<!DOCTYPE")) {
+          return "Server error occurred. Please refresh the page.";
+        }
+
+        return text;
       }
 
-      // Network level issues
       switch (err.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.receiveTimeout:

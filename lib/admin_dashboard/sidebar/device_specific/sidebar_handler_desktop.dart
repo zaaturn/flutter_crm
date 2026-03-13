@@ -30,6 +30,11 @@ import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_event.dart';
 import 'package:my_app/admin_dashboard/repository/employee_list_repository.dart';
 import 'package:my_app/dashboards/presentations/screens/content_management_page.dart';
+import 'package:my_app/client tracker/core/layout/app_shell.dart';
+import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
+import 'package:my_app/client tracker/features/payment/bloc/payment_bloc.dart';
+import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
+import 'package:my_app/client tracker/features/payment/repository/payment_repository.dart';
 
 class SidebarHandler {
   static Future<void> handle(
@@ -95,7 +100,23 @@ class SidebarHandler {
             const ContentManagementPage(),
           );
           break;
-        case SidebarAction.credentials:
+        case SidebarAction.client:
+          _push(
+            parentContext,
+            MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ClientBloc(ClientRepository()),
+                ),
+                BlocProvider(
+                  create: (_) => PaymentBloc(PaymentRepository()),
+                ),
+              ],
+              child: const AppShell(),
+            ),
+          );
+          break;
+
         case SidebarAction.assets:
           break;
 

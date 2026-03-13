@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'secure_storage_service.dart';
 
 class ApiClient {
@@ -16,6 +17,17 @@ class ApiClient {
 
   CancelToken _masterCancelToken = CancelToken();
   bool _isRefreshing = false;
+
+  // LOADER NOTIFIER
+  static final ValueNotifier<bool> loader = ValueNotifier(false);
+
+  static void showLoader() {
+    loader.value = true;
+  }
+
+  static void hideLoader() {
+    loader.value = false;
+  }
 
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
@@ -64,7 +76,6 @@ class ApiClient {
               options.headers["Authorization"] = "Bearer $token";
             }
 
-            // Automatically set multipart header when uploading files
             if (options.data is FormData) {
               options.headers["Content-Type"] = "multipart/form-data";
             }
@@ -110,7 +121,13 @@ class ApiClient {
 
             _isRefreshing = true;
 
+            // SHOW LOADER
+            ApiClient.showLoader();
+
             final newToken = await _performTokenRefresh();
+
+            // HIDE LOADER
+            ApiClient.hideLoader();
 
             _isRefreshing = false;
 

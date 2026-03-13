@@ -10,7 +10,7 @@ enum SidebarAction {
 
   // Management
   share,
-  credentials,
+  client,
   assets,
   leaveManagement,
 
@@ -89,9 +89,9 @@ const sidebarMenuConfig = [
   ),
 
   SidebarMenuItem(
-    title: "Credentials",
+    title: "Clients",
     icon: Icons.vpn_key_outlined,
-    action: SidebarAction.credentials,
+    action: SidebarAction.client,
   ),
 
   SidebarMenuItem(

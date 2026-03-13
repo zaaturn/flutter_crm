@@ -35,6 +35,7 @@ dependencies:
   cached_network_image: ^3.3.0
   shimmer: ^3.0.0
   flutter_staggered_animations: ^1.1.1
+  google_fonts: ^6.2.1
 
 
 
@@ -53,3 +54,14 @@ flutter:
   assets:
     - assets/images/login_bg.jpeg
     - assets/images/daxarrow.png
+
+  fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
