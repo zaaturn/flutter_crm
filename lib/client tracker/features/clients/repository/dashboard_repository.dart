@@ -3,10 +3,13 @@ import 'package:my_app/client tracker/features/clients/models/dashboard_model.da
 import '../../../core/constants/app_constant.dart';
 
 class DashboardRepository {
+
   final ApiClient _api = ApiClient();
 
   Future<DashboardModel> getDashboard() async {
-    final data = await _api.get("/dashboard/");
+
+    final data = await _api.get(AppConstants.dashboard);
+
     return DashboardModel.fromJson(data);
   }
 }

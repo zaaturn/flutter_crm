@@ -8,7 +8,7 @@ import 'package:my_app/services/secure_storage_service.dart';
 
 class ApiClient {
 
-  // Singleton instance
+  // Singleton
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
   ApiClient._internal();
@@ -32,7 +32,7 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Public Methods
+  // PUBLIC METHODS
   // ---------------------------------------------------------------------------
 
   Future<dynamic> get(String path, {Map<String, String>? queryParams}) {
@@ -56,7 +56,7 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
-  // Core Logic
+  // CORE REQUEST LOGIC
   // ---------------------------------------------------------------------------
 
   Future<dynamic> _request(
@@ -84,11 +84,11 @@ class ApiClient {
 
         _isRefreshing = true;
 
-        showLoader(); // show buffering
+        showLoader();
 
         final newToken = await _refreshToken();
 
-        hideLoader(); // hide buffering
+        hideLoader();
 
         _isRefreshing = false;
 
@@ -108,27 +108,38 @@ class ApiClient {
       return _handleResponse(res);
 
     } on TimeoutException {
-      throw ApiException(408, 'Request timeout. Please check your connection.');
+      throw ApiException(408, "Request timeout. Please try again.");
     } on SocketException {
-      throw ApiException(503, 'No internet connection.');
+      throw ApiException(503, "No internet connection.");
     } catch (e) {
+
       if (e is ApiException) rethrow;
-      throw ApiException(500, 'Unexpected error: $e');
+
+      throw ApiException(
+        500,
+        "Something went wrong. Please try again later.",
+      );
     }
   }
 
   // ---------------------------------------------------------------------------
+  // HEADERS
+  // ---------------------------------------------------------------------------
 
   Future<Map<String, String>> _getHeaders() async {
-    final String? token = await _storage.readToken();
+
+    final token = await _storage.readToken();
 
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      if (token != null && token.isNotEmpty)
+        'Authorization': 'Bearer $token',
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // TOKEN REFRESH
   // ---------------------------------------------------------------------------
 
   Future<String?> _refreshToken() async {
@@ -169,6 +180,8 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
+  // EXECUTE HTTP REQUEST
+  // ---------------------------------------------------------------------------
 
   Future<http.Response> _executeRequest(
       String method,
@@ -197,6 +210,8 @@ class ApiClient {
   }
 
   // ---------------------------------------------------------------------------
+  // RESPONSE HANDLING
+  // ---------------------------------------------------------------------------
 
   dynamic _handleResponse(http.Response res) {
 
@@ -205,38 +220,56 @@ class ApiClient {
     try {
       body = res.body.isNotEmpty ? jsonDecode(res.body) : {};
     } catch (_) {
-      body = {'error': 'Could not decode server response'};
+      body = {};
     }
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return body;
     }
 
-    throw ApiException(res.statusCode, _parseError(body));
+    throw ApiException(
+      res.statusCode,
+      _friendlyError(res.statusCode),
+    );
   }
 
-  String _parseError(dynamic body) {
+  // ---------------------------------------------------------------------------
+  // FRIENDLY ERROR MESSAGES
+  // ---------------------------------------------------------------------------
 
-    if (body is Map) {
+  String _friendlyError(int statusCode) {
 
-      if (body.containsKey('detail')) {
-        return body['detail'].toString();
-      }
+    switch (statusCode) {
 
-      if (body.containsKey('message')) {
-        return body['message'].toString();
-      }
+      case 400:
+        return "Invalid request.";
 
-      if (body.containsKey('error')) {
-        return body['error'].toString();
-      }
+      case 401:
+        return "Session expired. Please login again.";
 
+      case 403:
+        return "You don't have permission to perform this action.";
+
+      case 404:
+        return "Something went wrong. Please refresh.";
+
+      case 408:
+        return "Request timeout. Please try again.";
+
+      case 500:
+        return "Server error. Please try again later.";
+
+      case 503:
+        return "Service unavailable. Please try later.";
+
+      default:
+        return "Something went wrong. Please try again later.";
     }
-
-    return body.toString();
   }
 }
 
+// ---------------------------------------------------------------------------
+// API EXCEPTION
 // ---------------------------------------------------------------------------
 
 class ApiException implements Exception {
@@ -247,5 +280,5 @@ class ApiException implements Exception {
   ApiException(this.statusCode, this.message);
 
   @override
-  String toString() => 'ApiException($statusCode): $message';
+  String toString() => message;
 }
