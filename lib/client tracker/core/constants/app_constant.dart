@@ -1,17 +1,23 @@
 class AppConstants {
 
   static const String baseUrl =
-  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000/api');
+  String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://localhost:8000',
+  );
 
-  static const String clients     = '/clients/';
-  static const String services    = '/services/';
-  static const String credentials = '/credentials/';
-  static const String payments    = '/payments/';
+  // API endpoints
+  static const String clients     = '/api/clients/';
+  static const String services    = '/api/services/';
+  static const String credentials = '/api/credentials/';
+  static const String payments    = '/api/payments/';
+  static const String dashboard   = '/api/dashboard/';
+  static const String events      = '/api/events/';
 
-  static String clientById(int id)           => '/clients/$id/';
-  static String servicesByClient(int cid)    => '/services/client/$cid/';
-  static String credentialsByClient(int cid) => '/credentials/client/$cid/';
-  static String paymentById(int id)          => '/payments/$id/';
+  static String clientById(int id)           => '/api/clients/$id/';
+  static String servicesByClient(int cid)    => '/api/services/client/$cid/';
+  static String credentialsByClient(int cid) => '/api/credentials/client/$cid/';
+  static String paymentById(int id)          => '/api/payments/$id/';
 
   static const List<String> platforms = [
     'youtube',
