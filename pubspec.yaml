@@ -55,25 +55,22 @@ flutter:
     - assets/images/login_bg.jpeg
     - assets/images/daxarrow.png
 
+
   fonts:
-    - family: PlusJakartaSans
-      fonts:
-        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
-        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
-          weight: 800
+      - family: PlusJakartaSans
+        fonts:
+          - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+            weight: 500
+          - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+            weight: 600
+          - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+            weight: 700
 
-    - family: DMMono
-      fonts:
-        - asset: assets/fonts/DMMono-Regular.ttf
+      - family: DMMono
+        fonts:
+          - asset: assets/fonts/DMMono-Regular.ttf
 
-    - family: NotoSans
-      fonts:
-        - asset: assets/fonts/NotoSans-Regular.ttf
-        - asset: assets/fonts/NotoSans-Bold.ttf
-          weight: 700
+      - family: NotoSans
+        fonts:
+          - asset: assets/fonts/NotoSans-Regular.ttf

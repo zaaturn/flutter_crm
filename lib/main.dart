@@ -199,7 +199,10 @@ class MyApp extends StatelessWidget {
 
       theme: ThemeData(
         fontFamily: 'PlusJakartaSans',
-        fontFamilyFallback: const ['NotoSans'],
+        fontFamilyFallback: const [
+          'NotoSans',
+          'DMMono',
+        ],
       ),
 
       home: LoaderWrapper(
@@ -207,6 +210,7 @@ class MyApp extends StatelessWidget {
       ),
       onGenerateRoute: AppRouter.generateRoute,
     );
+
   }
 }
 

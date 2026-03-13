@@ -159,10 +159,10 @@ class HeroCard extends StatelessWidget {
           ),
         ),
 
-        IgnorePointer(
-          child: Positioned(
-            top: -40,
-            right: -40,
+        Positioned(
+          top: -40,
+          right: -40,
+          child: IgnorePointer(
             child: Container(
               width: 180,
               height: 180,
