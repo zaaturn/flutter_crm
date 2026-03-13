@@ -151,7 +151,7 @@ class ApiClient {
       if (refresh == null || refresh.isEmpty) return null;
 
       final res = await http.post(
-        Uri.parse("$_base/accounts/crm/token/refresh/"),
+        Uri.parse("$_base/api/accounts/crm/token/refresh/"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({"refresh": refresh}),
       ).timeout(_timeout);
