@@ -333,7 +333,7 @@ class _PaymentRowState extends State<_PaymentRow> {
             Expanded(
               flex: 2,
               child: Text(
-                'Mar ${p.month}, ${p.year}',
+                '${monthNames[p.month]} ${p.year}',
                 style: AppTextStyles.mono.copyWith(
                     fontSize: 12, color: AppColors.textMuted),
               ),

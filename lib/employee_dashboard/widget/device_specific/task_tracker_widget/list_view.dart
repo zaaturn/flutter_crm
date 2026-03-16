@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
-
 import 'shared_widgets.dart';
 
-class TaskListView extends StatelessWidget {
+class TaskListView extends StatefulWidget {
   const TaskListView({
     super.key,
     required this.tasks,
@@ -19,80 +18,84 @@ class TaskListView extends StatelessWidget {
   final Color Function(String) priorityColor;
   final String Function(String) statusLabel;
 
-  static const _surface = Colors.white;
-  static const _border = Color(0xFFE2E8F0);
-  static const _bg = Color(0xFFF8FAFC);
+  @override
+  State<TaskListView> createState() => _TaskListViewState();
+}
 
-  Color _statusBg(String s) => switch (s.toUpperCase()) {
-    'IN_PROGRESS' => const Color(0xFFEEF2FF),
-    'COMPLETED' => const Color(0xFFECFDF5),
-    _ => const Color(0xFFFFFBEB),
-  };
+class _TaskListViewState extends State<TaskListView> {
+  late List<TaskModel> localTasks;
 
-  Color _priorityBg(String p) => switch (p.toUpperCase()) {
-    'HIGH' => const Color(0xFFFEF2F2),
-    'MEDIUM' => const Color(0xFFFFF7ED),
-    _ => const Color(0xFFECFDF5),
-  };
+  @override
+  void initState() {
+    super.initState();
+    localTasks = List.from(widget.tasks);
+  }
+
+  @override
+  void didUpdateWidget(TaskListView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tasks != widget.tasks) {
+      localTasks = List.from(widget.tasks);
+    }
+  }
+
+  void _showDeleteConfirmation(int id, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Task?'),
+        content: Text('This will remove "$title" from your view.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              setState(() => localTasks.removeWhere((t) => t.id == id));
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _surface,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         children: [
           Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: const BoxDecoration(
-              color: _bg,
-              border: Border(bottom: BorderSide(color: _border)),
-              borderRadius:
-              BorderRadius.vertical(top: Radius.circular(12)),
+              color: Color(0xFFF8FAFC),
+              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: const Row(
               children: [
-                Expanded(flex: 3, child: HeaderCell('Task')),
-                Expanded(flex: 1, child: HeaderCell('Priority')),
-                Expanded(flex: 2, child: HeaderCell('Status')),
-                Expanded(flex: 1, child: HeaderCell('Assignee')),
+                Expanded(flex: 6, child: HeaderCell('TASK')),
+                Expanded(flex: 2, child: HeaderCell('PRIORITY')),
+                Expanded(flex: 2, child: HeaderCell('STATUS')),
+                Expanded(flex: 1, child: HeaderCell('ASSIGNEE')),
+                SizedBox(width: 48),
               ],
             ),
           ),
           Expanded(
-            child: tasks.isEmpty
-                ? const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.inbox_outlined,
-                      size: 56, color: _border),
-                  SizedBox(height: 12),
-                  Text(
-                    'No tasks available',
-                    style: TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF94A3B8)),
-                  ),
-                ],
-              ),
-            )
-                : ListView.separated(
-              itemCount: tasks.length,
-              separatorBuilder: (_, __) =>
-              const Divider(height: 1, color: _border),
+            child: ListView.separated(
+              itemCount: localTasks.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
               itemBuilder: (_, i) => _ListRow(
-                task: tasks[i],
-                statusColor: statusColor,
-                statusBg: _statusBg,
-                statusLabel: statusLabel,
-                priorityColor: priorityColor,
-                priorityBg: _priorityBg,
-                onStatusChange: onStatusChange,
+                task: localTasks[i],
+                statusColor: widget.statusColor,
+                priorityColor: widget.priorityColor,
+                onStatusChange: widget.onStatusChange,
+                onDelete: () => _showDeleteConfirmation(localTasks[i].id, localTasks[i].title),
               ),
             ),
           ),
@@ -102,179 +105,137 @@ class TaskListView extends StatelessWidget {
   }
 }
 
-class _ListRow extends StatefulWidget {
+class _ListRow extends StatelessWidget {
   const _ListRow({
     required this.task,
     required this.statusColor,
-    required this.statusBg,
-    required this.statusLabel,
     required this.priorityColor,
-    required this.priorityBg,
     required this.onStatusChange,
+    required this.onDelete,
   });
 
   final TaskModel task;
   final Color Function(String) statusColor;
-  final Color Function(String) statusBg;
-  final String Function(String) statusLabel;
   final Color Function(String) priorityColor;
-  final Color Function(String) priorityBg;
   final void Function(int, String) onStatusChange;
+  final VoidCallback onDelete;
 
-  @override
-  State<_ListRow> createState() => _ListRowState();
-}
-
-class _ListRowState extends State<_ListRow> {
-  bool _hovered = false;
+  // Helper to ensure the dropdown value matches the items exactly
+  String _getSafeStatus(String currentStatus) {
+    const validStatuses = ['Pending', 'In Progress', 'Completed'];
+    // Try to find a match regardless of case
+    return validStatuses.firstWhere(
+          (s) => s.toLowerCase() == currentStatus.toLowerCase(),
+      orElse: () => 'Pending', // Fallback to avoid red screen
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final t = widget.task;
+    final safeStatus = _getSafeStatus(task.status);
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        color: _hovered ? const Color(0xFFF8FAFC) : Colors.white,
-        padding:
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 3,
-              child: Row(
-                children: [
-                  Container(
-                    width: 3,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: widget.statusColor(t.status),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.title,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF0F172A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (t.description.isNotEmpty)
-                          Text(
-                            t.description,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF94A3B8),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              flex: 1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: widget.priorityBg(t.priority),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  t.priority.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: widget.priorityColor(t.priority),
-                    letterSpacing: 0.5,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 6,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: statusColor(task.status),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ),
-            ),
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: widget.statusBg(t.status),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: widget.statusColor(t.status)
-                        .withOpacity(0.25),
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: t.status,
-                    isDense: true,
-                    icon: Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 14,
-                      color: widget.statusColor(t.status),
-                    ),
-                    style: TextStyle(
-                      color: widget.statusColor(t.status),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    dropdownColor: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    items: const [
-                      DropdownMenuItem(
-                          value: 'PENDING',
-                          child: Text('Pending')),
-                      DropdownMenuItem(
-                          value: 'IN_PROGRESS',
-                          child: Text('In Progress')),
-                      DropdownMenuItem(
-                          value: 'COMPLETED',
-                          child: Text('Completed')),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        task.description,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.5),
+                        softWrap: true,
+                        maxLines: null, // Shows full content
+                      ),
                     ],
-                    onChanged: (v) {
-                      if (v != null && v != t.status) {
-                        widget.onStatusChange(t.id, v);
-                      }
-                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Container(
+              margin: const EdgeInsets.only(top: 4),
+              child: UnconstrainedBox(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: priorityColor(task.priority).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    task.priority,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: priorityColor(task.priority)),
                   ),
                 ),
               ),
             ),
-            Expanded(
-              flex: 1,
+          ),
+          Expanded(
+            flex: 2,
+            child: Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor(task.status).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: statusColor(task.status).withOpacity(0.2)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: safeStatus, // Uses the cleaned safe value
+                  isDense: true,
+                  style: TextStyle(color: statusColor(task.status), fontSize: 12, fontWeight: FontWeight.w600),
+                  items: const [
+                    DropdownMenuItem(value: 'Pending', child: Text('Pending')),
+                    DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
+                    DropdownMenuItem(value: 'Completed', child: Text('Completed')),
+                  ],
+                  onChanged: (v) => v != null ? onStatusChange(task.id, v) : null,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 1,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 4),
               child: CircleAvatar(
                 radius: 14,
-                backgroundColor:
-                widget.statusColor(t.status).withOpacity(0.1),
-                child: Text(
-                  t.title.isNotEmpty
-                      ? t.title[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: widget.statusColor(t.status),
-                  ),
-                ),
+                backgroundColor: statusColor(task.status).withOpacity(0.1),
+                child: Text(task.title.isNotEmpty ? task.title[0] : '?',
+                    style: TextStyle(fontSize: 12, color: statusColor(task.status))),
               ),
             ),
-          ],
-        ),
+          ),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+          ),
+        ],
       ),
     );
   }

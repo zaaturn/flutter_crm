@@ -22,18 +22,17 @@ class DraggableTaskCard extends StatefulWidget {
   final VoidCallback onDragEnd;
 
   @override
-  State<DraggableTaskCard> createState() =>
-      _DraggableTaskCardState();
+  State<DraggableTaskCard> createState() => _DraggableTaskCardState();
 }
 
 class _DraggableTaskCardState extends State<DraggableTaskCard> {
   bool _hovered = false;
 
-  Widget _cardBody({bool isFeedback = false}) {
+  Widget _cardBody({bool isFeedback = false, double? width}) {
     final t = widget.task;
 
     return Container(
-      width: isFeedback ? 260 : null,
+      width: width,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -49,8 +48,7 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
         boxShadow: isFeedback
             ? [
           BoxShadow(
-            color:
-            const Color(0xFF6366F1).withOpacity(0.2),
+            color: const Color(0xFF6366F1).withOpacity(0.2),
             blurRadius: 24,
             offset: const Offset(0, 8),
           )
@@ -76,15 +74,15 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.drag_indicator,
-                size: 16,
-                color: isFeedback
-                    ? const Color(0xFF6366F1)
-                    : _hovered
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFFCBD5E1),
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(
+                  Icons.drag_indicator,
+                  size: 16,
+                  color: Color(0xFFCBD5E1),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -96,16 +94,14 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
                     color: Color(0xFF0F172A),
                     height: 1.4,
                   ),
-                  maxLines: isFeedback ? 1 : null,
-                  overflow: isFeedback
-                      ? TextOverflow.ellipsis
-                      : null,
+
+                  maxLines: null,
                 ),
               ),
             ],
           ),
           if (t.description.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               t.description,
               style: const TextStyle(
@@ -113,7 +109,7 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
                 color: Color(0xFF64748B),
                 height: 1.5,
               ),
-              maxLines: 2,
+              maxLines: 4, // Increased to ensure visibility
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -121,8 +117,7 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: widget.priorityBg,
                   borderRadius: BorderRadius.circular(5),
@@ -140,13 +135,10 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
               const Spacer(),
               CircleAvatar(
                 radius: 13,
-                backgroundColor: widget
-                    .statusColor(t.status)
-                    .withOpacity(0.12),
+                backgroundColor:
+                widget.statusColor(t.status).withOpacity(0.12),
                 child: Text(
-                  t.title.isNotEmpty
-                      ? t.title[0].toUpperCase()
-                      : '?',
+                  t.title.isNotEmpty ? t.title[0].toUpperCase() : '?',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -163,38 +155,58 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Draggable<TaskModel>(
-      data: widget.task,
-      onDragStarted: widget.onDragStarted,
-      onDragEnd: (_) => widget.onDragEnd(),
-      onDraggableCanceled: (_, __) => widget.onDragEnd(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
 
-      // floating preview
-      feedback: Material(
-        color: Colors.transparent,
-        child: Transform.rotate(
-          angle: 0.018,
-          child: _cardBody(isFeedback: true),
-        ),
-      ),
+        final cardWidth = constraints.maxWidth;
 
-      // placeholder in original spot
-      childWhenDragging:
-      Opacity(opacity: 0.0, child: _cardBody()),
+        return Draggable<TaskModel>(
+          data: widget.task,
+          onDragStarted: widget.onDragStarted,
+          onDragEnd: (_) => widget.onDragEnd(),
+          onDraggableCanceled: (_, __) => widget.onDragEnd(),
 
-      child: MouseRegion(
-        cursor: SystemMouseCursors.grab,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 150),
-          opacity: widget.isDragging ? 0.35 : 1.0,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            child: _cardBody(),
+
+          feedback: Material(
+            color: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: cardWidth),
+              child: Transform.rotate(
+                angle: 0.02,
+                child: _cardBody(isFeedback: true),
+              ),
+            ),
           ),
-        ),
-      ),
+
+
+          childWhenDragging: Opacity(
+              opacity: 0.2,
+              child: _cardBody(width: cardWidth)
+          ),
+
+
+          child: MouseRegion(
+            cursor: SystemMouseCursors.grab,
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(scale: animation, child: child),
+                );
+              },
+              child: AnimatedOpacity(
+                key: ValueKey(widget.task.id), // Key helps Switcher identify changes
+                duration: const Duration(milliseconds: 200),
+                opacity: widget.isDragging ? 0.0 : 1.0,
+                child: _cardBody(width: cardWidth),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
