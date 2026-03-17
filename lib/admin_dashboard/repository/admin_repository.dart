@@ -83,12 +83,23 @@ class AdminRepository {
   // EMPLOYEES
   // -------------------------------------------------
   Future<List<User>> fetchEmployees() async {
-    final res = await _api.get("${_accountsBase}employees/");
-    final List<dynamic> results = res['results'];
+    List<User> allUsers = [];
 
-    return results
-        .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    String? url = "${_accountsBase}employees/";
+
+    while (url != null) {
+      final res = await _api.get(url);
+
+      final List<dynamic> results = res['results'];
+
+      allUsers.addAll(
+        results.map((e) => User.fromJson(Map<String, dynamic>.from(e))).toList(),
+      );
+
+      url = res['next'];
+    }
+
+    return allUsers;
   }
 
   // -------------------------------------------------
