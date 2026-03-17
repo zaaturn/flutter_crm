@@ -31,12 +31,13 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
       displayStringForOption: (User u) => u.displayName,
       optionsBuilder: (TextEditingValue value) {
         final q = value.text.toLowerCase();
-        if (q.isEmpty) return widget.users;
-        return widget.users.where(
-              (u) =>
-          u.username.toLowerCase().contains(q) ||
-              u.displayName.toLowerCase().contains(q),
-        );
+
+        if (q.isEmpty) return widget.users.toList();
+
+        return widget.users.where((u) {
+          return u.username.toLowerCase().contains(q) ||
+              u.displayName.toLowerCase().contains(q);
+        }).toList();
       },
       onSelected: (User u) {
         widget.controller.text = u.displayName;
@@ -73,6 +74,8 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
       },
       // --- OPTIONS OVERLAY ---
       optionsViewBuilder: (context, onSelected, options) {
+        final optionsList = options.toList();
+
         return Align(
           alignment: Alignment.topLeft,
           child: Material(
@@ -80,7 +83,7 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
             borderRadius: BorderRadius.circular(12),
             color: Colors.white,
             child: Container(
-              width: 320, // Desktop specific width
+              width: 320,
               constraints: const BoxConstraints(maxHeight: 300),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
@@ -89,9 +92,9 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
               child: ListView.builder(
                 padding: const EdgeInsets.all(8),
                 shrinkWrap: true,
-                itemCount: options.length,
+                itemCount: optionsList.length,
                 itemBuilder: (context, index) {
-                  final User user = options.elementAt(index);
+                  final User user = optionsList[index];
                   return _EmployeeOptionTile(
                     user: user,
                     onTap: () => onSelected(user),
