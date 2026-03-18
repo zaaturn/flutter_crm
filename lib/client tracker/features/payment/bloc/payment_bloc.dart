@@ -26,7 +26,10 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
 
     try {
       final updated = await _repo.updatePayment(
-          event.paymentId, event.invoiceSent, event.paymentReceived);
+        event.paymentId,
+        event.invoiceSent ?? false,
+        event.paymentReceived ?? false,
+      );
 
       final list = current.payments.map((p) {
         if (p.id == updated.id) return updated;

@@ -4,7 +4,7 @@ import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 
-
+import 'package:my_app/leave_management/screens/device_specific/pending_leave_update_screen.dart';
 import 'package:my_app/leave_management/screens/device_specific/apply_leave_screen_desktop.dart';
 import 'package:my_app/leave_management/screens/device_specific/employee_leave_status_screen_desktop.dart';
 import 'package:my_app/leave_management/screens/device_specific/public_holiday_desktop.dart';
@@ -19,7 +19,6 @@ class EmployeeLeaveDashboardScreenDesktop extends StatefulWidget {
 
 class _EmployeeLeaveDashboardScreenState
     extends State<EmployeeLeaveDashboardScreenDesktop> {
-
   static const Color _bgSlate = Color(0xFFF8FAFC);
   static const Color _borderSlate = Color(0xFFE2E8F0);
   static const Color _textMain = Color(0xFF0F172A);
@@ -27,7 +26,8 @@ class _EmployeeLeaveDashboardScreenState
   @override
   void initState() {
     super.initState();
-    context.read<LeaveBloc>().add(LoadMyLeaves());
+    // Fetch fresh data when dashboard opens
+    context.read<LeaveBloc>().add(const LoadMyLeaves());
   }
 
   @override
@@ -60,7 +60,6 @@ class _EmployeeLeaveDashboardScreenState
                     ),
                   ),
                   const SizedBox(height: 24),
-
                   BlocBuilder<LeaveBloc, LeaveState>(
                     builder: (context, state) {
                       int pendingCount = 0;
@@ -74,6 +73,7 @@ class _EmployeeLeaveDashboardScreenState
                         spacing: 24,
                         runSpacing: 24,
                         children: [
+                          // PENDING LEAVES (NOW MODIFIED)
                           _desktopActionCard(
                             width: isWide
                                 ? (screenWidth - 128) / 3
@@ -86,7 +86,17 @@ class _EmployeeLeaveDashboardScreenState
                               Color(0xFFFBBF24),
                               Color(0xFFF59E0B)
                             ],
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider.value(
+                                    value: context.read<LeaveBloc>(),
+                                    child: const PendingLeaveUpdateScreen(),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
 
                           // APPLY LEAVE
@@ -107,8 +117,7 @@ class _EmployeeLeaveDashboardScreenState
                                 MaterialPageRoute(
                                   builder: (_) => BlocProvider.value(
                                     value: context.read<LeaveBloc>(),
-                                    child:
-                                    const ApplyLeaveScreenDesktop(),
+                                    child: const ApplyLeaveScreenDesktop(),
                                   ),
                                 ),
                               );
@@ -121,8 +130,7 @@ class _EmployeeLeaveDashboardScreenState
                                 ? (screenWidth - 128) / 3
                                 : (screenWidth - 64) / 2,
                             title: "Leave Status",
-                            subtitle:
-                            "View approved & rejected leaves.",
+                            subtitle: "View approved & rejected leaves.",
                             icon: Icons.history_edu_rounded,
                             gradient: const [
                               Color(0xFF60A5FA),
@@ -134,8 +142,7 @@ class _EmployeeLeaveDashboardScreenState
                                 MaterialPageRoute(
                                   builder: (_) => BlocProvider.value(
                                     value: context.read<LeaveBloc>(),
-                                    child:
-                                    const EmployeeLeaveStatusScreenDesktop(),
+                                    child: const EmployeeLeaveStatusScreenDesktop(),
                                   ),
                                 ),
                               );
@@ -182,16 +189,14 @@ class _EmployeeLeaveDashboardScreenState
     return SliverAppBar(
       pinned: true,
       backgroundColor: Colors.white,
-
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: _textMain),
         onPressed: () {
           Navigator.of(context).pop();
         },
       ),
-
       title: const Text(
-        "Leave Management",
+        "Leave Management Dashboard",
         style: TextStyle(
           color: _textMain,
           fontWeight: FontWeight.w800,
@@ -204,8 +209,9 @@ class _EmployeeLeaveDashboardScreenState
     );
   }
 
+  // Placeholder - you mentioned this was unchanged
   Widget _buildSummaryHero() {
-    return const SizedBox(); // unchanged
+    return Container();
   }
 
   Widget _desktopActionCard({
@@ -226,18 +232,43 @@ class _EmployeeLeaveDashboardScreenState
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: _borderSlate),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: gradient[1], size: 24),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: gradient[0].withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: gradient[1], size: 28),
+            ),
+            const SizedBox(height: 20),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: _textMain,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(subtitle),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF64748B),
+                height: 1.5,
+              ),
+            ),
           ],
         ),
       ),

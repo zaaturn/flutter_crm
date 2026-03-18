@@ -98,3 +98,30 @@ class CancelLeaveEvent extends LeaveEvent {
   @override
   List<Object?> get props => [leaveId];
 }
+
+// ================= UPDATE LEAVE =================
+
+class UpdateLeave extends LeaveEvent {
+  final int leaveId;
+  final int leaveTypeId;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String? reason;
+
+  const UpdateLeave({
+    required this.leaveId,
+    required this.leaveTypeId,
+    required this.startDate,
+    required this.endDate,
+    this.reason,
+  });
+
+  @override
+  List<Object?> get props => [
+    leaveId,
+    leaveTypeId,
+    startDate,
+    endDate,
+    reason,
+  ];
+}

@@ -1,11 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:my_app/leave_management/block/leave_event.dart';
+import 'package:my_app/leave_management/block/leave_state.dart';
+import 'package:my_app/leave_management/models/leave_request.dart';
 import '../services/leave_api_services.dart';
-import 'leave_event.dart';
-import 'leave_state.dart';
 
 class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
   final LeaveApiService apiService;
+
+
+  List<LeaveRequest> _cachedLeaves = [];
+
+
+  String? _lastStatus;
+  DateTime? _lastStartDate;
+  DateTime? _lastEndDate;
 
   LeaveBloc(this.apiService) : super(LeaveInitial()) {
     on<LoadLeaveTypes>(_onLoadLeaveTypes);
@@ -13,6 +21,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     on<LoadMyLeaves>(_onLoadMyLeaves);
     on<LoadPendingLeaves>(_onLoadPendingLeaves);
     on<ApplyLeave>(_onApplyLeave);
+    on<UpdateLeave>(_onUpdateLeave);
     on<ApproveLeaveEvent>(_onApproveLeave);
     on<RejectLeaveEvent>(_onRejectLeave);
     on<CancelLeaveEvent>(_onCancelLeave);
@@ -21,11 +30,9 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
   // ================= COMMON ERROR HANDLER =================
   String _extractErrorMessage(Object error) {
     final message = error.toString();
-
     if (message.startsWith("Exception: ")) {
       return message.replaceFirst("Exception: ", "");
     }
-
     return message;
   }
 
@@ -62,20 +69,41 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       LoadMyLeaves event,
       Emitter<LeaveState> emit,
       ) async {
-    emit(MyLeavesLoading());
+
+    if (state is MyLeavesLoading) return;
+
+
+    _lastStatus = event.status;
+    _lastStartDate = event.startDate;
+    _lastEndDate = event.endDate;
+
+
+    if (_cachedLeaves.isEmpty) {
+      emit(MyLeavesLoading());
+    } else {
+      emit(MyLeavesLoaded(_cachedLeaves));
+    }
+
     try {
       final leaves = await apiService.getMyLeaves(
         status: event.status,
         startDate: event.startDate,
         endDate: event.endDate,
       );
+
+      _cachedLeaves = leaves;
+
       emit(MyLeavesLoaded(leaves));
     } catch (e) {
-      emit(LeaveError(_extractErrorMessage(e)));
+      if (_cachedLeaves.isNotEmpty) {
+        emit(MyLeavesLoaded(_cachedLeaves));
+      } else {
+        emit(LeaveError(_extractErrorMessage(e)));
+      }
     }
   }
 
-  // ================= PENDING LEAVES (ADMIN) =================
+  // ================= PENDING LEAVES =================
   Future<void> _onLoadPendingLeaves(
       LoadPendingLeaves event,
       Emitter<LeaveState> emit,
@@ -103,15 +131,51 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         reason: event.reason,
       );
 
-      emit( LeaveActionSuccess('Leave applied successfully'));
+      emit(LeaveActionSuccess('Leave applied successfully'));
 
-      add(const LoadMyLeaves());
+      await Future.delayed(const Duration(milliseconds: 300));
+
+
+      add(LoadMyLeaves(
+        status: _lastStatus,
+        startDate: _lastStartDate,
+        endDate: _lastEndDate,
+      ));
     } catch (e) {
       emit(LeaveError(_extractErrorMessage(e)));
     }
   }
 
-  // ================= APPROVE LEAVE =================
+  // ================= UPDATE LEAVE =================
+  Future<void> _onUpdateLeave(
+      UpdateLeave event,
+      Emitter<LeaveState> emit,
+      ) async {
+    emit(LeaveSubmitting());
+    try {
+      await apiService.updateLeave(
+        leaveId: event.leaveId,
+        leaveTypeId: event.leaveTypeId,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        reason: event.reason,
+      );
+
+      emit(LeaveActionSuccess('Leave updated successfully'));
+
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      add(LoadMyLeaves(
+        status: _lastStatus,
+        startDate: _lastStartDate,
+        endDate: _lastEndDate,
+      ));
+    } catch (e) {
+      emit(LeaveError(_extractErrorMessage(e)));
+    }
+  }
+
+  // ================= APPROVE =================
   Future<void> _onApproveLeave(
       ApproveLeaveEvent event,
       Emitter<LeaveState> emit,
@@ -123,7 +187,9 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         comment: event.comment,
       );
 
-      emit( LeaveActionSuccess('Leave approved successfully'));
+      emit(LeaveActionSuccess('Leave approved successfully'));
+
+      await Future.delayed(const Duration(milliseconds: 300));
 
       add(const LoadPendingLeaves());
     } catch (e) {
@@ -131,7 +197,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     }
   }
 
-  // ================= REJECT LEAVE =================
+  // ================= REJECT =================
   Future<void> _onRejectLeave(
       RejectLeaveEvent event,
       Emitter<LeaveState> emit,
@@ -143,7 +209,9 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         comment: event.comment,
       );
 
-      emit( LeaveActionSuccess('Leave rejected successfully'));
+      emit(LeaveActionSuccess('Leave rejected successfully'));
+
+      await Future.delayed(const Duration(milliseconds: 300));
 
       add(const LoadPendingLeaves());
     } catch (e) {
@@ -151,7 +219,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     }
   }
 
-  // ================= CANCEL LEAVE =================
+  // ================= CANCEL =================
   Future<void> _onCancelLeave(
       CancelLeaveEvent event,
       Emitter<LeaveState> emit,
@@ -160,9 +228,15 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     try {
       await apiService.cancelLeave(event.leaveId);
 
-      emit( LeaveActionSuccess('Leave cancelled successfully'));
+      emit(LeaveActionSuccess('Leave cancelled successfully'));
 
-      add(const LoadMyLeaves());
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      add(LoadMyLeaves(
+        status: _lastStatus,
+        startDate: _lastStartDate,
+        endDate: _lastEndDate,
+      ));
     } catch (e) {
       emit(LeaveError(_extractErrorMessage(e)));
     }

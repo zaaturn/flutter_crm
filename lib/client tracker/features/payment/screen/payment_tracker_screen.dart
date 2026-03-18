@@ -47,7 +47,6 @@ class _PaymentTrackerScreenState extends State<PaymentTrackerScreen> {
             },
           ),
           const SizedBox(height: 20),
-
           BlocBuilder<PaymentBloc, PaymentState>(
             builder: (ctx, state) {
               if (state is PaymentLoading) {
@@ -56,16 +55,13 @@ class _PaymentTrackerScreenState extends State<PaymentTrackerScreen> {
                         padding: EdgeInsets.all(48),
                         child: CircularProgressIndicator()));
               }
-
               if (state is PaymentError) {
                 return _ErrorBox(msg: state.message, onRetry: _load);
               }
-
               if (state is PaymentLoaded) {
                 return _PaymentTable(
                     payments: state.payments, month: _month, year: _year);
               }
-
               return const SizedBox.shrink();
             },
           ),
@@ -79,11 +75,7 @@ class _MonthBar extends StatelessWidget {
   final int month, year;
   final Function(int, int) onChanged;
 
-  const _MonthBar({
-    required this.month,
-    required this.year,
-    required this.onChanged,
-  });
+  const _MonthBar({required this.month, required this.year, required this.onChanged});
 
   @override
   Widget build(BuildContext context) => CrmCard(
@@ -94,20 +86,19 @@ class _MonthBar extends StatelessWidget {
         runSpacing: 10,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Text(
-            'Select Period:',
-            style: AppTextStyles.bodyMed.copyWith(color: AppColors.textMuted),
-          ),
-
+          Text('Select Period:',
+              style: AppTextStyles.bodyMed.copyWith(color: AppColors.textMuted)),
           _StyledDropdown<int>(
             value: month,
-            items: List.generate(
-                12,
-                    (i) => DropdownMenuItem(
-                    value: i + 1, child: Text(monthNames[i + 1]))),
+            items: List.generate(12, (i) {
+              final mIndex = i + 1;
+              return DropdownMenuItem(
+                value: mIndex,
+                child: Text(monthNames[mIndex] ?? ''),
+              );
+            }),
             onChanged: (v) => v != null ? onChanged(v, year) : null,
           ),
-
           _StyledDropdown<int>(
             value: year,
             items: List.generate(5, (i) {
@@ -127,18 +118,14 @@ class _StyledDropdown<T> extends StatelessWidget {
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?> onChanged;
 
-  const _StyledDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
+  const _StyledDropdown({required this.value, required this.items, required this.onChanged});
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+    padding: const EdgeInsets.symmetric(horizontal: 14),
     decoration: BoxDecoration(
-      color: AppColors.bg,
-      borderRadius: BorderRadius.circular(kRadiusSm),
+      color: const Color(0xFFF1F4F9),
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: AppColors.border, width: 1.5),
     ),
     child: DropdownButtonHideUnderline(
@@ -147,10 +134,8 @@ class _StyledDropdown<T> extends StatelessWidget {
         items: items,
         onChanged: onChanged,
         style: AppTextStyles.bodyMed,
-        icon: const Icon(Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textMuted, size: 20),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted, size: 20),
         dropdownColor: AppColors.surface,
-        borderRadius: BorderRadius.circular(kRadiusSm),
       ),
     ),
   );
@@ -160,86 +145,55 @@ class _PaymentTable extends StatelessWidget {
   final List<PaymentModel> payments;
   final int month, year;
 
-  const _PaymentTable({
-    required this.payments,
-    required this.month,
-    required this.year,
-  });
-
-  int get _invoiced => payments.where((p) => p.invoiceSent).length;
-  int get _paid => payments.where((p) => p.paymentReceived).length;
-  int get _pending => payments.where((p) => !p.paymentReceived).length;
+  const _PaymentTable({required this.payments, required this.month, required this.year});
 
   @override
-  Widget build(BuildContext context) => CrmCard(
-    child: Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 14),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border))),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${monthNames[month]} $year — Payment Status',
-                  style: AppTextStyles.subheading,
+  Widget build(BuildContext context) {
+    // Handling potential nulls in calculation
+    final invoiced = payments.where((p) => p.invoiceSent == true).length;
+    final paid = payments.where((p) => p.paymentReceived == true).length;
+    final pending = payments.where((p) => p.paymentReceived != true).length;
+
+    return CrmCard(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(22, 16, 22, 14),
+            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('${monthNames[month]} $year — Payment Status', style: AppTextStyles.subheading),
                 ),
-              ),
-              _SummaryPill('$_invoiced Invoiced', AppColors.accentLight,
-                  const Color(0xFF137333)),
-              const SizedBox(width: 8),
-              _SummaryPill(
-                  '$_paid Paid', AppColors.primaryLight, AppColors.primary),
-              const SizedBox(width: 8),
-              _SummaryPill(
-                  '$_pending Pending', AppColors.dangerLight, AppColors.danger),
-            ],
+                _SummaryPill('$invoiced Invoiced', const Color(0xFFE8F5E9), const Color(0xFF137333)),
+                const SizedBox(width: 8),
+                _SummaryPill('$paid Paid', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
+                const SizedBox(width: 8),
+                _SummaryPill('$pending Pending', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+              ],
+            ),
           ),
-        ),
-
-        Container(
-          color: AppColors.tableHead,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Row(
-            children: [
-              const SizedBox(width: 32),
-              Expanded(flex: 3, child: Text('# CLIENT NAME', style: AppTextStyles.tableHdr)),
-              Expanded(flex: 2, child: Text('INVOICE SENT', style: AppTextStyles.tableHdr)),
-              Expanded(flex: 2, child: Text('PAYMENT RECEIVED', style: AppTextStyles.tableHdr)),
-              Expanded(flex: 2, child: Text('LAST UPDATED', style: AppTextStyles.tableHdr)),
-            ],
+          Container(
+            color: AppColors.tableHead,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              children: [
+                const SizedBox(width: 32),
+                Expanded(flex: 3, child: Text('# CLIENT NAME', style: AppTextStyles.tableHdr)),
+                Expanded(flex: 2, child: Text('INVOICE SENT', style: AppTextStyles.tableHdr)),
+                Expanded(flex: 2, child: Text('PAYMENT RECEIVED', style: AppTextStyles.tableHdr)),
+                Expanded(flex: 2, child: Text('LAST UPDATED', style: AppTextStyles.tableHdr)),
+              ],
+            ),
           ),
-        ),
-
-        if (payments.isEmpty)
-          Padding(
-            padding: const EdgeInsets.all(40),
-            child: Text('No clients found for this period.',
-                style: AppTextStyles.small),
-          )
-        else
-          ...payments.asMap().entries.map((e) =>
-              _PaymentRow(payment: e.value, index: e.key + 1)),
-      ],
-    ),
-  );
-}
-
-class _SummaryPill extends StatelessWidget {
-  final String label;
-  final Color bg, fg;
-
-  const _SummaryPill(this.label, this.bg, this.fg);
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Text(label,
-        style: AppTextStyles.small.copyWith(
-            color: fg, fontWeight: FontWeight.w700, fontSize: 11.5)),
-  );
+          if (payments.isEmpty)
+            const Padding(padding: EdgeInsets.all(40), child: Text('No clients found for this period.'))
+          else
+            ...payments.asMap().entries.map((e) => _PaymentRow(payment: e.value, index: e.key + 1)),
+        ],
+      ),
+    );
+  }
 }
 
 class _PaymentRow extends StatefulWidget {
@@ -253,96 +207,248 @@ class _PaymentRow extends StatefulWidget {
 }
 
 class _PaymentRowState extends State<_PaymentRow> {
-  bool _hovered = false;
+  bool? invoiceValue;
+  bool? paymentValue;
+
+  @override
+  void initState() {
+    super.initState();
+
+
+    invoiceValue = null;
+    paymentValue = null;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.payment;
+    final payment = widget.payment;
+    final index = widget.index;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: _hovered ? AppColors.bg : Colors.transparent,
-          border: const Border(
-            bottom: BorderSide(color: AppColors.border),
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 32,
-              child: Text(
-                '${widget.index < 10 ? '0' : ''}${widget.index}',
-                style: AppTextStyles.small.copyWith(fontFamily: 'DM Mono'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${index < 10 ? '0' : ''}$index',
+              style: AppTextStyles.small.copyWith(
+                fontFamily: 'DM Mono',
+                color: Colors.grey,
               ),
             ),
+          ),
 
-            Expanded(
-              flex: 3,
-              child: Row(
-                children: [
-                  ClientAvatar(
-                    name: p.clientName,
-                    size: 32,
-                    gradient: ClientAvatar.gradientFor(p.clientName),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      p.clientName,
-                      style: AppTextStyles.bodyMed,
-                      overflow: TextOverflow.ellipsis,
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.blue.withValues(alpha: 0.1),
+                  child: Text(
+                    payment.clientName.isNotEmpty
+                        ? payment.clientName[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    payment.clientName,
+                    style: AppTextStyles.bodyMed,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
+          ),
 
-            Expanded(
-              flex: 2,
+
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
               child: StatusPillDropdown(
-                value: p.invoiceSent,
+                value: invoiceValue,
+                isInvoice: true,
                 onChanged: (v) {
-                  context.read<PaymentBloc>().add(UpdatePaymentEvent(
-                    paymentId: p.id,
-                    invoiceSent: v,
-                    paymentReceived: p.paymentReceived,
-                  ));
+                  if (v == null) return;
+
+                  setState(() {
+                    invoiceValue = v;
+                  });
+
+                  context.read<PaymentBloc>().add(
+                    UpdatePaymentEvent(
+                      paymentId: payment.id,
+                      invoiceSent: v,
+                      paymentReceived: paymentValue ?? false,
+                    ),
+                  );
                 },
               ),
             ),
+          ),
 
-            Expanded(
-              flex: 2,
+
+          Expanded(
+            flex: 2,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16),
               child: StatusPillDropdown(
-                value: p.paymentReceived,
+                value: paymentValue,
+                isInvoice: false,
                 onChanged: (v) {
-                  context.read<PaymentBloc>().add(UpdatePaymentEvent(
-                    paymentId: p.id,
-                    invoiceSent: p.invoiceSent,
-                    paymentReceived: v,
-                  ));
+                  if (v == null) return;
+
+                  setState(() {
+                    paymentValue = v;
+                  });
+
+                  context.read<PaymentBloc>().add(
+                    UpdatePaymentEvent(
+                      paymentId: payment.id,
+                      invoiceSent: invoiceValue ?? false,
+                      paymentReceived: v,
+                    ),
+                  );
                 },
               ),
             ),
+          ),
 
-            Expanded(
-              flex: 2,
-              child: Text(
-                '${monthNames[p.month]} ${p.year}',
-                style: AppTextStyles.mono.copyWith(
-                    fontSize: 12, color: AppColors.textMuted),
+          Expanded(
+            flex: 2,
+            child: Text(
+              '${monthNames[payment.updatedAt.month]} ${payment.updatedAt.day} ${payment.updatedAt.year}',
+              style: AppTextStyles.mono.copyWith(
+                fontSize: 12,
+                color: AppColors.textMuted,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StatusPillDropdown extends StatelessWidget {
+  final bool? value;
+  final ValueChanged<bool?> onChanged;
+  final bool isInvoice;
+
+  const StatusPillDropdown({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    required this.isInvoice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+
+    final Color bgColor = value == null
+        ? const Color(0xFFF5F5F5)
+        : (value! ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE));
+
+    final Color textColor = value == null
+        ? Colors.grey
+        : (value! ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
+
+    final String label = value == null
+        ? "Select"
+        : (value! ? (isInvoice ? "Sent" : "Received") : "Pending");
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 34,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<bool?>(
+          value: value,
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: textColor,
+            size: 18,
+          ),
+
+
+          selectedItemBuilder: (context) {
+            return [null, true, false].map((e) {
+
+              final Color color = e == null
+                  ? Colors.grey
+                  : (e ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
+
+              final String text = e == null
+                  ? "Select"
+                  : (e ? (isInvoice ? "Sent" : "Received") : "Pending");
+
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              );
+            }).toList();
+          },
+
+          items: [
+            const DropdownMenuItem(
+              value: null,
+              child: Text("Select"),
+            ),
+            DropdownMenuItem(
+              value: true,
+              child: Text(isInvoice ? "Sent" : "Received"),
+            ),
+            const DropdownMenuItem(
+              value: false,
+              child: Text("Pending"),
             ),
           ],
+
+          onChanged: (v) {
+            if (v == null) return;
+            onChanged(v);
+          },
         ),
       ),
     );
   }
+}
+
+class _SummaryPill extends StatelessWidget {
+  final String label;
+  final Color bg, fg;
+
+  const _SummaryPill(this.label, this.bg, this.fg);
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+    child: Text(label, style: AppTextStyles.small.copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 11.5)),
+  );
 }
 
 class _ErrorBox extends StatelessWidget {

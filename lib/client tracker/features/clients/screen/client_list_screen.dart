@@ -118,6 +118,32 @@ class _ClientRow extends StatefulWidget {
 class _ClientRowState extends State<_ClientRow> {
   bool _hovered = false;
 
+  // Function to show confirmation before deleting
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Client?'),
+        content: Text('Are you sure you want to delete ${widget.client.name}? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              // Trigger the Bloc Event
+              context.read<ClientBloc>().add(DeleteClientEvent(widget.client.id));
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = widget.client;
@@ -130,7 +156,6 @@ class _ClientRowState extends State<_ClientRow> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          // FIXED: The 'color' property was moved inside the BoxDecoration
           decoration: BoxDecoration(
             color: _hovered ? AppColors.bg : Colors.transparent,
             border: const Border(bottom: BorderSide(color: AppColors.border)),
@@ -143,7 +168,22 @@ class _ClientRowState extends State<_ClientRow> {
             Expanded(flex: 3, child: Text(c.email ?? '-', style: AppTextStyles.body.copyWith(color: AppColors.textMuted), overflow: TextOverflow.ellipsis)),
             Expanded(flex: 1, child: Center(child: _ServicesPill(count: c.servicesCount))),
             Expanded(flex: 1, child: CrmBadge('Active', type: BadgeType.green)),
-            SizedBox(width: 80, child: CrmButton('View →', style: BtnStyle.ghost)),
+
+            // DELETE BUTTON SECTION
+            SizedBox(
+                width: 80,
+                child: Row(
+                  children: [
+                    if (_hovered) // Only show trash icon on hover to keep UI clean
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                        onPressed: () => _confirmDelete(context),
+                      ),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right, color: AppColors.textLight),
+                  ],
+                )
+            ),
           ]),
         ),
       ),

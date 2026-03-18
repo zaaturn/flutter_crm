@@ -55,3 +55,8 @@ class LeaveActionSuccess extends LeaveState {
   final String message;
   LeaveActionSuccess(this.message);
 }
+
+class LeaveDetailsLoaded extends LeaveState {
+  final LeaveRequest leave;
+  LeaveDetailsLoaded(this.leave);
+}

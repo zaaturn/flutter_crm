@@ -85,7 +85,8 @@ class ApiClient {
 
             handler.next(options);
           } catch (e) {
-            handler.reject(DioException(requestOptions: options, error: e.toString()));
+            handler.reject(DioException(
+                requestOptions: options, error: e.toString()));
           }
         },
         onError: (error, handler) async {
@@ -158,7 +159,8 @@ class ApiClient {
 
       final newAccess = data["access"];
       await _storage.saveToken(newAccess);
-      if (data["refresh"] != null) await _storage.saveRefreshToken(data["refresh"]);
+      if (data["refresh"] != null)
+        await _storage.saveRefreshToken(data["refresh"]);
 
       _isAuthenticated = true;
       return newAccess;
@@ -183,33 +185,89 @@ class ApiClient {
   }
 
   ApiException _handleError(DioException e) {
-    if (CancelToken.isCancel(e)) return ApiException(499, "Request cancelled");
-    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+    if (CancelToken.isCancel(e))
+      return ApiException(499, "Request cancelled");
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
       return ApiException(408, "Request timeout.");
     }
-    return ApiException(e.response?.statusCode ?? 500, e.response?.data ?? e.error);
+    return ApiException(
+        e.response?.statusCode ?? 500, e.response?.data ?? e.error);
   }
 
-  Future<Map<String, dynamic>> get(String url, {Map<String, dynamic>? queryParameters}) async {
+  Future<Map<String, dynamic>> get(String url,
+      {Map<String, dynamic>? queryParameters}) async {
     try {
-      final response = await _dio.get(url, queryParameters: queryParameters, cancelToken: _masterCancelToken);
+      final response = await _dio.get(url,
+          queryParameters: queryParameters,
+          cancelToken: _masterCancelToken);
       return _parseMap(response.data);
-    } on DioException catch (e) { throw _handleError(e); }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
-  Future<List> getList(String url, {Map<String, dynamic>? queryParameters}) async {
+  Future<List> getList(String url,
+      {Map<String, dynamic>? queryParameters}) async {
     try {
-      final response = await _dio.get(url, queryParameters: queryParameters, cancelToken: _masterCancelToken);
+      final response = await _dio.get(url,
+          queryParameters: queryParameters,
+          cancelToken: _masterCancelToken);
       if (response.data is List) return response.data as List<dynamic>;
       throw ApiException(500, "Expected list response");
-    } on DioException catch (e) { throw _handleError(e); }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 
   Future<Map<String, dynamic>> post(String url, {Object? body}) async {
     try {
-      final response = await _dio.post(url, data: body ?? {}, cancelToken: _masterCancelToken);
+      final response = await _dio.post(url,
+          data: body ?? {}, cancelToken: _masterCancelToken);
       return _parseMap(response.data);
-    } on DioException catch (e) { throw _handleError(e); }
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ===============================
+  // PUT METHOD
+  // ===============================
+  Future<Map<String, dynamic>> put(
+      String url, {
+        Object? body,
+        Map<String, dynamic>? queryParameters,
+      }) async {
+    try {
+      final response = await _dio.put(
+        url,
+        data: body ?? {},
+        queryParameters: queryParameters,
+        cancelToken: _masterCancelToken,
+      );
+      return _parseMap(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ===============================
+  //  DELETE METHOD
+  // ===============================
+  Future<Map<String, dynamic>> delete(
+      String url, {
+        Map<String, dynamic>? queryParameters,
+      }) async {
+    try {
+      final response = await _dio.delete(
+        url,
+        queryParameters: queryParameters,
+        cancelToken: _masterCancelToken,
+      );
+      return _parseMap(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
   }
 }
 
@@ -217,13 +275,19 @@ class ApiException implements Exception {
   final int code;
   final dynamic data;
   ApiException(this.code, this.data);
+
   String get message {
     if (data is Map<String, dynamic>) {
       final map = data as Map<String, dynamic>;
-      return (map["detail"] ?? map["message"] ?? map["error"] ?? "Something went wrong.").toString();
+      return (map["detail"] ??
+          map["message"] ??
+          map["error"] ??
+          "Something went wrong.")
+          .toString();
     }
     return data?.toString() ?? "Something went wrong.";
   }
+
   @override
   String toString() => message;
 }

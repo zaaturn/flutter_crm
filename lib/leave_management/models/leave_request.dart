@@ -41,6 +41,47 @@ class LeaveRequest {
     this.reviewComment,
   });
 
+  // ===============================
+  // ADDED: copyWith Method
+  // ===============================
+  LeaveRequest copyWith({
+    int? id,
+    int? employeeId,
+    String? employeeName,
+    LeaveType? leaveType,
+    String? leaveTypeName,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? duration,
+    double? totalDays,
+    String? reason,
+    String? status,
+    DateTime? appliedAt,
+    int? reviewedBy,
+    String? reviewedByName,
+    DateTime? reviewedAt,
+    String? reviewComment,
+  }) {
+    return LeaveRequest(
+      id: id ?? this.id,
+      employeeId: employeeId ?? this.employeeId,
+      employeeName: employeeName ?? this.employeeName,
+      leaveType: leaveType ?? this.leaveType,
+      leaveTypeName: leaveTypeName ?? this.leaveTypeName,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      duration: duration ?? this.duration,
+      totalDays: totalDays ?? this.totalDays,
+      reason: reason ?? this.reason,
+      status: status ?? this.status,
+      appliedAt: appliedAt ?? this.appliedAt,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      reviewedByName: reviewedByName ?? this.reviewedByName,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      reviewComment: reviewComment ?? this.reviewComment,
+    );
+  }
+
   factory LeaveRequest.fromJson(Map<String, dynamic> json) {
     final dynamic employeeField = json['employee'];
     final dynamic leaveTypeField = json['leave_type'];
@@ -60,10 +101,8 @@ class LeaveRequest {
       employeeId: employeeField is int ? employeeField : 0,
       employeeName:
       employeeField is String ? employeeField : json['employee_name'],
-
       leaveType: parsedLeaveType,
       leaveTypeName: parsedLeaveTypeName,
-
       startDate: DateTime.parse(json['start_date']),
       endDate: DateTime.parse(json['end_date']),
       duration: json['duration'] ?? 'FULL',
@@ -71,11 +110,10 @@ class LeaveRequest {
         (json['total_days'] ?? json['requested_days'] ?? 0).toString(),
       ),
       reason: json['reason'] ?? '',
-      status: json['status'] ?? 'PENDING',
+      status: (json['status'] ?? 'PENDING').toString().toUpperCase(),
       appliedAt: json['applied_at'] != null
           ? DateTime.parse(json['applied_at'])
           : DateTime.now(),
-
       reviewedBy: json['reviewed_by'],
       reviewedByName: json['reviewed_by_name'],
       reviewedAt: json['reviewed_at'] != null
@@ -101,8 +139,7 @@ class LeaveRequest {
 
   // ---------- UI HELPERS ----------
 
-  String get displayLeaveType =>
-      leaveTypeName ?? leaveType?.name ?? 'Leave';
+  String get displayLeaveType => leaveTypeName ?? leaveType?.name ?? 'Leave';
 
   String get statusLabel {
     switch (status) {

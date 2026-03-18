@@ -12,6 +12,8 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     on<SaveClientEvent>(_onSave);
     on<AddClientCredentialsEvent>(_onAddCredentials);
     on<UpdateClientEvent>(_onUpdateClient);
+    // REGISTER THE NEW DELETE EVENT
+    on<DeleteClientEvent>(_onDeleteClient);
   }
 
   Future<void> _onLoadClients(
@@ -86,26 +88,20 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
       ) async {
     try {
       await _repo.createCredentials(e.credentials);
-      // Refresh details to show new credential
       add(LoadClientDetailEvent(e.clientId));
     } catch (err) {
       emit(ClientError(err.toString()));
     }
   }
 
-  // --- UPDATED HANDLER: FORCES REFRESH OF CLIENT & SERVICES ---
   Future<void> _onUpdateClient(
       UpdateClientEvent e,
       Emitter<ClientState> emit,
       ) async {
-    // 1. Emit loading to clear old UI state
     emit(ClientLoading());
-
     try {
-      // 2. Perform the PATCH update (The 200 OK part)
       await _repo.updateClient(e.clientId, e.clientData);
 
-      // 3. Handle Services logic from the text field string
       if (e.clientData.containsKey('services')) {
         final String servicesString = e.clientData['services'] ?? '';
         final List<String> serviceNames = servicesString
@@ -115,33 +111,45 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
             .toList();
 
         if (serviceNames.isNotEmpty) {
-          final List<Map<String, dynamic>> servicesToSave = serviceNames.map((name) => {
+          final List<Map<String, dynamic>> servicesToSave =
+          serviceNames.map((name) => {
             'client': e.clientId,
             'service_name': name,
           }).toList();
 
-          // Create the new services in the DB
           await _repo.createServices(servicesToSave);
         }
       }
 
-      // 4. Wait slightly to ensure the Backend DB has finished writing
       await Future.delayed(const Duration(milliseconds: 300));
 
-      // 5. MANUALLY RE-FETCH everything from the database
       final updatedClient = await _repo.getClientById(e.clientId);
       final updatedServices = await _repo.getServices(e.clientId);
       final updatedCredentials = await _repo.getCredentials(e.clientId);
 
-      // 6. Emit the Loaded state with the FRESH data (SEO + WEB APP)
       emit(ClientDetailLoaded(
         client: updatedClient,
         services: updatedServices,
         credentials: updatedCredentials,
       ));
-
     } catch (err) {
       emit(ClientError(err.toString()));
+    }
+  }
+
+  // --- NEW DELETE HANDLER ---
+  Future<void> _onDeleteClient(
+      DeleteClientEvent e,
+      Emitter<ClientState> emit,
+      ) async {
+    try {
+      // 1. Call the repository to delete from Backend
+      await _repo.deleteClient(e.clientId);
+
+      // 2. Refresh the list automatically so the UI updates
+      add(LoadClientsEvent());
+    } catch (err) {
+      emit(ClientError("Failed to delete client: ${err.toString()}"));
     }
   }
 }

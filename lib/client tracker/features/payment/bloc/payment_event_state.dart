@@ -6,13 +6,17 @@ abstract class PaymentEvent {}
 class LoadPaymentsEvent extends PaymentEvent {
   final int month;
   final int year;
+
   LoadPaymentsEvent(this.month, this.year);
 }
 
 class UpdatePaymentEvent extends PaymentEvent {
   final int paymentId;
-  final bool invoiceSent;
-  final bool paymentReceived;
+
+  // ✅ changed to nullable
+  final bool? invoiceSent;
+  final bool? paymentReceived;
+
   UpdatePaymentEvent({
     required this.paymentId,
     required this.invoiceSent,
@@ -31,10 +35,12 @@ class PaymentLoaded extends PaymentState {
   final List<PaymentModel> payments;
   final int month;
   final int year;
+
   PaymentLoaded(this.payments, this.month, this.year);
 }
 
 class PaymentError extends PaymentState {
   final String message;
+
   PaymentError(this.message);
 }

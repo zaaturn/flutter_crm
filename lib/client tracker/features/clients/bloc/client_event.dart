@@ -6,7 +6,6 @@ class LoadClientsEvent extends ClientEvent {}
 
 class LoadClientDetailEvent extends ClientEvent {
   final int clientId;
-
   LoadClientDetailEvent(this.clientId);
 }
 
@@ -23,7 +22,7 @@ class SaveClientEvent extends ClientEvent {
   });
 }
 
-/// Update existing client information
+
 class UpdateClientEvent extends ClientEvent {
   final int clientId;
   final Map<String, dynamic> clientData;
@@ -34,7 +33,7 @@ class UpdateClientEvent extends ClientEvent {
   });
 }
 
-/// Add new credentials to an existing client
+
 class AddClientCredentialsEvent extends ClientEvent {
   final int clientId;
   final List<Map<String, dynamic>> credentials;
@@ -43,4 +42,10 @@ class AddClientCredentialsEvent extends ClientEvent {
     required this.clientId,
     required this.credentials,
   });
+}
+
+
+class DeleteClientEvent extends ClientEvent {
+  final int clientId;
+  DeleteClientEvent(this.clientId);
 }

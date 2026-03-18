@@ -40,9 +40,13 @@ class ClientRepository {
     await _api.postList(AppConstants.credentials, body);
   }
 
-  // --- FIXED UPDATE METHOD ---
   Future<void> updateClient(int clientId, Map<String, dynamic> data) async {
-    // Changed _apiClient to _api and used AppConstants for the path
     await _api.patch(AppConstants.clientById(clientId), data);
+  }
+
+
+  Future<void> deleteClient(int clientId) async {
+
+    await _api.delete(AppConstants.clientById(clientId));
   }
 }

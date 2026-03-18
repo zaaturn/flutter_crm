@@ -20,8 +20,13 @@ import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
-import 'package:my_app/leave_management/screens/admin_leave_list_screen.dart';
+import 'package:my_app/leave_management/screens/device_specific/admin_leave_approve_panel.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/assign_task_screen_desktop.dart';
+
+
+import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
+import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
+import 'package:my_app/leave_management/services/leave_api_services.dart';
 
 import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
 
@@ -85,11 +90,22 @@ class SidebarHandler {
         case SidebarAction.leaveManagement:
           _push(
             parentContext,
-            BlocProvider(
-              create: (_) => LeaveBloc(
-                LeaveApiService(),
-              )..add(LoadPendingLeaves()),
-              child: const AdminLeaveListScreen(),
+            MultiBlocProvider(
+              providers: [
+                BlocProvider<LeaveBloc>(
+                  create: (_) => LeaveBloc(
+                    LeaveApiService(),
+                  )..add(LoadPendingLeaves()),
+                ),
+
+
+                BlocProvider<LeaveDashboardBloc>(
+                  create: (_) => LeaveDashboardBloc(
+                    LeaveApiService(),
+                  )..add(FetchDashboardCounts()),
+                ),
+              ],
+              child: const AdminLeaveDashboard(),
             ),
           );
           break;

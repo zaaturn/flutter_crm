@@ -4,8 +4,10 @@ class PaymentModel {
   final String clientName;
   final int month;
   final int year;
-  bool invoiceSent;
-  bool paymentReceived;
+
+  final bool? invoiceSent;
+  final bool? paymentReceived;
+  final DateTime updatedAt;
 
   PaymentModel({
     required this.id,
@@ -15,17 +17,37 @@ class PaymentModel {
     required this.year,
     required this.invoiceSent,
     required this.paymentReceived,
+    required this.updatedAt,
   });
 
-  factory PaymentModel.fromJson(Map<String, dynamic> json) => PaymentModel(
-    id: json['id'],
-    clientId: json['client'],
-    clientName: json['client_name'] ?? '',
-    month: json['month'],
-    year: json['year'],
-    invoiceSent: json['invoice_sent'] ?? false,
-    paymentReceived: json['payment_received'] ?? false,
-  );
+  factory PaymentModel.fromJson(Map<String, dynamic> json) {
+    return PaymentModel(
+      id: json['id'],
+      clientId: json['client'],
+      clientName: json['client_name'] ?? '',
+      month: json['month'],
+      year: json['year'],
+
+      // ✅ DO NOT default to false anymore
+      invoiceSent: json['invoice_sent'],
+      paymentReceived: json['payment_received'],
+
+      // ✅ parse updated_at
+      updatedAt: DateTime.parse(json['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'client': clientId,
+      'month': month,
+      'year': year,
+      'invoice_sent': invoiceSent,
+      'payment_received': paymentReceived,
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }
 
 const List<String> monthNames = [
