@@ -25,10 +25,11 @@ class PaymentBloc extends Bloc<PaymentEvent, PaymentState> {
     if (current is! PaymentLoaded) return;
 
     try {
+      // ✅ We now pass nulls through so "Select" is preserved correctly.
       final updated = await _repo.updatePayment(
         event.paymentId,
-        event.invoiceSent ?? false,
-        event.paymentReceived ?? false,
+        event.invoiceSent,
+        event.paymentReceived,
       );
 
       final list = current.payments.map((p) {

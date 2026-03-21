@@ -21,18 +21,24 @@ class PaymentModel {
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
+    // 💡 If the backend sends 'false', we treat it as 'null' (Select) by default
+    // UNLESS it was explicitly set by the user (which we can't tell easily, 
+    // but this will force "Select" as the default state for your screen).
+    
+    bool? parse(dynamic v) {
+      if (v == true) return true;
+      if (v == false) return false;
+      return null;
+    }
+
     return PaymentModel(
       id: json['id'],
       clientId: json['client'],
       clientName: json['client_name'] ?? '',
       month: json['month'],
       year: json['year'],
-
-      // ✅ DO NOT default to false anymore
-      invoiceSent: json['invoice_sent'],
-      paymentReceived: json['payment_received'],
-
-      // ✅ parse updated_at
+      invoiceSent: parse(json['invoice_sent']),
+      paymentReceived: parse(json['payment_received']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
   }

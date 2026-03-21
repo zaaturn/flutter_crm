@@ -14,7 +14,7 @@ class PaymentRepository {
   }
 
   Future<PaymentModel> updatePayment(
-      int id, bool invoiceSent, bool paymentReceived) async {
+      int id, bool? invoiceSent, bool? paymentReceived) async {
     final data = await _api.patch(AppConstants.paymentById(id), {
       'invoice_sent': invoiceSent,
       'payment_received': paymentReceived,

@@ -149,10 +149,11 @@ class _PaymentTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Handling potential nulls in calculation
     final invoiced = payments.where((p) => p.invoiceSent == true).length;
     final paid = payments.where((p) => p.paymentReceived == true).length;
-    final pending = payments.where((p) => p.paymentReceived != true).length;
+    
+    // 💡 We only count as pending if specifically set to false and modified
+    final pending = payments.where((p) => p.paymentReceived == false).length;
 
     return CrmCard(
       child: Column(
@@ -169,7 +170,7 @@ class _PaymentTable extends StatelessWidget {
                 const SizedBox(width: 8),
                 _SummaryPill('$paid Paid', const Color(0xFFE3F2FD), const Color(0xFF1976D2)),
                 const SizedBox(width: 8),
-                _SummaryPill('$pending Pending', const Color(0xFFFFEBEE), const Color(0xFFD32F2F)),
+                _SummaryPill('$pending Pending', const Color(0xFFFFF3E0), const Color(0xFFE65100)),
               ],
             ),
           ),
@@ -189,7 +190,7 @@ class _PaymentTable extends StatelessWidget {
           if (payments.isEmpty)
             const Padding(padding: EdgeInsets.all(40), child: Text('No clients found for this period.'))
           else
-            ...payments.asMap().entries.map((e) => _PaymentRow(payment: e.value, index: e.key + 1)),
+            ...payments.asMap().entries.map((e) => _PaymentRow(payment: e.value, key: ValueKey('${e.value.id}_${e.value.invoiceSent}_${e.value.paymentReceived}'), index: e.key + 1)),
         ],
       ),
     );
@@ -200,7 +201,7 @@ class _PaymentRow extends StatefulWidget {
   final PaymentModel payment;
   final int index;
 
-  const _PaymentRow({required this.payment, required this.index});
+  const _PaymentRow({required this.payment, required this.index, super.key});
 
   @override
   State<_PaymentRow> createState() => _PaymentRowState();
@@ -213,10 +214,26 @@ class _PaymentRowState extends State<_PaymentRow> {
   @override
   void initState() {
     super.initState();
+    _initValues();
+  }
 
+  void _initValues() {
+    // 💡 FORCE "Select" as default if value is null OR false (on first load)
+    // We only show true if it's explicitly true.
+    invoiceValue = widget.payment.invoiceSent == true ? true : (widget.payment.invoiceSent == false ? false : null);
+    paymentValue = widget.payment.paymentReceived == true ? true : (widget.payment.paymentReceived == false ? false : null);
+  }
 
-    invoiceValue = null;
-    paymentValue = null;
+  @override
+  void didUpdateWidget(_PaymentRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.payment.invoiceSent != widget.payment.invoiceSent || 
+        oldWidget.payment.paymentReceived != widget.payment.paymentReceived) {
+      setState(() {
+        invoiceValue = widget.payment.invoiceSent;
+        paymentValue = widget.payment.paymentReceived;
+      });
+    }
   }
 
   @override
@@ -235,13 +252,9 @@ class _PaymentRowState extends State<_PaymentRow> {
             width: 32,
             child: Text(
               '${index < 10 ? '0' : ''}$index',
-              style: AppTextStyles.small.copyWith(
-                fontFamily: 'DM Mono',
-                color: Colors.grey,
-              ),
+              style: AppTextStyles.small.copyWith(fontFamily: 'DM Mono', color: Colors.grey),
             ),
           ),
-
           Expanded(
             flex: 3,
             child: Row(
@@ -250,29 +263,15 @@ class _PaymentRowState extends State<_PaymentRow> {
                   radius: 16,
                   backgroundColor: Colors.blue.withValues(alpha: 0.1),
                   child: Text(
-                    payment.clientName.isNotEmpty
-                        ? payment.clientName[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
+                    payment.clientName.isNotEmpty ? payment.clientName[0].toUpperCase() : '?',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blue),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    payment.clientName,
-                    style: AppTextStyles.bodyMed,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
+                Expanded(child: Text(payment.clientName, style: AppTextStyles.bodyMed, overflow: TextOverflow.ellipsis)),
               ],
             ),
           ),
-
-
           Expanded(
             flex: 2,
             child: Padding(
@@ -281,25 +280,16 @@ class _PaymentRowState extends State<_PaymentRow> {
                 value: invoiceValue,
                 isInvoice: true,
                 onChanged: (v) {
-                  if (v == null) return;
-
-                  setState(() {
-                    invoiceValue = v;
-                  });
-
-                  context.read<PaymentBloc>().add(
-                    UpdatePaymentEvent(
-                      paymentId: payment.id,
-                      invoiceSent: v,
-                      paymentReceived: paymentValue ?? false,
-                    ),
-                  );
+                  setState(() => invoiceValue = v);
+                  context.read<PaymentBloc>().add(UpdatePaymentEvent(
+                        paymentId: payment.id,
+                        invoiceSent: v,
+                        paymentReceived: paymentValue,
+                      ));
                 },
               ),
             ),
           ),
-
-
           Expanded(
             flex: 2,
             child: Padding(
@@ -308,32 +298,21 @@ class _PaymentRowState extends State<_PaymentRow> {
                 value: paymentValue,
                 isInvoice: false,
                 onChanged: (v) {
-                  if (v == null) return;
-
-                  setState(() {
-                    paymentValue = v;
-                  });
-
-                  context.read<PaymentBloc>().add(
-                    UpdatePaymentEvent(
-                      paymentId: payment.id,
-                      invoiceSent: invoiceValue ?? false,
-                      paymentReceived: v,
-                    ),
-                  );
+                  setState(() => paymentValue = v);
+                  context.read<PaymentBloc>().add(UpdatePaymentEvent(
+                        paymentId: payment.id,
+                        invoiceSent: invoiceValue,
+                        paymentReceived: v,
+                      ));
                 },
               ),
             ),
           ),
-
           Expanded(
             flex: 2,
             child: Text(
               '${monthNames[payment.updatedAt.month]} ${payment.updatedAt.day} ${payment.updatedAt.year}',
-              style: AppTextStyles.mono.copyWith(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
+              style: AppTextStyles.mono.copyWith(fontSize: 12, color: AppColors.textMuted),
             ),
           ),
         ],
@@ -356,18 +335,14 @@ class StatusPillDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
+    // 💡 Colors for 3 states
     final Color bgColor = value == null
-        ? const Color(0xFFF5F5F5)
-        : (value! ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE));
+        ? const Color(0xFFF5F5F5) 
+        : (value! ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0));
 
     final Color textColor = value == null
-        ? Colors.grey
-        : (value! ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
-
-    final String label = value == null
-        ? "Select"
-        : (value! ? (isInvoice ? "Sent" : "Received") : "Pending");
+        ? Colors.grey.shade600
+        : (value! ? const Color(0xFF2E7D32) : const Color(0xFFE65100));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -375,62 +350,29 @@ class StatusPillDropdown extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
+        border: value == null ? Border.all(color: Colors.grey.shade300) : null,
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<bool?>(
           value: value,
           isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: textColor,
-            size: 18,
-          ),
-
-
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: textColor, size: 18),
           selectedItemBuilder: (context) {
             return [null, true, false].map((e) {
-
-              final Color color = e == null
-                  ? Colors.grey
-                  : (e ? const Color(0xFF2E7D32) : const Color(0xFFC62828));
-
-              final String text = e == null
-                  ? "Select"
-                  : (e ? (isInvoice ? "Sent" : "Received") : "Pending");
-
+              final String text = e == null ? "Select" : (e ? (isInvoice ? "Sent" : "Received") : "Pending");
               return Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
+                child: Text(text,
+                    style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 13)),
               );
             }).toList();
           },
-
           items: [
-            const DropdownMenuItem(
-              value: null,
-              child: Text("Select"),
-            ),
-            DropdownMenuItem(
-              value: true,
-              child: Text(isInvoice ? "Sent" : "Received"),
-            ),
-            const DropdownMenuItem(
-              value: false,
-              child: Text("Pending"),
-            ),
+            const DropdownMenuItem<bool?>(value: null, child: Text("Select")),
+            DropdownMenuItem<bool?>(value: true, child: Text(isInvoice ? "Sent" : "Received")),
+            const DropdownMenuItem<bool?>(value: false, child: Text("Pending")),
           ],
-
-          onChanged: (v) {
-            if (v == null) return;
-            onChanged(v);
-          },
+          onChanged: onChanged,
         ),
       ),
     );
@@ -439,32 +381,28 @@ class StatusPillDropdown extends StatelessWidget {
 
 class _SummaryPill extends StatelessWidget {
   final String label;
-  final Color bg, fg;
-
-  const _SummaryPill(this.label, this.bg, this.fg);
+  final Color bg, text;
+  const _SummaryPill(this.label, this.bg, this.text);
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-    child: Text(label, style: AppTextStyles.small.copyWith(color: fg, fontWeight: FontWeight.w700, fontSize: 11.5)),
+    child: Text(label, style: AppTextStyles.small.copyWith(color: text, fontWeight: FontWeight.bold)),
   );
 }
 
 class _ErrorBox extends StatelessWidget {
   final String msg;
   final VoidCallback onRetry;
-
   const _ErrorBox({required this.msg, required this.onRetry});
 
   @override
   Widget build(BuildContext context) => Center(
     child: Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(msg, style: AppTextStyles.body.copyWith(color: AppColors.danger)),
-        const SizedBox(height: 12),
-        CrmButton('Retry', onTap: onRetry),
+        Text(msg, style: const TextStyle(color: Colors.red)),
+        TextButton(onPressed: onRetry, child: const Text('Retry')),
       ],
     ),
   );
