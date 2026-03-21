@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
 class AdaptiveLayout extends StatelessWidget {
   final Widget mobile;
@@ -6,27 +7,39 @@ class AdaptiveLayout extends StatelessWidget {
   final Widget webDesktop;
 
   const AdaptiveLayout({
+    super.key,
     required this.mobile,
     required this.tablet,
     required this.webDesktop,
-    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
 
-    // Desktop / Web large screens
-    if (width >= 1000) {
-      return webDesktop;
-    }
+        debugPrint("LAYOUT WIDTH: $width | isWeb: $kIsWeb");
 
-    // Tablet
-    if (width >= 700) {
-      return tablet;
-    }
 
-    // Mobile
-    return mobile;
+        if (!kIsWeb) {
+          if (width >= 700) {
+            return tablet;
+          }
+          return mobile;
+        }
+
+
+        if (width >= 1000) {
+          return webDesktop;
+        }
+
+        if (width >= 700) {
+          return tablet;
+        }
+
+        return mobile;
+      },
+    );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/services/secure_storage_service.dart';
-import 'package:my_app/screens/device_specific/welcome_desktop.dart';
 
 class StartupGate extends StatefulWidget {
   const StartupGate({super.key});
@@ -28,28 +27,36 @@ class _StartupGateState extends State<StartupGate> {
 
     if (!mounted) return;
 
-
     if (token == null) {
-      Navigator.pushReplacement(
+      Navigator.pushNamedAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        ),
+        '/employeeLogin',
+            (route) => false,
       );
       return;
     }
 
     if (role == "admin") {
-      Navigator.pushReplacementNamed(context, '/adminDashboard');
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/adminDashboard',
+            (route) => false,
+      );
     } else {
-      Navigator.pushReplacementNamed(context, '/employeeDashboard');
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/employeeDashboard',
+            (route) => false,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }

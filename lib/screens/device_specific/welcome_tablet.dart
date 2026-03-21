@@ -20,8 +20,8 @@ class WelcomeTablet extends StatelessWidget {
           ),
           Center(
             child: SizedBox(
-              width: 520, // 🔑 tablet width control
-              child: const WelcomeMobile(),
+              width: 520, //
+              child: const LoginScreenmobile(),
             ),
           ),
         ],

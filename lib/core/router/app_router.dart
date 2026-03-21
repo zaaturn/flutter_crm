@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:my_app/screens/welcome_screen.dart';
 
 // Login
-import 'package:my_app/screens/device_specific/login_mobile.dart';
+import 'package:my_app/screens/device_specific/welcome_mobile.dart';
 import 'package:my_app/screens/device_specific/welcome_desktop.dart';
 
 // Profile
@@ -15,6 +15,7 @@ import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen.dart';
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/admin_dashboard.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 
 // Calendar (ADD BOTH)
@@ -45,8 +46,8 @@ class AppRouter {
       case '/employeeLogin':
         return MaterialPageRoute(
           builder: (_) => AdaptiveLayout(
-            mobile: const LoginMobile(role: "Employee"),
-            tablet: const LoginMobile(role: "Employee"),
+            mobile: const LoginScreenmobile(),
+            tablet: const LoginScreenmobile(),
             webDesktop: const LoginScreen(),
           ),
         );
@@ -57,8 +58,8 @@ class AppRouter {
       case '/adminLogin':
         return MaterialPageRoute(
           builder: (_) => const AdaptiveLayout(
-            mobile: LoginMobile(role: 'Admin',),
-            tablet: LoginMobile(role: 'Admin',),
+            mobile: LoginScreenmobile(),
+            tablet: LoginScreenmobile(),
             webDesktop: LoginScreen(),
           ),
         );
@@ -82,8 +83,8 @@ class AppRouter {
       case '/adminDashboard':
         return MaterialPageRoute(
           builder: (_) => AdaptiveLayout(
-            mobile: const AdminDashboardScreen(),
-            tablet: const AdminDashboardScreen(),
+            mobile: const AdminDashboardMobile(),
+            tablet: const AdminDashboardMobile(),
             webDesktop: const AdminDashboardDesktop(),
           ),
         );

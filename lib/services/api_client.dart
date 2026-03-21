@@ -37,7 +37,7 @@ class ApiClient {
 
   // --- Endpoints ---
   static const String _base =
-  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://192.168.1.13:8000');
 
   String get baseAccounts => "$_base/api/accounts/crm";
   String get baseEmployee => "$_base/api/employee/crm";

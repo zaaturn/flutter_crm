@@ -45,7 +45,7 @@ class AdminRepository {
 
 
   static const String _base =
-  String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:8000');
+  String.fromEnvironment('BASE_URL', defaultValue: 'http://192.168.1.13:8000');
 
   String get _crmBase => "$_base/api/employee/crm/";
   String get _accountsBase => "$_base/api/accounts/crm/";

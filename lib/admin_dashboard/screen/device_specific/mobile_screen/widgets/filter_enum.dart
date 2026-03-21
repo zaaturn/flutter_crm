@@ -1,0 +1,1 @@
+enum EmployeeFilter { all, working, onBreak, absent }

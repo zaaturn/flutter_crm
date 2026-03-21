@@ -88,6 +88,7 @@ class Employee {
   }
 
   factory Employee.fromJson(Map<String, dynamic> json) {
+    print("📦 MOBILE JSON: $json");
     return Employee(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
