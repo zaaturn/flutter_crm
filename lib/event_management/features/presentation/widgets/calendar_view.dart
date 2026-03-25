@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:my_app/event_management/features/domain/entities/event_entity.dart';
 import '../widgets/event_chip.dart';
+import 'dart:developer';
 
 class CalendarViewMobile extends StatefulWidget {
   final List<EventEntity> events;
@@ -48,6 +49,8 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
 
   @override
   Widget build(BuildContext context) {
+    // Note: The parent of this widget should ideally be an Expanded
+    // or a SizedBox with height in the main screen.
     return Container(
       color: Colors.white,
       child: widget.format == CalendarFormat.twoWeeks
@@ -58,57 +61,58 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
 
   // ── GRID VIEW ──────────────────────────────────────────────────────────────
   Widget _buildGridView() {
-    return Expanded(
-      child: TableCalendar<EventEntity>(
-        firstDay: DateTime(2020),
-        lastDay: DateTime(2030),
-        focusedDay: widget.focusedDay,
-        calendarFormat: widget.format,
-        headerVisible: false,
-        rowHeight: 120,
-        daysOfWeekHeight: 40,
-        onPageChanged: widget.onPageChanged,
-        eventLoader: (day) {
-          return widget.events.where((e) {
-            return e.start.year == day.year &&
-                e.start.month == day.month &&
-                e.start.day == day.day;
-          }).toList();
-        },
-        calendarStyle: _calendarStyle(),
-        calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) => _buildDayCell(day, Colors.black87),
-          outsideBuilder: (context, day, focusedDay) => _buildDayCell(day, Colors.grey[400]!),
-          todayBuilder: (context, day, focusedDay) => _buildSelectedDayCell(day, const Color(0xFF00796B)),
-          selectedBuilder: (context, day, focusedDay) => _buildSelectedDayCell(day, Colors.black),
-          markerBuilder: (context, date, events) => _buildEventMarkers(events),
-        ),
-        onDaySelected: (selected, focused) => widget.onDayTapped(selected),
+    log("EVENT COUNT: ${widget.events.length}");
+
+    // REMOVED: Expanded widget that was causing the "ParentDataWidget" crash
+    return TableCalendar<EventEntity>(
+      firstDay: DateTime(2020),
+      lastDay: DateTime(2030),
+      focusedDay: widget.focusedDay,
+      calendarFormat: widget.format,
+      headerVisible: false,
+      rowHeight: 120,
+      daysOfWeekHeight: 40,
+      onPageChanged: widget.onPageChanged,
+      eventLoader: (day) {
+        return widget.events.where((e) {
+          return e.start.year == day.year &&
+              e.start.month == day.month &&
+              e.start.day == day.day;
+        }).toList();
+      },
+      calendarStyle: _calendarStyle(),
+      calendarBuilders: CalendarBuilders(
+        defaultBuilder: (context, day, focusedDay) => _buildDayCell(day, Colors.black87),
+        outsideBuilder: (context, day, focusedDay) => _buildDayCell(day, Colors.grey[400]!),
+        todayBuilder: (context, day, focusedDay) => _buildSelectedDayCell(day, const Color(0xFF00796B)),
+        selectedBuilder: (context, day, focusedDay) => _buildSelectedDayCell(day, Colors.black),
+        markerBuilder: (context, date, events) => _buildEventMarkers(events),
       ),
+      onDaySelected: (selected, focused) => widget.onDayTapped(selected),
     );
   }
 
   // ── HOURLY VIEW ────────────────────────────────────────────────────────────
   Widget _buildHourlyView() {
     final dayEvents = widget.events.where((e) => isSameDay(e.start, widget.focusedDay)).toList();
-    return Expanded(
-      child: SingleChildScrollView(
-        child: SizedBox(
-          height: 24 * _hourHeight,
-          child: Row(
-            children: [
-              _timeGutter(),
-              Expanded(
-                child: Stack(
-                  children: [
-                    _gridBackground(),
-                    ...dayEvents.map((ev) => _positionEventInTimeline(ev)),
-                    _currentTimeLine(),
-                  ],
-                ),
+
+    // REMOVED: Expanded widget here as well
+    return SingleChildScrollView(
+      child: SizedBox(
+        height: 24 * _hourHeight,
+        child: Row(
+          children: [
+            _timeGutter(),
+            Expanded( // This Expanded is OK because its direct parent is a Row
+              child: Stack(
+                children: [
+                  _gridBackground(),
+                  ...dayEvents.map((ev) => _positionEventInTimeline(ev)),
+                  _currentTimeLine(),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -125,7 +129,7 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
     );
   }
 
-  // ── HELPER UI BUILDERS (THE STRUCTURE) ─────────────────────────────────────
+  // ── HELPER UI BUILDERS ─────────────────────────────────────────────────────
 
   CalendarStyle _calendarStyle() => CalendarStyle(
     outsideDaysVisible: true,
@@ -200,7 +204,6 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
     return Positioned(top: (now.hour * _hourHeight) + (now.minute / 60 * _hourHeight), left: 0, right: 0, child: Container(height: 2, color: Colors.red));
   }
 
-  // ── UTILITIES ──────────────────────────────────────────────────────────────
   Color _parseColor(String hex) {
     try { return Color(int.parse(hex.replaceAll('#', '0xFF'))); }
     catch (e) { return const Color(0xFF039BE5); }
@@ -209,7 +212,6 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
   String _formatHour(int i) => i == 0 ? "12 AM" : i > 12 ? "${i - 12} PM" : "$i ${i == 12 ? 'PM' : 'AM'}";
 }
 
-// ── EXTRACTED COMPONENT: EVENT DETAIL SHEET ──────────────────────────────────
 class _EventDetailSheet extends StatelessWidget {
   final EventEntity event;
   final Color eventColor;
@@ -253,16 +255,26 @@ class _EventDetailSheet extends StatelessWidget {
     children: [
       const Text("ATTENDEES", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.blueGrey)),
       const SizedBox(height: 12),
-      if (event.participants?.isNotEmpty ?? false)
+      // Safely check for null and empty list to prevent crashes
+      if (event.participants != null && event.participants!.isNotEmpty)
         ...event.participants!.map((p) => ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: CircleAvatar(backgroundColor: eventColor.withOpacity(0.1), child: Text(p.name[0], style: TextStyle(color: eventColor))),
+          leading: CircleAvatar(
+              backgroundColor: eventColor.withOpacity(0.1),
+              child: Text(
+                  (p.name.isNotEmpty) ? p.name[0].toUpperCase() : "?",
+                  style: TextStyle(color: eventColor)
+              )
+          ),
           title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
           subtitle: Text(p.email),
           trailing: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-        ))
+        )).toList()
       else
-        const Text("No attendees", style: TextStyle(color: Colors.grey)),
+        const Padding(
+          padding: EdgeInsets.only(top: 8.0),
+          child: Text("No attendees", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+        ),
     ],
   );
 
