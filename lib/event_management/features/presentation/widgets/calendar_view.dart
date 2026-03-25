@@ -49,8 +49,6 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
 
   @override
   Widget build(BuildContext context) {
-    // Note: The parent of this widget should ideally be an Expanded
-    // or a SizedBox with height in the main screen.
     return Container(
       color: Colors.white,
       child: widget.format == CalendarFormat.twoWeeks
@@ -96,18 +94,32 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
   Widget _buildHourlyView() {
     final dayEvents = widget.events.where((e) => isSameDay(e.start, widget.focusedDay)).toList();
 
-    // REMOVED: Expanded widget here as well
+
+    dayEvents.sort((a, b) => a.start.compareTo(b.start));
+
     return SingleChildScrollView(
       child: SizedBox(
         height: 24 * _hourHeight,
         child: Row(
           children: [
             _timeGutter(),
-            Expanded( // This Expanded is OK because its direct parent is a Row
+            Expanded(
               child: Stack(
                 children: [
                   _gridBackground(),
-                  ...dayEvents.map((ev) => _positionEventInTimeline(ev)),
+                  ...dayEvents.asMap().entries.map((entry) {
+                    int idx = entry.key;
+                    var ev = entry.value;
+                    int overlaps = dayEvents.where((e) =>
+                    (e.start.isBefore(ev.end) && e.end.isAfter(ev.start))
+                    ).length;
+
+                    int positionInGroup = dayEvents.sublist(0, idx).where((e) =>
+                    (e.start.isBefore(ev.end) && e.end.isAfter(ev.start))
+                    ).length;
+
+                    return _positionEventInTimeline(ev, overlaps, positionInGroup);
+                  }),
                   _currentTimeLine(),
                 ],
               ),
@@ -184,24 +196,102 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
     ),
   );
 
-  Widget _positionEventInTimeline(EventEntity ev) {
-    final top = (ev.start.hour * _hourHeight) + ((ev.start.minute / 60) * _hourHeight);
-    final h = (ev.end.difference(ev.start).inMinutes / 60) * _hourHeight;
+  Widget _positionEventInTimeline(EventEntity ev, int totalOverlaps, int positionIndex) {
+    final double startMinutes = (ev.start.hour * 60.0) + ev.start.minute.toDouble();
+    final double durationMinutes = ev.end.difference(ev.start).inMinutes.toDouble();
+
+    final double top = (startMinutes / 60.0) * _hourHeight;
+    double calculatedHeight = (durationMinutes / 60.0) * _hourHeight;
+    final double finalHeight = calculatedHeight < 38.0 ? 38.0 : calculatedHeight;
+
+    double availableWidth = MediaQuery.of(context).size.width - 65.0;
+    double eventWidth = (availableWidth - 10) / totalOverlaps;
+    double leftOffset = 65.0 + (positionIndex * eventWidth);
+
     return Positioned(
-      top: top + 2, left: 4, right: 8, height: h - 4,
-      child: GestureDetector(
+      top: top + 2.0,
+      left: leftOffset,
+      width: eventWidth - 2.0,
+      height: finalHeight - 4.0,
+      child: EventChip(
+        event: ev,
         onTap: () => _showEventDetails(ev),
-        child: EventChip(event: ev, onTap: () => _showEventDetails(ev)),
       ),
     );
   }
 
-  Widget _timeGutter() => SizedBox(width: 60, child: Column(children: List.generate(24, (i) => SizedBox(height: _hourHeight, child: Center(child: Text(_formatHour(i), style: const TextStyle(fontSize: 10, color: Colors.grey)))))));
-  Widget _gridBackground() => Column(children: List.generate(24, (i) => Container(height: _hourHeight, decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey[200]!), left: BorderSide(color: Colors.grey[200]!))))));
+  Widget _timeGutter() => SizedBox(
+    width: 65,
+    child: Column(
+      children: List.generate(
+        24,
+            (i) => SizedBox(
+          height: _hourHeight,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                _formatHour(i),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _gridBackground() => Column(
+    children: List.generate(
+      24,
+          (i) => Container(
+        height: _hourHeight,
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Colors.grey[350]!, width: 0.8),
+            left: BorderSide(color: Colors.grey[350]!, width: 1.0),
+          ),
+        ),
+      ),
+    ),
+  );
+
   Widget _currentTimeLine() {
     final now = DateTime.now();
     if (!isSameDay(now, widget.focusedDay)) return const SizedBox.shrink();
-    return Positioned(top: (now.hour * _hourHeight) + (now.minute / 60 * _hourHeight), left: 0, right: 0, child: Container(height: 2, color: Colors.red));
+
+    final double topPos = (now.hour.toDouble() * _hourHeight) +
+        ((now.minute.toDouble() / 60.0) * _hourHeight);
+
+    return Positioned(
+      top: topPos,
+      left: 55,
+      right: 0,
+      child: Row(
+        children: [
+
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Color _parseColor(String hex) {

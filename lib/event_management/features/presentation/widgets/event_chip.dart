@@ -1,88 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Recommended for cleaner time formatting
-
-
- import 'package:my_app/event_management/core/constants/app_colors.dart';
+import 'package:intl/intl.dart';
+import 'package:my_app/event_management/core/constants/app_colors.dart';
 import '../../domain/entities/event_entity.dart';
 
 class EventChip extends StatelessWidget {
-  final dynamic event; // Replace with EventEntity
+  final EventEntity event;
   final VoidCallback onTap;
 
   const EventChip({super.key, required this.event, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    // Assuming tc has bg and text properties
     final tc = EventTypeColor.of(event.eventType);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+    return ClipRRect( // Prevents any tiny overflow from showing outside the box
+      borderRadius: BorderRadius.circular(4),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            // Subtly border the card for a "clean" SaaS look
-            border: Border.all(color: const Color(0xFFEDF2F7), width: 1),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x05000000),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
+            color: tc.text.withOpacity(0.15),
+            border: Border.all(color: tc.text.withOpacity(0.3), width: 0.5),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 1. The Accent Bar (The "Brand" color of the event)
               Container(
-                width: 4,
-                height: 32,
+                width: 2.0,
+                height: 16.0,
                 decoration: BoxDecoration(
-                  color: tc.text, // Using the prominent color for the bar
-                  borderRadius: BorderRadius.circular(2),
+                  color: tc.text,
+                  borderRadius: BorderRadius.circular(1),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
 
-              // 2. Event Details
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       event.title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A202C),
-                        letterSpacing: -0.2,
+                      style: TextStyle(
+                        fontSize: 11.0,
+                        fontWeight: FontWeight.bold,
+                        color: tc.text,
+                        height: 1.1,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+
                     Text(
                       _fmt(event.start),
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[500],
+                        fontSize: 9.0,
+                        color: tc.text.withOpacity(0.8),
+                        height: 1.1, // Tighten line height
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              // 3. Trailing indicator (Optional: shows it's clickable)
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 18,
-                color: Colors.grey[300],
               ),
             ],
           ),
@@ -91,7 +71,6 @@ class EventChip extends StatelessWidget {
     );
   }
 
-  // Improved time formatter
   static String _fmt(DateTime dt) {
     final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
     final m = dt.minute.toString().padLeft(2, '0');
