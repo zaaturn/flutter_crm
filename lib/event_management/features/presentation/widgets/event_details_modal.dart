@@ -78,14 +78,15 @@ class EventDetailsModal extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildParticipantSection(),
+                      const SizedBox(height: 24),
                       if (event.description.isNotEmpty)
                         _buildWideCard('Notes', event.description, Icons.notes_rounded),
                       const SizedBox(height: 16),
                       if (event.meetingLink.isNotEmpty)
                         _buildLinkCard(),
-                      const SizedBox(height: 24),
-                      _buildParticipantSection(),
                       const SizedBox(height: 140),
                     ],
                   ),
