@@ -85,7 +85,7 @@ flutter_launcher_icons:
 #  NATIVE SPLASH CONFIGURATION (Removes Blue Logo)
 # ═══════════════════════════════════════════════════
 flutter_native_splash:
-  color: "#0C0C0C"
+  color: "#FFFFFF"
   image: assets/images/logo.png
 
   android: true
@@ -93,4 +93,4 @@ flutter_native_splash:
 
   android_12:
     image: assets/images/logo.png
-    color: "#0C0C0C"
+    color: "#FFFFFF"
