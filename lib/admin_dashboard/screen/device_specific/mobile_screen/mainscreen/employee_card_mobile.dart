@@ -16,17 +16,20 @@ class EmployeeCardMobile extends StatelessWidget {
 
   Color get _avatarColor {
     const colors = [
-      Color(0xFF6366F1), Color(0xFF0EA5E9), Color(0xFF10B981),
-      Color(0xFFF59E0B), Color(0xFF8B5CF6), Color(0xFFEF4444),
+      Color(0xFF6366F1),
+      Color(0xFF0EA5E9),
+      Color(0xFF10B981),
+      Color(0xFFF59E0B),
+      Color(0xFF8B5CF6),
+      Color(0xFFEF4444),
     ];
     final int index =
-    (employee.employeeId?.hashCode ?? employee.fullName.length);
+    (employee.employeeId.hashCode);
     return colors[index % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ USE MODEL DIRECTLY (same as desktop)
     final status = employee.liveStatus;
 
     final bool isWorking = status == LiveStatus.working;
@@ -34,11 +37,11 @@ class EmployeeCardMobile extends StatelessWidget {
 
     final Color statusColor = isWorking
         ? const Color(0xFF10B981)
-        : (isOnBreak ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8));
+        : (isOnBreak
+        ? const Color(0xFFF59E0B)
+        : const Color(0xFF94A3B8));
 
-    final String statusLabel = isWorking
-        ? "Working"
-        : (isOnBreak ? "On Break" : "Logged Out");
+    final String statusLabel = employee.statusText;
 
     return Container(
       decoration: BoxDecoration(
@@ -50,10 +53,11 @@ class EmployeeCardMobile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          /// EMPLOYEE ID
           Align(
             alignment: Alignment.topRight,
             child: Text(
-              '#${employee.employeeId ?? "N/A"}',
+              '#${employee.employeeId}',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
@@ -62,6 +66,7 @@ class EmployeeCardMobile extends StatelessWidget {
             ),
           ),
 
+          /// AVATAR + STATUS DOT
           Stack(
             children: [
               _buildAvatar(),
@@ -69,8 +74,8 @@ class EmployeeCardMobile extends StatelessWidget {
                 bottom: 2,
                 right: 2,
                 child: Container(
-                  width: 12,
-                  height: 12,
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
@@ -80,8 +85,10 @@ class EmployeeCardMobile extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 12),
 
+          /// NAME
           Text(
             employee.fullName,
             style: GoogleFonts.plusJakartaSans(
@@ -93,6 +100,7 @@ class EmployeeCardMobile extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
 
+          /// DESIGNATION
           Text(
             employee.designation ?? '—',
             style: GoogleFonts.plusJakartaSans(
@@ -103,54 +111,79 @@ class EmployeeCardMobile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
+
+          const SizedBox(height: 8),
+
+          /// 🔥 CHECK-IN + STATUS (LIKE DESKTOP)
+          Row(
+            children: [
+              Icon(Icons.login, size: 14, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                employee.checkIn,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(Icons.circle, size: 6, color: statusColor),
+              const SizedBox(width: 4),
+              Text(
+                statusLabel,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF64748B),
+                ),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 10),
 
+          /// STATUS BADGE
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration:
-                  BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  statusLabel,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
-                  ),
-                )
-              ],
+            child: Text(
+              statusLabel,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: statusColor,
+              ),
             ),
           ),
+
           const SizedBox(height: 12),
 
+          /// TAGS
           Wrap(
             spacing: 6,
             runSpacing: 4,
             children: [
               if (employee.workLocation?.isNotEmpty == true)
                 _Tag(
-                    icon: Icons.location_on_outlined,
-                    label: employee.workLocation!),
+                  icon: Icons.location_on_outlined,
+                  label: employee.workLocation!,
+                ),
               if (employee.department?.isNotEmpty == true)
                 _Tag(
-                    icon: Icons.business_outlined,
-                    label: employee.department!),
+                  icon: Icons.business_outlined,
+                  label: employee.department!,
+                ),
             ],
           ),
 
           const Spacer(),
 
+          /// ACTION BUTTONS
           Row(
             children: [
               Expanded(
@@ -163,7 +196,9 @@ class EmployeeCardMobile extends StatelessWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius:
+                        BorderRadius.circular(8),
+                      ),
                     ),
                     child: Text(
                       'View Profile',
@@ -187,6 +222,7 @@ class EmployeeCardMobile extends StatelessWidget {
   Widget _buildAvatar() {
     bool hasImage =
         employee.profilePhoto != null && employee.profilePhoto!.isNotEmpty;
+
     return Container(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -198,9 +234,13 @@ class EmployeeCardMobile extends StatelessWidget {
         backgroundImage:
         hasImage ? NetworkImage(employee.profilePhoto!) : null,
         child: !hasImage
-            ? Text(employee.initials,
-            style: TextStyle(
-                color: _avatarColor, fontWeight: FontWeight.bold))
+            ? Text(
+          employee.initials,
+          style: TextStyle(
+            color: _avatarColor,
+            fontWeight: FontWeight.bold,
+          ),
+        )
             : null,
       ),
     );
@@ -240,7 +280,8 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding:
+      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(6),

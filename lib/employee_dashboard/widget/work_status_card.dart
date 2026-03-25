@@ -1,102 +1,159 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/employee_dashboard_bloc.dart';
-import '../bloc/employee_dashboard_event.dart';
-import '../model/attendance_model.dart';
+import '../utils/design_tokens.dart';
 
-class WorkStatusCard extends StatelessWidget {
-  final AttendanceModel? att;
-  const WorkStatusCard({super.key, this.att});
+// Ensure these paths match your project structure
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
+import 'package:my_app/employee_dashboard/model/attendance_model.dart';
 
-  // --- SAAS COLOR PALETTE (Matched to Drawer/Sidebar) ---
-  final Color bgLight = const Color(0xFFF1F5F9); // Slate 100
-  final Color textSecondary = const Color(0xFF64748B); // Slate 500
-  final Color primaryIndigo = const Color(0xFF4F46E5); // Indigo 600
-  final Color accentViolet = const Color(0xFF7C3AED); // Violet 600
-  final Color textDark = const Color(0xFF1E293B); // Slate 800
-  final Color successGreen = const Color(0xFF10B981); // Emerald 500
-  final Color warningAmber = const Color(0xFFF59E0B); // Amber 500
+class SessionOverviewSection extends StatefulWidget {
+  const SessionOverviewSection({super.key});
 
-  String _formatTime(DateTime? t) {
-    if (t == null) return "—";
-    final dt = t.toLocal();
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final suffix = dt.hour >= 12 ? "PM" : "AM";
-    return "$h:$m $suffix";
+  @override
+  State<SessionOverviewSection> createState() => _SessionOverviewSectionState();
+}
+
+class _SessionOverviewSectionState extends State<SessionOverviewSection> {
+  Timer? _ticker;
+  Duration _liveElapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTicker();
   }
 
-  String _formatDuration(Duration? d) {
-    if (d == null) return "—";
-    return "${d.inHours}h ${d.inMinutes % 60}m";
+  void _startTicker() {
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      final state = context.read<EmployeeBloc>().state;
+      final attendance = state.attendance;
+      if (attendance != null && attendance.isCheckedIn && !attendance.onBreak) {
+        setState(() => _liveElapsed = _calcElapsed(attendance));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  Duration _calcElapsed(AttendanceModel a) {
+    if (a.checkInTime == null) return Duration.zero;
+    return DateTime.now().difference(a.checkInTime!);
+  }
+
+  String _fmtTimer(Duration d) {
+    String p(int n) => n.toString().padLeft(2, '0');
+    return '${p(d.inHours)}:${p(d.inMinutes.remainder(60))}:${p(d.inSeconds.remainder(60))}';
+  }
+
+  String _fmtTime(DateTime? dt) => dt == null
+      ? '--:--'
+      : '${(dt.hour % 12 == 0 ? 12 : dt.hour % 12).toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}';
+
+  String _fmtDur(Duration? d) {
+    if (d == null) return '0h 0m';
+    return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (att == null) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
+    return BlocConsumer<EmployeeBloc, EmployeeState>(
+      listener: (context, state) {
+        if (state.attendance != null && state.attendance!.isCheckedIn) {
+          setState(() => _liveElapsed = _calcElapsed(state.attendance!));
+        } else {
+          setState(() => _liveElapsed = Duration.zero);
+        }
+      },
+      builder: (context, state) {
+        final a = state.attendance;
+        final isCheckedIn = a?.isCheckedIn ?? false;
+        final isOnBreak = a?.onBreak ?? false;
+        final isLoading = state.loading;
 
-    final isCheckedIn = att!.isCheckedIn;
-    final onBreak = att!.onBreak;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSessionCard(context, a, isCheckedIn, isOnBreak, isLoading),
+            const SizedBox(height: 32),
+            _buildTodaysLog(a),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSessionCard(BuildContext context, AttendanceModel? a, bool isCheckedIn, bool isOnBreak, bool loading) {
+    // Vibrant SaaS Status Colors
+    final statusLabel = isOnBreak ? 'ON BREAK' : isCheckedIn ? 'WORKING' : 'OFF DUTY';
+    final statusColor = isOnBreak ? const Color(0xFFF59E0B) : isCheckedIn ? const Color(0xFF10B981) : const Color(0xFF94A3B8);
+    final statusBg = isOnBreak ? const Color(0xFFFEF3C7) : isCheckedIn ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E293B).withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER WITH STATUS BADGE
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "WORK STATUS",
-                style: TextStyle(
-                  fontSize: 11,
-                  color: textSecondary,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Current Session', style: AppTextStyles.label(color: AppColors.onSurfaceVariant)),
+                  const SizedBox(height: 4),
+                  Text(
+                    isCheckedIn ? _fmtTimer(_liveElapsed) : '00:00:00',
+                    style: AppTextStyles.headline(
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.primary,
+                    ).copyWith(letterSpacing: -1.0), // Corrected using copyWith
+                  ),
+                ],
               ),
+              // --- VIBRANT STATUS BOARD ---
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isCheckedIn ? successGreen.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  color: statusBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: statusColor.withOpacity(0.2), width: 1.5),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      radius: 3,
-                      backgroundColor: isCheckedIn ? successGreen : Colors.red,
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Text(
-                      isCheckedIn ? "Checked In" : "Checked Out",
+                      statusLabel,
                       style: TextStyle(
-                        color: isCheckedIn ? successGreen : Colors.red,
                         fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
@@ -104,164 +161,150 @@ class WorkStatusCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
-          // PRIMARY ACTIONS (GRADIENT BUTTONS)
+          _buildStat("Total Worked Today", _fmtDur(a?.totalHours)),
+          const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(
-                child: _actionButton(
-                  onPressed: () => context.read<EmployeeBloc>().add(ToggleCheckInEvent()),
-                  icon: isCheckedIn ? Icons.logout_rounded : Icons.login_rounded,
-                  label: isCheckedIn ? "Check-Out" : "Check-In",
-                  isPrimary: true,
+              if (isCheckedIn) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: Icon(isOnBreak ? Icons.play_arrow_rounded : Icons.coffee_rounded, size: 20),
+                    label: Text(isOnBreak ? "Resume" : "Break"),
+                    onPressed: loading ? null : () => context.read<EmployeeBloc>().add(ToggleBreakEvent()),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: AppColors.onSurface,
+                      backgroundColor: AppColors.surfaceContainerHigh,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
+              ],
               Expanded(
-                child: _actionButton(
-                  onPressed: () => context.read<EmployeeBloc>().add(ToggleBreakEvent()),
-                  icon: onBreak ? Icons.play_arrow_rounded : Icons.pause_rounded,
-                  label: onBreak ? "End Break" : "Break",
-                  isPrimary: false,
-                  accentColor: onBreak ? warningAmber : textDark,
+                child: ElevatedButton.icon(
+                  icon: Icon(isCheckedIn ? Icons.stop_rounded : Icons.play_arrow_rounded, size: 22),
+                  label: Text(isCheckedIn ? "Punch Out" : "Punch In"),
+                  onPressed: loading ? null : () => _handlePunchInOut(context, isCheckedIn),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: isCheckedIn ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 24),
-
-          // ATTENDANCE DATA GRID
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: bgLight,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: IntrinsicHeight(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _attendanceItem(
-                    icon: Icons.login_rounded,
-                    title: "In",
-                    value: _formatTime(att!.checkInTime),
-                    color: primaryIndigo,
-                  ),
-                  _vDivider(),
-                  _attendanceItem(
-                    icon: Icons.logout_rounded,
-                    title: "Out",
-                    value: _formatTime(att!.checkOutTime),
-                    color: accentViolet,
-                  ),
-                  _vDivider(),
-                  _attendanceItem(
-                    icon: Icons.schedule_rounded,
-                    title: "Total",
-                    value: _formatDuration(att!.totalHours),
-                    color: textDark,
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
-  // --- CUSTOM ACTION BUTTONS ---
-  Widget _actionButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required bool isPrimary,
-    Color? accentColor,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          gradient: isPrimary
-              ? LinearGradient(colors: [primaryIndigo, accentViolet])
-              : null,
-          color: isPrimary ? null : Colors.white,
-          border: isPrimary ? null : Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: isPrimary
-              ? [
-            BoxShadow(
-              color: primaryIndigo.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: isPrimary ? Colors.white : (accentColor ?? textDark), size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: isPrimary ? Colors.white : (accentColor ?? textDark),
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+  void _handlePunchInOut(BuildContext context, bool isCheckedIn) async {
+    if (isCheckedIn) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text("Punch Out"),
+          content: const Text("Confirm session end for today?"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEF4444), foregroundColor: Colors.white),
+                child: const Text("Punch Out")
             ),
           ],
         ),
-      ),
+      );
+      if (confirm != true) return;
+    }
+    if (mounted) context.read<EmployeeBloc>().add(ToggleCheckInEvent());
+  }
+
+  Widget _buildStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+            label.toUpperCase(),
+            style: AppTextStyles.label(fontSize: 10, fontWeight: FontWeight.w700).copyWith(letterSpacing: 1.1)
+        ),
+        const SizedBox(height: 4),
+        Text(value, style: AppTextStyles.body(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.onSurface)),
+      ],
     );
   }
 
-  // --- ATTENDANCE ITEM (MATCHED TO SIDEBAR ICON STYLE) ---
-  Widget _attendanceItem({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+  Widget _buildTodaysLog(AttendanceModel? a) {
+    final isWorking = a?.isCheckedIn ?? false;
+    final onBreak = a?.onBreak ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text("Today's Log", style: AppTextStyles.headline(fontSize: 18, fontWeight: FontWeight.bold)),
+            TextButton(
+              onPressed: () {},
+              child: Text("History", style: AppTextStyles.label(color: AppColors.primary, fontWeight: FontWeight.bold)),
             ),
-            child: Icon(icon, color: color, size: 16),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.surfaceContainerHigh),
           ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(fontSize: 10, color: textSecondary, fontWeight: FontWeight.w600),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildLogDetail("In", _fmtTime(a?.checkInTime)),
+              _vDivider(),
+              _buildLogDetail("Out", _fmtTime(a?.checkOutTime)),
+              _vDivider(),
+              _buildLogDetail("Worked", _fmtDur(a?.totalHours)),
+              _vDivider(),
+              Column(
+                children: [
+                  Text("STATUS", style: AppTextStyles.label(fontSize: 9, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: onBreak ? const Color(0xFFF59E0B) : isWorking ? const Color(0xFF10B981) : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: textDark,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _vDivider() => VerticalDivider(
-    color: textSecondary.withOpacity(0.1),
-    thickness: 1,
-    width: 1,
-    indent: 10,
-    endIndent: 10,
-  );
+  Widget _vDivider() => Container(width: 1, height: 30, color: AppColors.surfaceContainerHigh);
+
+  Widget _buildLogDetail(String label, String value) {
+    return Column(
+      children: [
+        Text(label.toUpperCase(), style: AppTextStyles.label(fontSize: 9, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        Text(value, style: AppTextStyles.body(fontSize: 13, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
 }

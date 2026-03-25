@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -7,13 +6,10 @@ import '../bloc/employee_dashboard_event.dart';
 import '../bloc/employee_dashboard_state.dart';
 
 import '../widget/top_bar.dart';
-import '../widget/greeting_header.dart';
-import '../widget/work_status_card.dart';
+import '../widget/work_status_card.dart'; // Renamed to SessionOverviewSection inside
 import '../widget/assigned_tasks_section.dart';
-import '../widget/shared_items_section.dart';
-import '../widget/event_section.dart';
 import '../widget/bottom_nav.dart';
-import '../widget/app_drawer.dart';
+
 
 class EmployeeDashboardScreen extends StatefulWidget {
   const EmployeeDashboardScreen({super.key});
@@ -29,16 +25,9 @@ class _EmployeeDashboardScreenState
   @override
   void initState() {
     super.initState();
-
     final bloc = context.read<EmployeeBloc>();
-
-    // Load dashboard data
     bloc.add(LoadDashboard());
-
-    // Start polling
     bloc.add(StartTaskPolling());
-
-    //  Register notification device (clean call)
     bloc.add(RegisterNotificationDevice());
   }
 
@@ -60,21 +49,11 @@ class EmployeeDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
-      drawer: AppDrawer(),
-      body: SafeArea(
-        child: Builder(
-          builder: (innerContext) {
-            return Column(
-              children: [
-                TopBar(scaffoldContext: innerContext),
-                const Expanded(child: _DashboardBody()),
-                const BottomNav(),
-              ],
-            );
-          },
-        ),
-      ),
+      // --- CHANGED TO PURE WHITE HERE ---
+      backgroundColor: Colors.white,
+      appBar: TopBar(scaffoldContext: context),
+      body: const _DashboardBody(),
+      bottomNavigationBar: const BottomNav(),
     );
   }
 }
@@ -96,16 +75,13 @@ class _DashboardBody extends StatelessWidget {
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const GreetingHeader(),
-                const SizedBox(height: 20),
-
-                WorkStatusCard(att: state.attendance),
-                const SizedBox(height: 20),
-
+                const SizedBox(height: 16),
+                const SessionOverviewSection(),
+                const SizedBox(height: 32),
                 AssignedTasksSection(
                   tasks: state.tasks,
                   onStatusChange: (taskId, status) {
@@ -117,14 +93,7 @@ class _DashboardBody extends StatelessWidget {
                     );
                   },
                 ),
-
-                const SizedBox(height: 20),
-
-                SharedItemsSection(items: state.sharedItems),
-                const SizedBox(height: 20),
-
-                EventSection(events: state.events),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
               ],
             ),
           ),

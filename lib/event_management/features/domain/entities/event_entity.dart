@@ -1,14 +1,28 @@
+import 'package:flutter/foundation.dart';
+
+class Participant {
+  final int id;
+  final String name;
+  final String email;
+
+  const Participant({
+    required this.id,
+    required this.name,
+    required this.email,
+  });
+}
 
 class EventEntity {
-  final int? id;                 // null when creating a new event
+  final int? id;
   final String title;
   final String description;
   final DateTime start;
   final DateTime end;
-  final String meetingLink;      // empty string = no link
-  final String eventType;        // 'meeting' | 'call' | 'followup' | 'task'
-  final List<int> participants;  // list of user-IDs (matches Django User PKs)
-  final int reminderBefore;      // minutes
+  final String meetingLink;
+  final String eventType;
+  final List<Participant> participants;
+  final int reminderBefore;
+  final String color;
 
   const EventEntity({
     this.id,
@@ -20,12 +34,12 @@ class EventEntity {
     required this.eventType,
     this.participants = const [],
     required this.reminderBefore,
+    this.color = '#6366F1',
   });
 
-  // ── Equality ──
   @override
   bool operator ==(Object other) {
-    if (this == other) return true;
+    if (identical(this, other)) return true;
     if (other is! EventEntity) return false;
     return id == other.id &&
         title == other.title &&
@@ -34,6 +48,7 @@ class EventEntity {
         end == other.end &&
         meetingLink == other.meetingLink &&
         eventType == other.eventType &&
+        color == other.color &&
         _listEq(participants, other.participants) &&
         reminderBefore == other.reminderBefore;
   }
@@ -41,10 +56,9 @@ class EventEntity {
   @override
   int get hashCode => Object.hash(
     id, title, description, start, end,
-    meetingLink, eventType, participants, reminderBefore,
+    meetingLink, eventType, participants, reminderBefore, color,
   );
 
-  /// Shallow copy with overrides.
   EventEntity copyWith({
     int? id,
     String? title,
@@ -53,8 +67,9 @@ class EventEntity {
     DateTime? end,
     String? meetingLink,
     String? eventType,
-    List<int>? participants,
+    List<Participant>? participants,
     int? reminderBefore,
+    String? color,
   }) => EventEntity(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -65,13 +80,14 @@ class EventEntity {
     eventType: eventType ?? this.eventType,
     participants: participants ?? this.participants,
     reminderBefore: reminderBefore ?? this.reminderBefore,
+    color: color ?? this.color,
   );
 }
 
-bool _listEq(List<int> a, List<int> b) {
+bool _listEq(List<Participant> a, List<Participant> b) {
   if (a.length != b.length) return false;
   for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
+    if (a[i].id != b[i].id) return false;
   }
   return true;
 }

@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/user.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_search_desktop.dart';
-import 'package:my_app/admin_dashboard/widget/device_specific/section_card_desktop.dart';
 
 class AssignTaskScreenDesktop extends StatefulWidget {
   const AssignTaskScreenDesktop({super.key});
@@ -59,8 +58,6 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       appBar: _buildAppBar(),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // SaaS-Level Responsive Logic
-          // 1. Calculate horizontal padding for ultra-wide screens to keep content centered
           double horizontalPadding = 24.0;
           if (constraints.maxWidth > 1400) {
             horizontalPadding = (constraints.maxWidth - 1200) / 2;
@@ -107,12 +104,10 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
     );
   }
 
-  // DESKTOP & LAPTOP: 2-Column Dashboard Style
   Widget _buildWideLayout() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Primary Column: Main Task Content
         Expanded(
           flex: 3,
           child: Column(
@@ -144,7 +139,6 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
           ),
         ),
         const SizedBox(width: 24),
-        // Secondary Column: Sidebar Metadata
         Expanded(
           flex: 1,
           child: Column(
@@ -175,7 +169,6 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
     );
   }
 
-  // TABLET & MOBILE: Single Column Stack
   Widget _buildNarrowLayout() {
     return Column(
       children: [
@@ -216,8 +209,6 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       ],
     );
   }
-
-  // --- REUSABLE UI BLOCKS ---
 
   Widget _buildSectionCard({required String title, required List<Widget> children}) {
     return Container(
@@ -392,8 +383,6 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
     );
   }
 
-  // --- LOGIC HELPER METHODS ---
-
   void _resetForm() {
     assignToController.clear();
     taskController.clear();
@@ -438,12 +427,17 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
   Future<void> _submitTask() async {
     if (selectedUser == null || taskController.text.isEmpty || dueDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Missing Required Info: Please select an assignee, title, and due date.")),
+        const SnackBar(
+          content: Text("Please fill all required fields."),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
 
     setState(() => submitting = true);
+
     try {
       await _repository.createTask(
         assignedTo: selectedUser!.id,
@@ -452,11 +446,39 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
         priority: priority,
         dueDate: DateFormat("yyyy-MM-dd").format(dueDate!),
       );
-      if (mounted) Navigator.pop(context);
+
+      if (mounted) {
+        // --- THE SUCCESS SNACKBAR ---
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Text("Task assigned to ${selectedUser!.username} successfully!"),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981), // Modern Emerald Green
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Return true so the calling screen knows it was successful
+        Navigator.pop(context, true);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => submitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: ${e.toString()}")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.toString()}"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }

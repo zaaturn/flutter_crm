@@ -16,7 +16,16 @@ class AdminTasksRefreshed extends AdminDashboardEvent {
   const AdminTasksRefreshed();
 }
 
-
 class RegisterAdminNotificationDevice extends AdminDashboardEvent {
   const RegisterAdminNotificationDevice();
+}
+
+// ── NEW APPROVE EVENT ────────────────────────────────────────────────────────
+
+class ApproveTaskRequested extends AdminDashboardEvent {
+  final int taskId;
+
+  const ApproveTaskRequested({required this.taskId});
+
+  List<Object> get props => [taskId];
 }

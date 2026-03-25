@@ -83,3 +83,11 @@ class DeleteEventRequested extends EventEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class ChangeCalendarFormat extends EventEvent {
+  final CalendarFormat format;
+  const ChangeCalendarFormat(this.format);
+
+  @override
+  List<Object?> get props => [format];
+}

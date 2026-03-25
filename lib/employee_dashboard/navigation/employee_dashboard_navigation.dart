@@ -13,6 +13,8 @@ import 'package:my_app/leave_management/screens/employee_leave_dashboard.dart';
 import 'package:my_app/leave_management/screens/apply_leave_screen.dart';
 import 'package:my_app/leave_management/screens/employee_leave_status_screen.dart';
 import 'package:my_app/leave_management/screens/public_holiday_calender.dart';
+// --> NEW: Added Mobile Task Tracker Import
+import 'package:my_app/employee_dashboard/widget/employee_task_tracker_screen_mobile.dart';
 
 // ================= DESKTOP / WEB SCREENS =================
 import 'package:my_app/leave_management/screens/device_specific/employee_leave_dashboard_desktop.dart';
@@ -32,53 +34,61 @@ class EmployeeDashboardNavigator {
     return MediaQuery.of(context).size.width >= 900;
   }
 
-  // ================= MAIN DASHBOARD =================
-  static void dashboard(BuildContext context) {
+  // ================= TAB NAVIGATION HELPER =================
+  // NEW: Provides instant, native-feeling tab switching without stacking pages in memory.
+  static void _switchTab(BuildContext context, Widget screen) {
     _safeCloseDrawer(context);
-
-    Navigator.of(context, rootNavigator: true).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => const EmployeeDashboardScreen(),
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation1, animation2) => screen,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
       ),
     );
   }
 
+  // ================= MAIN DASHBOARD =================
+  static void dashboard(BuildContext context) {
+    _switchTab(context, const EmployeeDashboardScreen());
+  }
+
   // ================= TASK TRACKER (MODIFIED) =================
   static void tasks(BuildContext context) {
-    _safeCloseDrawer(context);
-
-    if (!_isDesktop(context)) return;
-
-    Navigator.push(
+    // Correctly routes to desktop or mobile without blocking mobile devices
+    _switchTab(
       context,
-      MaterialPageRoute(
-
-        builder: (_) => const EmployeeTaskTrackerScreen(),
-      ),
+      _isDesktop(context)
+          ? const EmployeeTaskTrackerScreen()
+          : const EmployeeTaskTrackerScreenMobile(),
     );
   }
 
   // ================= LEAVE DASHBOARD =================
   static void leaveDashboard(BuildContext context) {
-    _safeCloseDrawer(context);
-
-    Navigator.push(
+    _switchTab(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider(
-          create: (_) => LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
-          child: _isDesktop(context)
-              ? const EmployeeLeaveDashboardScreenDesktop()
-              : const EmployeeLeaveDashboardScreen(),
-        ),
+      BlocProvider(
+        create: (_) => LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
+        child: _isDesktop(context)
+            ? const EmployeeLeaveDashboardScreenDesktop()
+            : const EmployeeLeaveDashboardScreen(),
       ),
     );
   }
 
-  // ================= APPLY LEAVE =================
+  // ================= EVENTS =================
+  static void events(BuildContext context) {
+    _safeCloseDrawer(context);
+    // pushReplacementNamed prevents infinite back-stacks on bottom nav tabs
+    Navigator.pushReplacementNamed(context, '/calendar');
+  }
+
+  // ================= APPLY LEAVE (SUB-SCREEN) =================
   static void applyLeave(BuildContext context) {
     _safeCloseDrawer(context);
 
+    // Standard push used here so the user can use the physical/app back button
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -92,10 +102,11 @@ class EmployeeDashboardNavigator {
     );
   }
 
-  // ================= LEAVE STATUS =================
+  // ================= LEAVE STATUS (SUB-SCREEN) =================
   static void leaveStatus(BuildContext context) {
     _safeCloseDrawer(context);
 
+    // Standard push used here so the user can use the physical/app back button
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -109,10 +120,11 @@ class EmployeeDashboardNavigator {
     );
   }
 
-  // ================= PUBLIC HOLIDAY =================
+  // ================= PUBLIC HOLIDAY (SUB-SCREEN) =================
   static void holidayCalendar(BuildContext context) {
     _safeCloseDrawer(context);
 
+    // Standard push used here so the user can use the physical/app back button
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -121,12 +133,6 @@ class EmployeeDashboardNavigator {
             : const PublicHolidayCalendarScreen(),
       ),
     );
-  }
-
-  // ================= EVENTS =================
-  static void events(BuildContext context) {
-    _safeCloseDrawer(context);
-    Navigator.pushNamed(context, '/calendar');
   }
 
   // ================= SAFE DRAWER CLOSE =================

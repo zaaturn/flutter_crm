@@ -5,6 +5,7 @@ class TaskModel {
   final String status;
   final String priority;
   final String? attachment;
+  final String? dueDate;
 
   TaskModel({
     required this.id,
@@ -13,19 +14,20 @@ class TaskModel {
     required this.status,
     required this.priority,
     this.attachment,
+    this.dueDate,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
-      id: json['id'],
+      id: json['id'] ?? 0,
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       status: json['status']?.toString() ?? 'PENDING',
       priority: json['priority']?.toString() ?? 'LOW',
       attachment: json['attachment'],
+      dueDate: json['due_date']?.toString(),
     );
   }
-
 
   TaskModel copyWith({
     int? id,
@@ -34,6 +36,7 @@ class TaskModel {
     String? status,
     String? priority,
     String? attachment,
+    String? dueDate,
   }) {
     return TaskModel(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class TaskModel {
       status: status ?? this.status,
       priority: priority ?? this.priority,
       attachment: attachment ?? this.attachment,
+      dueDate: dueDate ?? this.dueDate,
     );
   }
 }

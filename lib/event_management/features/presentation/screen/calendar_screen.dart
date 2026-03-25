@@ -1,21 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
-// App Constants
-import 'package:my_app/event_management/core/constants/app_colors.dart';
-
-// Bloc Imports
 import '../bloc/event_bloc.dart';
 import '../bloc/event_event.dart';
 import '../bloc/event_state.dart';
-
-// Mobile Specific Widgets
 import '../widgets/calendar_view.dart';
 import '../widgets/event_details_modal.dart' hide EventTypeColor;
 import '../widgets/event_modal.dart';
 
-// Domain/Data Layers
 import '../../calendar/data/repositories/event_repository_impl.dart';
 import '../../calendar/data/datasources/event_remote_datasource_impl.dart';
 import '../../domain/usecases/create_event.dart';
@@ -25,22 +19,19 @@ import '../../domain/usecases/get_events.dart';
 
 class CalendarScreenMobile extends StatefulWidget {
   final int? focusEventId;
-
-  const CalendarScreenMobile({
-    super.key,
-    this.focusEventId,
-  });
+  const CalendarScreenMobile({super.key, this.focusEventId});
 
   @override
   State<CalendarScreenMobile> createState() => _CalendarScreenMobileState();
 }
 
 class _CalendarScreenMobileState extends State<CalendarScreenMobile> {
-  bool _eventAutoFocused = false;
+  // Remote source kept at state level to persist across rebuilds
+  final EventRemoteDatasourceImpl _dataSource = EventRemoteDatasourceImpl();
 
   @override
   Widget build(BuildContext context) {
-    final repo = EventRepositoryImpl(EventRemoteDatasourceImpl());
+    final repo = EventRepositoryImpl(_dataSource);
 
     return BlocProvider(
       create: (_) => EventBloc(
@@ -48,171 +39,156 @@ class _CalendarScreenMobileState extends State<CalendarScreenMobile> {
         updateEvent: UpdateEvent(repo),
         deleteEvent: DeleteEvent(repo),
         getEvents: GetEvents(repo),
-      )..add(
-        FetchEventsRequested(
-          start: DateTime.now().subtract(const Duration(days: 30)),
-          end: DateTime.now().add(const Duration(days: 30)),
-        ),
+      )..add(FetchEventsRequested(
+        start: DateTime.now().subtract(const Duration(days: 30)),
+        end: DateTime.now().add(const Duration(days: 30)),
+      )),
+      child: _CalendarScaffold(dataSource: _dataSource),
+    );
+  }
+}
+
+class _CalendarScaffold extends StatelessWidget {
+  final EventRemoteDatasourceImpl dataSource;
+  const _CalendarScaffold({required this.dataSource});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Column(
+        children: [
+          const _CalendarHeader(),
+          Expanded(child: _CalendarBody(dataSource: dataSource)),
+        ],
       ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        // --- MOBILE TOP BAR ---
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-          leadingWidth: 56,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text(
-                  'C',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          title: BlocBuilder<EventBloc, EventState>(
-            builder: (context, state) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      floatingActionButton: const _CalendarFAB(),
+    );
+  }
+}
+
+// ── HEADER MODULE ────────────────────────────────────────────────────────────
+class _CalendarHeader extends StatelessWidget {
+  const _CalendarHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(top: 60, left: 8, right: 16, bottom: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
+      ),
+      child: BlocBuilder<EventBloc, EventState>(
+        builder: (context, state) {
+          return Column(
+            children: [
+              Row(
                 children: [
-                  const Text(
-                    'CRM Calendar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  Text(
-                    DateFormat('MMMM yyyy').format(state.focusedDay),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
+                  _navBackButton(context),
+                  const _BrandLogo(),
+                  const SizedBox(width: 16),
+                  _headerTitle(state.focusedDay),
+                  _todayButton(context),
                 ],
-              );
-            },
-          ),
-          actions: [
-            Builder(builder: (ctx) {
-              return IconButton(
-                icon: const Icon(Icons.today_outlined, color: Color(0xFF4B5563)),
-                onPressed: () => ctx.read<EventBloc>().add(NavigateCalendar(DateTime.now())),
-              );
-            }),
-            const SizedBox(width: 8),
-          ],
-          bottom: const PreferredSize(
-            preferredSize: Size.fromHeight(1),
-            child: Divider(height: 1, color: Color(0xFFE5E7EB)),
-          ),
-        ),
-        body: Column(
-          children: [
-            Expanded(
-              child: MultiBlocListener(
-                listeners: [
-                  BlocListener<EventBloc, EventState>(
-                    listenWhen: (prev, curr) =>
-                    curr is EventActionSuccess || curr is EventError,
-                    listener: (ctx, state) {
-                      if (state is EventActionSuccess) {
-                        _showSnackBar(ctx, state.message, const Color(0xFF10B981));
-                      } else if (state is EventError) {
-                        _showSnackBar(ctx, state.message, const Color(0xFFEF4444));
-                      }
-                    },
-                  ),
-                  BlocListener<EventBloc, EventState>(
-                    listener: (ctx, state) {
-                      if (state is CreateModalOpen) {
-                        _showMobileCreateModal(ctx, state.selectedDateTime);
-                      } else if (state is DetailModalOpen) {
-                        _showMobileDetailModal(ctx, state.selectedEvent);
-                      }
-                    },
-                  ),
-                ],
-                child: BlocBuilder<EventBloc, EventState>(
-                  builder: (ctx, state) {
-                    // Logic for focusing specific event on load
-                    if (!_eventAutoFocused &&
-                        widget.focusEventId != null &&
-                        state.events.isNotEmpty) {
-                      for (final event in state.events) {
-                        if (event.id == widget.focusEventId) {
-                          _eventAutoFocused = true;
-                          ctx.read<EventBloc>().add(NavigateCalendar(event.start));
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            ctx.read<EventBloc>().add(EventTapped(event));
-                          });
-                          break;
-                        }
-                      }
-                    }
-
-                    if (state is EventLoading && state.events.isEmpty) {
-                      return const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF6366F1)),
-                      );
-                    }
-
-                    return CalendarView(
-                      events: state.events,
-                      format: state.calendarFormat,
-                      focusedDay: state.focusedDay,
-                      onDayTapped: (dt) => ctx.read<EventBloc>().add(SlotTapped(dt)),
-                      onEventTapped: (ev) => ctx.read<EventBloc>().add(EventTapped(ev)),
-                    );
-                  },
-                ),
               ),
-            ),
-            // --- MOBILE LEGEND ---
-            const _CalendarLegend(),
-          ],
-        ),
-        floatingActionButton: Builder(builder: (ctx) {
-          return FloatingActionButton(
-            backgroundColor: const Color(0xFF6366F1),
-            elevation: 4,
-            child: const Icon(Icons.add, color: Colors.white),
-            onPressed: () => ctx.read<EventBloc>().add(SlotTapped(DateTime.now())),
+              const SizedBox(height: 20),
+              _ViewFilters(currentFormat: state.calendarFormat),
+            ],
           );
-        }),
+        },
       ),
     );
   }
 
-  static void _showMobileCreateModal(BuildContext ctx, DateTime? dt) {
+  Widget _navBackButton(BuildContext context) => IconButton(
+    onPressed: () => Navigator.canPop(context)
+        ? Navigator.pop(context)
+        : Navigator.pushReplacementNamed(context, '/employeeDashboard'),
+    icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1A202C), size: 20),
+  );
+
+  Widget _headerTitle(DateTime focusedDay) => Expanded(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Calendar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF1A202C))),
+        Text(DateFormat('MMMM yyyy').format(focusedDay), style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+      ],
+    ),
+  );
+
+  Widget _todayButton(BuildContext context) => Container(
+    decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(10)),
+    child: IconButton(
+      onPressed: () => context.read<EventBloc>().add(NavigateCalendar(DateTime.now())),
+      icon: const Icon(Icons.today_rounded, color: Color(0xFF6366F1), size: 22),
+    ),
+  );
+}
+
+// ── BODY MODULE ──────────────────────────────────────────────────────────────
+class _CalendarBody extends StatelessWidget {
+  final EventRemoteDatasourceImpl dataSource;
+  const _CalendarBody({required this.dataSource});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<EventBloc, EventState>(
+          listenWhen: (p, c) => c is EventActionSuccess || c is EventError,
+          listener: (ctx, state) {
+            if (state is EventActionSuccess) _showSnack(ctx, state.message, const Color(0xFF10B981));
+            if (state is EventError) _showSnack(ctx, state.message, const Color(0xFFEF4444));
+          },
+        ),
+        BlocListener<EventBloc, EventState>(
+          listener: (ctx, state) {
+            if (state is CreateModalOpen) _showCreateModal(ctx, state.selectedDateTime);
+            if (state is DetailModalOpen) _showDetailModal(ctx, state.selectedEvent);
+          },
+        ),
+      ],
+      child: BlocBuilder<EventBloc, EventState>(
+        builder: (ctx, state) {
+          if (state is EventLoading && state.events.isEmpty) {
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6366F1)));
+          }
+          return CalendarViewMobile(
+            events: state.events,
+            format: state.calendarFormat,
+            focusedDay: state.focusedDay,
+            onDayTapped: (dt) => ctx.read<EventBloc>().add(SlotTapped(dt)),
+            onEventTapped: (ev) => ctx.read<EventBloc>().add(EventTapped(ev)),
+            onPageChanged: (focusedDay) => ctx.read<EventBloc>().add(NavigateCalendar(focusedDay)),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreateModal(BuildContext ctx, DateTime? dt) async {
+    await dataSource.ensureUsersLoaded();
+    if (!ctx.mounted) return;
+
     showModalBottomSheet(
       context: ctx,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => EventModal(
         selectedDateTime: dt,
-        onSave: (entity) {
-          ctx.read<EventBloc>().add(CreateEventRequested(entity));
-        },
+        usersById: dataSource.usersById,
+        onSave: (entity) => ctx.read<EventBloc>().add(CreateEventRequested(entity)),
       ),
-    ).then((_) => ctx.read<EventBloc>().add(ModalDismissed()));
+    ).then((_) {
+      if (ctx.mounted) ctx.read<EventBloc>().add(ModalDismissed());
+    });
   }
 
-  static void _showMobileDetailModal(BuildContext ctx, dynamic event) async {
-    final ds = EventRemoteDatasourceImpl();
-    await ds.ensureUsersLoaded();
+  void _showDetailModal(BuildContext ctx, dynamic event) async {
+    await dataSource.ensureUsersLoaded();
+    if (!ctx.mounted) return;
 
     showModalBottomSheet(
       context: ctx,
@@ -220,91 +196,90 @@ class _CalendarScreenMobileState extends State<CalendarScreenMobile> {
       backgroundColor: Colors.transparent,
       builder: (_) => EventDetailsModal(
         event: event,
-        usersById: ds.usersById,
+        usersById: dataSource.usersById,
         onEdit: (ev) {
-          Navigator.pop(ctx);
-          _showMobileCreateModal(ctx, ev.start);
+          Future.delayed(const Duration(milliseconds: 100), () {
+            _showCreateModal(ctx, ev.start);
+          });
         },
-        onDelete: (id) {
-          ctx.read<EventBloc>().add(DeleteEventRequested(id.toString()));
-          Navigator.pop(ctx);
-        },
+        onDelete: (id) => ctx.read<EventBloc>().add(DeleteEventRequested(id.toString())),
       ),
-    ).then((_) => ctx.read<EventBloc>().add(ModalDismissed()));
+    ).then((_) {
+      if (ctx.mounted) ctx.read<EventBloc>().add(ModalDismissed());
+    });
   }
 
-  void _showSnackBar(BuildContext ctx, String msg, Color color) {
-    ScaffoldMessenger.of(ctx).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+  void _showSnack(BuildContext ctx, String msg, Color color) {
+    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+      content: Text(msg, style: const TextStyle(fontWeight: FontWeight.bold)),
+      backgroundColor: color,
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.all(20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ));
   }
 }
 
-class _CalendarLegend extends StatelessWidget {
-  const _CalendarLegend();
+// ── SUB-COMPONENTS ───────────────────────────────────────────────────────────
+
+class _BrandLogo extends StatelessWidget {
+  const _BrandLogo();
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 40, width: 40,
+    decoration: BoxDecoration(color: const Color(0xFF6366F1), borderRadius: BorderRadius.circular(12)),
+    child: const Icon(Icons.calendar_today_rounded, color: Colors.white, size: 18),
+  );
+}
+
+class _ViewFilters extends StatelessWidget {
+  final CalendarFormat currentFormat;
+  const _ViewFilters({required this.currentFormat});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF9FAFB),
-        border: Border(top: BorderSide(color: Color(0xFFE5E7EB))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      height: 42, padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
+      child: Row(
         children: [
-          const Text(
-            "LEGEND",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF9CA3AF),
-              letterSpacing: 1.1,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 16,
-            runSpacing: 10,
-            children: [
-              _legendItem('Meeting', const Color(0xFF6366F1)),
-              _legendItem('Call', const Color(0xFF10B981)),
-              _legendItem('Task', const Color(0xFFF59E0B)),
-              _legendItem('Deadline', const Color(0xFFEF4444)),
-            ],
-          ),
+          _filterBtn(context, "Month", CalendarFormat.month),
+          _filterBtn(context, "Week", CalendarFormat.week),
+          _filterBtn(context, "Day", CalendarFormat.twoWeeks),
         ],
       ),
     );
   }
 
-  Widget _legendItem(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF4B5563),
+  Widget _filterBtn(BuildContext context, String label, CalendarFormat target) {
+    final bool isSelected = target == currentFormat;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => context.read<EventBloc>().add(ChangeCalendarFormat(target)),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(label, style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? const Color(0xFF6366F1) : const Color(0xFF64748B)
+            )),
           ),
         ),
-      ],
+      ),
     );
   }
+}
+
+class _CalendarFAB extends StatelessWidget {
+  const _CalendarFAB();
+  @override
+  Widget build(BuildContext context) => FloatingActionButton(
+    backgroundColor: const Color(0xFF6366F1),
+    onPressed: () => context.read<EventBloc>().add(SlotTapped(DateTime.now())),
+    child: const Icon(Icons.add, color: Colors.white),
+  );
 }

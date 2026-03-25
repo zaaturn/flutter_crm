@@ -17,7 +17,7 @@ class PendingLeaveUpdateScreen extends StatefulWidget {
 
 class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
 
-  // ✅ FIX: Store leave types locally (persistent across state changes)
+
   List<LeaveType> cachedLeaveTypes = [];
 
   @override

@@ -33,53 +33,101 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   String selectedStatus = 'pending';
   String searchQuery = '';
 
+  void _confirmApproval(BuildContext context, Task task) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Archive Task?", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text("Are you sure you want to approve \"${task.title}\"? It will be removed from the active workspace."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              context.read<AdminDashboardBloc>().add(ApproveTaskRequested(taskId: task.id));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Approve & Archive", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(BuildContext context, String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildEnterpriseAppBar(context),
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF3B4DE0)));
+      body: BlocListener<AdminDashboardBloc, AdminDashboardState>(
+        listenWhen: (prev, curr) => curr.successMessage != null || curr.error != null,
+        listener: (context, state) {
+          if (state.successMessage != null) {
+            _showSnackBar(context, state.successMessage!, const Color(0xFF10B981));
           }
+          if (state.error != null) {
+            _showSnackBar(context, state.error!, const Color(0xFFEF4444));
+          }
+        },
+        child: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF3B4DE0)));
+            }
 
-          final List<Task> tasks = state.tasks;
+            final List<Task> tasks = state.tasks;
 
-          final filteredTasks = tasks.where((t) {
-            final matchesStatus = t.status.trim().toLowerCase() == selectedStatus.toLowerCase();
-            final query = searchQuery.toLowerCase();
-            return matchesStatus &&
-                (query.isEmpty ||
-                    t.title.toLowerCase().contains(query) ||
-                    t.assignedToName.toLowerCase().contains(query));
-          }).toList();
+            final filteredTasks = tasks.where((t) {
+              final matchesStatus = t.status.trim().toLowerCase() == selectedStatus.toLowerCase();
+              final query = searchQuery.toLowerCase();
+              return matchesStatus &&
+                  (query.isEmpty ||
+                      t.title.toLowerCase().contains(query) ||
+                      t.assignedToName.toLowerCase().contains(query));
+            }).toList();
 
-          return Column(
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1400),
-                  child: _buildControlPanel(tasks),
+            return Column(
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1400),
+                    child: _buildControlPanel(tasks),
+                  ),
                 ),
-              ),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
-              Expanded(
-                child: Container(
-                  color: const Color(0xFFF8FAFC),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1400),
-                      child: filteredTasks.isEmpty
-                          ? _buildEmptyState()
-                          : _buildTaskGrid(filteredTasks),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFFF8FAFC),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1400),
+                        child: filteredTasks.isEmpty
+                            ? _buildEmptyState()
+                            : _buildTaskGrid(filteredTasks),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -139,11 +187,13 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       itemCount: filteredTasks.length,
       itemBuilder: (context, index) {
+        final task = filteredTasks[index];
         return ModrenLevelTaskRow(
-          task: filteredTasks[index],
+          task: task,
           onTap: () {},
           onEdit: () {},
           onDelete: () {},
+          onApprove: () => _confirmApproval(context, task),
         );
       },
     );
@@ -163,8 +213,6 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   }
 }
 
-// --- HELPER CLASSES (The missing parts) ---
-
 class _TaskSearchBar extends StatelessWidget {
   final ValueChanged<String> onChanged;
   const _TaskSearchBar({required this.onChanged});
@@ -172,22 +220,22 @@ class _TaskSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-        width: 320,
-        decoration: BoxDecoration(
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: TextField(
+      width: 320,
+      decoration: BoxDecoration(
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: TextField(
         onChanged: onChanged,
         decoration: InputDecoration(
-        hintText: "Search tasks...",
-        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(vertical: 16),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF3B4DE0), width: 1.5)),
-    ),
-    ),
+          hintText: "Search tasks...",
+          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF3B4DE0), width: 1.5)),
+        ),
+      ),
     );
   }
 }

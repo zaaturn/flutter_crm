@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:intl/intl.dart';
 import 'package:my_app/event_management/core/constants/app_colors.dart';
-import '../../domain/entities/event_entity.dart';
-
+import 'package:my_app/event_management/features/domain/entities/event_entity.dart';
+import 'package:my_app/event_management/features/calendar/data/datasources/event_remote_datasource_impl.dart';
 
 class EventDetailsModal extends StatelessWidget {
   final EventEntity event;
-
-
-  final Map<int, dynamic> usersById;
-
+  final Map<int, UserLite> usersById;
   final void Function(EventEntity) onEdit;
   final void Function(int) onDelete;
 
@@ -25,157 +22,263 @@ class EventDetailsModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tc = EventTypeColor.of(event.eventType);
-    final theme = Theme.of(context);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.55,
-      maxChildSize: 0.85,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (ctx, scrollCtrl) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-          ),
-        ),
-        child: ListView(
-          controller: scrollCtrl,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          children: [
-            // ── Handle ──
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC), // Ultra light SaaS grey background
+        borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+      ),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              // ── Dynamic Glass Header ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(child: _buildHandle()),
+                      const SizedBox(height: 20),
+                      _buildTopRow(context, tc),
+                      const SizedBox(height: 16),
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildDateSubtitle(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
 
-            // ── Header row: badge + close ──
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: tc.bg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
+              // ── The Info Grid ──
+              SliverPadding(
+                padding: const EdgeInsets.all(24),
+                sliver: SliverGrid.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.6,
+                  children: [
+                    _buildInfoCard('Time', _fmtTimeRange(), Icons.access_time_filled_rounded),
+                    _buildInfoCard('Reminder', '${event.reminderBefore}m early', Icons.notifications_active_rounded),
+                  ],
+                ),
+              ),
+
+              // ── Description & Link (Wide Cards) ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
                     children: [
-                      Text(_getTypeIcon(event.eventType), style: const TextStyle(fontSize: 14)),
-                      const SizedBox(width: 5),
-                      Text(event.eventType.toUpperCase(), style: TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600, color: tc.text,
-                      )),
+                      if (event.description.isNotEmpty)
+                        _buildWideCard('Notes', event.description, Icons.notes_rounded),
+                      const SizedBox(height: 16),
+                      if (event.meetingLink.isNotEmpty)
+                        _buildLinkCard(),
+                      const SizedBox(height: 24),
+                      _buildParticipantSection(),
+                      const SizedBox(height: 140), // Space for bottom dock
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Container(
-                    width: 30, height: 30,
-                    decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+              ),
+            ],
+          ),
+
+          // ── The Floating Action Dock ──
+          _buildFloatingDock(context),
+        ],
+      ),
+    );
+  }
+
+  // ── UI WIDGETS ───────────────────────────────────────────
+
+  Widget _buildHandle() => Container(
+    width: 36, height: 4,
+    decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(10)),
+  );
+
+  Widget _buildTopRow(BuildContext context, EventTypeColor tc) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: tc.bg.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tc.text.withOpacity(0.2)),
+          ),
+          child: Text(
+            event.eventType.toUpperCase(),
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: tc.text, letterSpacing: 1),
+          ),
+        ),
+        CircleAvatar(
+          backgroundColor: Colors.white,
+          child: IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDateSubtitle() {
+    return Text(
+      DateFormat('EEEE • d MMMM yyyy').format(event.start),
+      style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600, fontSize: 14),
+    );
+  }
+
+  Widget _buildInfoCard(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(icon, size: 20, color: const Color(0xFF6366F1)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold)),
+              Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWideCard(String label, String value, IconData icon) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: const Color(0xFF6366F1)),
+              const SizedBox(width: 8),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(value, style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.5)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkCard() {
+    return InkWell(
+      onTap: () => _launch(event.meetingLink),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)]),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.video_camera_front_rounded, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Join Meeting', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-            const SizedBox(height: 12),
+            Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+          ],
+        ),
+      ),
+    );
+  }
 
-            Text(event.title, style: theme.textTheme.displayMedium),
-            const SizedBox(height: 20),
-
-            _detailRow('🕐', 'Date & Time', Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_formatFullDate(event.start), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                Text('${_fmtTime(event.start)} – ${_fmtTime(event.end)}', style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
-              ],
-            )),
-
-            if (event.description.isNotEmpty)
-              _detailRow('📝', 'Description', Text(event.description, style: const TextStyle(fontSize: 13))),
-
-            if (event.meetingLink.isNotEmpty)
-              _detailRow('🔗', 'Meeting Link', GestureDetector(
-                onTap: () => _launch(event.meetingLink),
-                child: Text(event.meetingLink, style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary,
-                  decoration: TextDecoration.underline,
-                )),
-              )),
-
-            // ── Participants ──
-            if (event.participants.isNotEmpty)
-              _detailRow('👥', 'Participants', Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: event.participants.map((uid) {
-
-                  final userData = usersById[uid];
-
-
-                  final String name = userData?.name ?? 'Unknown';
-                  final initials = _getInitials(name);
-
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: AppColors.primary,
-                        child: Text(initials, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(name, style: const TextStyle(fontSize: 12)),
-                    ],
-                  );
-                }).toList(),
-              )),
-
-            _detailRow('🔔', 'Reminder', Text(
-              '${event.reminderBefore} minutes before',
-              style: const TextStyle(fontSize: 13),
-            )),
-
-            const SizedBox(height: 24),
-            const Divider(height: 1, color: AppColors.border),
-            const SizedBox(height: 16),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.dangerBorder, width: 1.5),
-                    foregroundColor: AppColors.danger,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () => _confirmDelete(context),
-                  child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w600)),
+  Widget _buildParticipantSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("ATTENDEES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1.2)),
+        const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: event.participants.map((uid) {
+              final user = usersById[uid];
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 26,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      child: Text(user?.name.isNotEmpty == true ? user!.name[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1))),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(user?.name.split(' ')[0] ?? 'User', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
+                  ],
                 ),
-                Row(children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      onEdit(event);
-                    },
-                    child: const Text('Edit'),
-                  ),
-                ]),
-              ],
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFloatingDock(BuildContext context) {
+    return Positioned(
+      bottom: 30, left: 24, right: 24,
+      child: Container(
+        height: 70,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B), // Dark Navy SaaS Dock
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () => _confirmDelete(context, event, onDelete),
+                icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFF87171), size: 20),
+                label: const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            Container(width: 1, height: 30, color: Colors.white10),
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  onEdit(event);
+                },
+                icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF818CF8), size: 22),
+                label: const Text("Edit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              ),
             ),
           ],
         ),
@@ -183,65 +286,25 @@ class EventDetailsModal extends StatelessWidget {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // Helpers
-  // ─────────────────────────────────────────────
+  // ── HELPERS ─────────────────────────────────────────────
 
-  String _getInitials(String name) {
-    if (name.isEmpty || name == 'Unknown') return "?";
-    List<String> parts = name.trim().split(" ");
-    if (parts.length > 1) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return parts[0][0].toUpperCase();
+  String _fmtTimeRange() => "${DateFormat('h:mm').format(event.start)} - ${DateFormat('h:mm a').format(event.end)}";
+
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  String _getTypeIcon(String type) {
-    switch (type.toLowerCase()) {
-      case 'meeting': return '🤝';
-      case 'call': return '📞';
-      case 'task': return '✅';
-      case 'followup': return '🔁';
-      default: return '📅';
-    }
-  }
-
-  static Widget _detailRow(String icon, String label, Widget content) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 34, height: 34,
-          decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(8)),
-          child: Center(child: Text(icon, style: const TextStyle(fontSize: 16))),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label.toUpperCase(), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted, letterSpacing: 0.6)),
-            const SizedBox(height: 2),
-            content,
-          ],
-        )),
-      ],
-    ),
-  );
-
-  Future<void> _confirmDelete(BuildContext context) async {
+  Future<void> _confirmDelete(BuildContext context, EventEntity event, void Function(int) onDelete) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Delete Event'),
-        content: const Text('This action cannot be undone.'),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Remove Event?', style: TextStyle(color: Colors.white)),
+        content: const Text('This will delete the event permanently.', style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Color(0xFFF87171)))),
         ],
       ),
     );
@@ -249,42 +312,5 @@ class EventDetailsModal extends StatelessWidget {
       onDelete(event.id!);
       if (context.mounted) Navigator.pop(context);
     }
-  }
-
-  static Future<void> _launch(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  static String _fmtTime(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    return '$h:$m ${dt.hour >= 12 ? "PM" : "AM"}';
-  }
-
-  static String _formatFullDate(DateTime dt) {
-    final days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
-}
-
-class EventTypeColor {
-  final Color text;
-  final Color bg;
-  final Color border;
-
-  const EventTypeColor({required this.text, required this.bg, required this.border});
-
-  static EventTypeColor of(String type) {
-    const map = {
-      'meeting': EventTypeColor(text: AppColors.meetingText, bg: AppColors.meetingBg, border: AppColors.meetingBorder),
-      'call':    EventTypeColor(text: AppColors.callText,    bg: AppColors.callBg,    border: AppColors.callBorder),
-      'followup':EventTypeColor(text: AppColors.followUpText,bg: AppColors.followUpBg,border: AppColors.followUpBorder),
-      'task':    EventTypeColor(text: AppColors.taskText,    bg: AppColors.taskBg,    border: AppColors.taskBorder),
-    };
-    return map[type.toLowerCase()] ?? map['meeting']!;
   }
 }

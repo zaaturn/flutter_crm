@@ -24,12 +24,13 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
   late final TextEditingController _titleCtrl, _descCtrl, _linkCtrl, _searchCtrl;
   Timer? _debounce;
   List<UserLite> _searchResults = [];
-  final Map<int, UserLite> _selectedUsers = {};
+
+  // ✅ CHANGED: Map stores Participant objects instead of UserLite
+  final Map<int, Participant> _selectedParticipants = {};
 
   bool _isSearching = false;
   late DateTime _start, _end;
   late String _eventType;
-  late List<int> _participants;
   late int _reminderBefore;
   AnimationController? _animCtrl;
 
@@ -47,8 +48,14 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
     _start = ev?.start ?? slot ?? DateTime.now();
     _end = ev?.end ?? _start.add(const Duration(hours: 1));
     _eventType = ev?.eventType ?? 'meeting';
-    _participants = List<int>.from(ev?.participants ?? []);
     _reminderBefore = ev?.reminderBefore ?? 30;
+
+    // ✅ Initialize selected participants from the existing event
+    if (ev?.participants != null) {
+      for (var p in ev!.participants) {
+        _selectedParticipants[p.id] = p;
+      }
+    }
 
     _animCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..forward();
   }
@@ -73,7 +80,8 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
     setState(() => _isSearching = true);
     final results = await _ds.searchUser(query);
     setState(() {
-      _searchResults = results.where((u) => !_participants.contains(u.id)).toList();
+      // ✅ Filter out users already in the participant map
+      _searchResults = results.where((u) => !_selectedParticipants.containsKey(u.id)).toList();
       _isSearching = false;
     });
   }
@@ -84,7 +92,7 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
   Widget build(BuildContext context) {
     final animation = _animCtrl != null
         ? CurvedAnimation(parent: _animCtrl!, curve: Curves.easeOutCubic)
-        : AlwaysStoppedAnimation(1.0);
+        : const AlwaysStoppedAnimation(1.0);
 
     return ScaleTransition(
       scale: animation,
@@ -104,7 +112,7 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header with gradient
+              // Header
               Container(
                 padding: const EdgeInsets.fromLTRB(32, 28, 20, 24),
                 decoration: BoxDecoration(
@@ -181,13 +189,13 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
                       const SizedBox(height: 20),
                       _label('Participants'),
                       _participantField(),
-                      if (_selectedUsers.isNotEmpty) ...[const SizedBox(height: 12), _chips()],
+                      if (_selectedParticipants.isNotEmpty) ...[const SizedBox(height: 12), _chips()],
                     ],
                   ),
                 ),
               ),
 
-              // Footer actions
+              // Footer
               Container(
                 padding: const EdgeInsets.fromLTRB(32, 16, 32, 28),
                 decoration: BoxDecoration(
@@ -214,7 +222,6 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
-                        shadowColor: AppColors.primary.withOpacity(0.4),
                       ),
                       onPressed: _titleCtrl.text.trim().isEmpty ? null : _save,
                       child: Row(
@@ -256,10 +263,6 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
           filled: true,
           fillColor: AppColors.background,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 2),
-          ),
           contentPadding: EdgeInsets.symmetric(horizontal: icon != null ? 12 : 16, vertical: 14),
         ),
       ),
@@ -346,17 +349,16 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
                   backgroundColor: AppColors.primary,
                   child: Text(
                     u.name.isNotEmpty ? u.name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                 ),
-
                 onTap: () => setState(() {
-                  _participants.add(u.id);
-                  _selectedUsers[u.id] = u;
+                  // ✅ FIXED: Convert UserLite to Participant when adding
+                  _selectedParticipants[u.id] = Participant(
+                      id: u.id,
+                      name: u.name,
+                      email: '' // Using empty string as discussed
+                  );
                   _searchResults.clear();
                   _searchCtrl.clear();
                 }),
@@ -370,39 +372,19 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
   Widget _chips() => Wrap(
     spacing: 8,
     runSpacing: 8,
-    children: _selectedUsers.values.map((u) {
-      final initials =
-      u.name.isNotEmpty ? u.name[0].toUpperCase() : '?';
-
+    children: _selectedParticipants.values.map((p) {
+      final initials = p.name.isNotEmpty ? p.name[0].toUpperCase() : '?';
       return Chip(
         avatar: CircleAvatar(
           radius: 12,
           backgroundColor: AppColors.primary,
-          child: Text(
-            initials,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          child: Text(initials, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w700)),
         ),
-        label: Text(
-          u.name,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        label: Text(p.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
         deleteIcon: const Icon(Icons.close, size: 16),
-        onDeleted: () => setState(() {
-          _participants.remove(u.id);
-          _selectedUsers.remove(u.id);
-        }),
+        onDeleted: () => setState(() => _selectedParticipants.remove(p.id)),
         backgroundColor: AppColors.primaryExtraLight,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       );
     }).toList(),
   );
@@ -417,7 +399,8 @@ class _EventModalState extends State<EventModalDesktop> with SingleTickerProvide
       end: _end,
       meetingLink: _linkCtrl.text.trim(),
       eventType: _eventType,
-      participants: _participants,
+      // ✅ FIXED: Passing List<Participant> instead of List<int>
+      participants: _selectedParticipants.values.toList(),
       reminderBefore: _reminderBefore,
     ));
     Navigator.pop(context);

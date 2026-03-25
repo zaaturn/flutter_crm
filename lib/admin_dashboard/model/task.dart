@@ -6,6 +6,7 @@ class Task {
   final String dueDate;
   final String assignedToName;
   final String status;
+  final bool isApproved;
 
   Task({
     required this.id,
@@ -15,6 +16,7 @@ class Task {
     required this.dueDate,
     required this.assignedToName,
     required this.status,
+    required this.isApproved,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -24,16 +26,22 @@ class Task {
       description: json['description']?.toString() ?? '',
       priority: json['priority']?.toString() ?? '',
       dueDate: json['due_date']?.toString() ?? '',
-      assignedToName:
-      json['assigned_to_name']?.toString() ?? 'Unassigned',
-      status: json['status']
-          ?.toString()
-          .trim()
-          .toLowerCase() ??
-          'pending',
+      assignedToName: json['assigned_to_name']?.toString() ?? 'Unassigned',
+      status: json['status']?.toString().trim().toLowerCase() ?? 'pending',
+      isApproved: json['is_approved'] ?? false,
+    );
+  }
+
+  Task copyWith({String? status, bool? isApproved}) {
+    return Task(
+      id: id,
+      title: title,
+      description: description,
+      priority: priority,
+      dueDate: dueDate,
+      assignedToName: assignedToName,
+      status: status ?? this.status,
+      isApproved: isApproved ?? this.isApproved,
     );
   }
 }
-
-
-

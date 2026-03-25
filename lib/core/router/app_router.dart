@@ -18,26 +18,27 @@ import 'package:my_app/admin_dashboard/screen/admin_dashboard.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 
-// Calendar (ADD BOTH)
-import 'package:my_app/event_management/features/presentation/screen/calendar_screen.dart';
 
+import 'package:my_app/event_management/features/presentation/screen/calendar_screen.dart';
 import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
 
 
-// Core
 import 'package:my_app/core/layout/adaptive_layout.dart';
+import 'package:my_app/core/router/startup_gate.dart';
 
+
+import 'package:my_app/screens/splash_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
 
     // =====================
-    // WELCOME
+    // ROOT (SPLASH CONTROL)
     // =====================
       case '/':
         return MaterialPageRoute(
-          builder: (_) => const WelcomePage(),
+          builder: (_) => const MobileSplashEntry(),
         );
 
     // =====================
@@ -63,7 +64,6 @@ class AppRouter {
             webDesktop: LoginScreen(),
           ),
         );
-
 
     // =====================
     // EMPLOYEE DASHBOARD
@@ -121,5 +121,21 @@ class AppRouter {
           builder: (_) => const WelcomePage(),
         );
     }
+  }
+}
+
+// =====================
+// MOBILE SPLASH ENTRY (OUTSIDE CLASS)
+// =====================
+class MobileSplashEntry extends StatelessWidget {
+  const MobileSplashEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AdaptiveLayout(
+      mobile: const SplashScreen(),
+      tablet: const SplashScreen(),
+      webDesktop: const StartupGate(),
+    );
   }
 }

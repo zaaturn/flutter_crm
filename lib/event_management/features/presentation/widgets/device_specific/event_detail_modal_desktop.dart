@@ -4,7 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:my_app/event_management/core/constants/app_colors.dart';
 import 'package:my_app/event_management/features/domain/entities/event_entity.dart';
 
-// ✅ import real user model
+
 import '../../../calendar/data/datasources/event_remote_datasource_impl.dart';
 
 class EventDetailsModalDesktop extends StatelessWidget {

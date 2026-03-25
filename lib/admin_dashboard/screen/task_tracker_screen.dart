@@ -34,6 +34,11 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   String selectedStatus = 'pending';
   String searchQuery = '';
 
+  // 🔥 Normalize function (CORE FIX)
+  String normalizeStatus(String status) {
+    return status.trim().toLowerCase().replaceAll(" ", "_");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,10 +72,14 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
 
           final List<Task> tasks = state.tasks;
 
+          // ✅ FIXED FILTERING
           final filteredTasks = tasks.where((t) {
-            final matchesStatus = t.status == selectedStatus;
+            final taskStatus = normalizeStatus(t.status);
+            final matchesStatus =
+                taskStatus == selectedStatus.toLowerCase();
 
             final query = searchQuery.toLowerCase();
+
             final matchesSearch = query.isEmpty ||
                 t.title.toLowerCase().contains(query) ||
                 t.description.toLowerCase().contains(query) ||
@@ -96,6 +105,7 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
                     selectedStatus = status;
                   });
                 },
+                normalizeStatus: normalizeStatus, // 🔥 pass fix
               ),
               Expanded(
                 child: filteredTasks.isEmpty
@@ -151,20 +161,27 @@ class _TaskStatusTabs extends StatelessWidget {
   final List<Task> tasks;
   final String selectedStatus;
   final Function(String) onChanged;
+  final String Function(String) normalizeStatus;
 
   const _TaskStatusTabs({
     required this.tasks,
     required this.selectedStatus,
     required this.onChanged,
+    required this.normalizeStatus,
   });
 
   @override
   Widget build(BuildContext context) {
-    final pending = tasks.where((t) => t.status == 'pending').length;
-    final inProgress =
-        tasks.where((t) => t.status == 'in_progress').length;
+    // ✅ FIXED COUNTS
+    final pending =
+        tasks.where((t) => normalizeStatus(t.status) == 'pending').length;
+
+    final inProgress = tasks
+        .where((t) => normalizeStatus(t.status) == 'in_progress')
+        .length;
+
     final completed =
-        tasks.where((t) => t.status == 'completed').length;
+        tasks.where((t) => normalizeStatus(t.status) == 'completed').length;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -260,5 +277,3 @@ class _StatusTab extends StatelessWidget {
     );
   }
 }
-
-

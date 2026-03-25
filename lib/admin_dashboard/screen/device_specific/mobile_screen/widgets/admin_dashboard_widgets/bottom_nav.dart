@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'nav_item.dart';
 
 class BottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -14,11 +13,12 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      NavItem(icon: Icons.home_rounded, label: 'HOME'),
-      NavItem(icon: Icons.person_rounded, label: 'PROFILE'),
-      NavItem(icon: Icons.chat_bubble_rounded, label: 'CHAT'),
-      NavItem(icon: Icons.share_rounded, label: 'SHARE'),
+    // 💎 SAAS-LEVEL NAVIGATION LABELS
+    final items = [
+      _BottomNavItem(icon: Icons.grid_view_rounded, label: 'HOME'),
+      _BottomNavItem(icon: Icons.badge_rounded, label: 'DIRECTORY'),
+      _BottomNavItem(icon: Icons.chat_bubble_rounded, label: 'CHAT'),
+      _BottomNavItem(icon: Icons.settings_rounded, label: 'SETTINGS'),
     ];
 
     return Container(
@@ -55,6 +55,7 @@ class BottomNav extends StatelessWidget {
 
                   return GestureDetector(
                     onTap: () => onTap(index),
+                    behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -70,6 +71,7 @@ class BottomNav extends StatelessWidget {
                           item.label,
                           style: TextStyle(
                             fontSize: 10,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                             color: isSelected
                                 ? const Color(0xFF4456BA)
                                 : const Color(0xFF94A3B8),
@@ -86,4 +88,10 @@ class BottomNav extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BottomNavItem {
+  final IconData icon;
+  final String label;
+  const _BottomNavItem({required this.icon, required this.label});
 }

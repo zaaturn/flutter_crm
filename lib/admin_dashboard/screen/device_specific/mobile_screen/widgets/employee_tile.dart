@@ -15,22 +15,12 @@ class EmployeeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 DIRECT STATUS CONTROL (NO INDIRECT HELPERS)
-    final status = employee.liveStatus;
+    /// ✅ USE MODEL (SAME AS DESKTOP)
+    final Color statusColor = employee.statusColor;
+    final String statusText = employee.statusText;
 
-    final bool isWorking = status == LiveStatus.working;
-    final bool isOnBreak = status == LiveStatus.breakTime;
-    final bool isLoggedOut = status == LiveStatus.loggedOut;
-
-    // 🔥 FORCE COLOR BASED ON ACTUAL STATUS
-    final Color statusColor = isWorking
-        ? const Color(0xFF10B981)
-        : (isOnBreak ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8));
-
-    // 🔥 FORCE TEXT BASED ON ACTUAL STATUS
-    final String statusText = isWorking
-        ? "WORKING"
-        : (isOnBreak ? "BREAK" : "LOGGED OUT");
+    final bool isWorking = employee.liveStatus == LiveStatus.working;
+    final bool isOnBreak = employee.liveStatus == LiveStatus.breakTime;
 
     final String displayName = employee.name.isNotEmpty
         ? employee.name
@@ -38,8 +28,8 @@ class EmployeeTile extends StatelessWidget {
         ? employee.fullName
         : "Employee #${employee.id}");
 
-    // 🔍 DEBUG (REMOVE LATER)
-    print("👤 ${employee.name} → ${employee.liveStatus}");
+    /// 🔍 DEBUG
+    print("👤 $displayName → ${employee.liveStatus}");
 
     return Material(
       color: Colors.transparent,
@@ -64,6 +54,7 @@ class EmployeeTile extends StatelessWidget {
             ),
             child: Row(
               children: [
+                /// AVATAR + STATUS DOT
                 Stack(
                   children: [
                     Avatar(employee: employee),
@@ -82,7 +73,10 @@ class EmployeeTile extends StatelessWidget {
                     ),
                   ],
                 ),
+
                 const SizedBox(width: 16),
+
+                /// DETAILS
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,7 +89,9 @@ class EmployeeTile extends StatelessWidget {
                           color: const Color(0xFF0F172A),
                         ),
                       ),
+
                       const SizedBox(height: 4),
+
                       Text(
                         "${employee.designation ?? 'Staff'} • ${employee.department ?? 'General'}",
                         style: GoogleFonts.plusJakartaSans(
@@ -103,7 +99,10 @@ class EmployeeTile extends StatelessWidget {
                           color: const Color(0xFF64748B),
                         ),
                       ),
+
                       const SizedBox(height: 12),
+
+                      /// ✅ TIME + STATUS FIXED
                       Row(
                         children: [
                           Icon(
@@ -116,11 +115,12 @@ class EmployeeTile extends StatelessWidget {
                                 : const Color(0xFF94A3B8),
                           ),
                           const SizedBox(width: 6),
+
                           Text(
-                            isWorking
+                            employee.liveStatus == LiveStatus.working
                                 ? "In: ${employee.checkIn}"
-                                : (isOnBreak
-                                ? "On Break"
+                                : (employee.checkOut == '-'
+                                ? "Active"
                                 : "Last Seen: ${employee.checkOut}"),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
@@ -133,6 +133,8 @@ class EmployeeTile extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                /// STATUS CHIP
                 Container(
                   padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -141,7 +143,7 @@ class EmployeeTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    statusText,
+                    statusText.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,

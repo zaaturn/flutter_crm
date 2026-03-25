@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,14 +28,10 @@ import 'admin_dashboard/repository/admin_repository.dart';
 import 'event_management/features/presentation/bloc/event_bloc.dart';
 import 'event_management/features/calendar/data/repositories/event_repository_impl.dart';
 import 'event_management/features/calendar/data/datasources/event_remote_datasource_impl.dart';
-import 'event_management/features/domain/usecases/create_event.dart'
-as event_usecase;
-import 'event_management/features/domain/usecases/update_event.dart'
-as event_usecase;
-import 'event_management/features/domain/usecases/delete_event.dart'
-as event_usecase;
-import 'event_management/features/domain/usecases/get_events.dart'
-as event_usecase;
+import 'event_management/features/domain/usecases/create_event.dart' as create_ev;
+import 'event_management/features/domain/usecases/update_event.dart' as update_ev;
+import 'event_management/features/domain/usecases/delete_event.dart' as delete_ev;
+import 'event_management/features/domain/usecases/get_events.dart' as get_ev;
 
 // Dashboards Feature
 import 'dashboards/data/datasource/post_remote_datasource.dart';
@@ -51,14 +48,12 @@ import 'services/flutter_local_notification_service.dart';
 import 'services/notification_service.dart';
 import 'core/router/app_router.dart';
 import 'services/api_client.dart';
-import 'package:my_app/core/router/startup_gate.dart';
 
-//client
+// Client
 import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
 import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
 
-final GlobalKey<NavigatorState> navigatorKey =
-GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
@@ -97,20 +92,13 @@ Future<void> main() async {
     EventRemoteDatasourceImpl(),
   );
 
+  // Create remote datasources
+  final postRemoteDataSource = PostRemoteDataSource(apiClient);
+  final userRemoteDataSource = UserRemoteDataSource(apiClient);
 
-// Create remote datasources
-  final postRemoteDataSource =
-  PostRemoteDataSource(apiClient);
-
-  final userRemoteDataSource =
-  UserRemoteDataSource(apiClient);
-
-// Create repositories
-  final postRepository =
-  PostRepositoryImpl(postRemoteDataSource);
-
-  final userRepository =
-  UserRepositoryImpl(userRemoteDataSource);
+  // Create repositories
+  final postRepository = PostRepositoryImpl(postRemoteDataSource);
+  final userRepository = UserRepositoryImpl(userRemoteDataSource);
 
   runApp(
     MultiRepositoryProvider(
@@ -121,20 +109,13 @@ Future<void> main() async {
         RepositoryProvider(create: (_) => AdminRepository()),
         RepositoryProvider<EventRepositoryImpl>.value(value: eventRepo),
         RepositoryProvider(create: (_) => ClientRepository()),
-
-        // Dashboards Repositories
-        RepositoryProvider<PostRepository>.value(
-          value: postRepository,
-        ),
-        RepositoryProvider<UserRepository>.value(
-          value: userRepository,
-        ),
+        RepositoryProvider<PostRepository>.value(value: postRepository),
+        RepositoryProvider<UserRepository>.value(value: userRepository),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
-            create: (context) =>
-                LeadBloc(context.read<LeadRepository>()),
+            create: (context) => LeadBloc(context.read<LeadRepository>()),
           ),
           BlocProvider<EmployeeBloc>(
             create: (context) => EmployeeBloc(
@@ -142,8 +123,7 @@ Future<void> main() async {
             ),
           ),
           BlocProvider<LeaveBloc>(
-            create: (context) =>
-                LeaveBloc(context.read<LeaveApiService>()),
+            create: (context) => LeaveBloc(context.read<LeaveApiService>()),
           ),
           BlocProvider<AdminDashboardBloc>(
             create: (context) => AdminDashboardBloc(
@@ -152,33 +132,22 @@ Future<void> main() async {
           ),
           BlocProvider<EventBloc>(
             create: (context) => EventBloc(
-              createEvent:
-              event_usecase.CreateEvent(eventRepo),
-              updateEvent:
-              event_usecase.UpdateEvent(eventRepo),
-              deleteEvent:
-              event_usecase.DeleteEvent(eventRepo),
-              getEvents:
-              event_usecase.GetEvents(eventRepo),
+              createEvent: create_ev.CreateEvent(eventRepo),
+              updateEvent: update_ev.UpdateEvent(eventRepo),
+              deleteEvent: delete_ev.DeleteEvent(eventRepo),
+              getEvents: get_ev.GetEvents(eventRepo),
             ),
           ),
-
-          // client
           BlocProvider<ClientBloc>(
-            create: (context) =>
-                ClientBloc(context.read<ClientRepository>()),
+            create: (context) => ClientBloc(context.read<ClientRepository>()),
           ),
-
-          // Dashboards Blocs
           BlocProvider<PostBloc>(
-            create: (context) =>
-                PostBloc(context.read<PostRepository>()),
+            create: (context) => PostBloc(context.read<PostRepository>()),
           ),
           BlocProvider<AudienceBloc>(
-            create: (context) =>
-                AudienceBloc(
-                  userRepository: context.read<UserRepository>(),
-                ),
+            create: (context) => AudienceBloc(
+              userRepository: context.read<UserRepository>(),
+            ),
           ),
         ],
         child: const MyApp(),
@@ -196,7 +165,6 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'DaxarrowTeams',
-
       theme: ThemeData(
         fontFamily: 'PlusJakartaSans',
         fontFamilyFallback: const [
@@ -204,13 +172,14 @@ class MyApp extends StatelessWidget {
           'DMMono',
         ],
       ),
-
-      home: LoaderWrapper(
-        child: StartupGate(),
-      ),
+      initialRoute: '/',
       onGenerateRoute: AppRouter.generateRoute,
+      builder: (context, child) {
+        return LoaderWrapper(
+          child: child ?? const SizedBox(),
+        );
+      },
     );
-
   }
 }
 

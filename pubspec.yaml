@@ -1,5 +1,5 @@
 name: my_app
-description: "A new Flutter project."
+description: "A new Flutter project for Zaaturn."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -36,17 +36,15 @@ dependencies:
   shimmer: ^3.0.0
   flutter_staggered_animations: ^1.1.1
   google_fonts: ^6.2.1
-
-
-
-
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^5.0.0
+  # Tools for App Icon and Native Splash
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
@@ -54,23 +52,45 @@ flutter:
   assets:
     - assets/images/login_bg.jpeg
     - assets/images/daxarrow.png
-
+    - assets/images/logo.png
 
   fonts:
-      - family: PlusJakartaSans
-        fonts:
-          - asset: assets/fonts/PlusJakartaSans-Regular.ttf
-          - asset: assets/fonts/PlusJakartaSans-Medium.ttf
-            weight: 500
-          - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
-            weight: 600
-          - asset: assets/fonts/PlusJakartaSans-Bold.ttf
-            weight: 700
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+    - family: DMMono
+      fonts:
+        - asset: assets/fonts/DMMono-Regular.ttf
+    - family: NotoSans
+      fonts:
+        - asset: assets/fonts/NotoSans-Regular.ttf
 
-      - family: DMMono
-        fonts:
-          - asset: assets/fonts/DMMono-Regular.ttf
+# ═══════════════════════════════════════════════════
+#  APP ICON CONFIGURATION (Home Screen)
+# ═══════════════════════════════════════════════════
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/logo.png"
 
-      - family: NotoSans
-        fonts:
-          - asset: assets/fonts/NotoSans-Regular.ttf
+# ═══════════════════════════════════════════════════
+#  NATIVE SPLASH CONFIGURATION (Removes Blue Logo)
+# ═══════════════════════════════════════════════════
+flutter_native_splash:
+  color: "#0C0C0C"
+  image: assets/images/logo.png
+
+  android: true
+  ios: true
+
+  android_12:
+    image: assets/images/logo.png
+    color: "#0C0C0C"

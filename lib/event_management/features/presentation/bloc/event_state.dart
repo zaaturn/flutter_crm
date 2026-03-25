@@ -13,7 +13,7 @@ abstract class EventState extends Equatable {
   const EventState({
     this.events = const [],
     required this.focusedDay,
-    this.calendarFormat = CalendarFormat.week,
+    this.calendarFormat = CalendarFormat.month,
   });
 
   @override
@@ -21,36 +21,35 @@ abstract class EventState extends Equatable {
 }
 
 class EventInitial extends EventState {
-  // REMOVED const: focusedDay: DateTime.now() is dynamic.
-  EventInitial() : super(focusedDay: DateTime.now());
+  EventInitial() : super(
+    focusedDay: DateTime.now(),
+    calendarFormat: CalendarFormat.month,
+  );
 }
 
 class EventLoading extends EventState {
-  // REMOVED const from constructor
   EventLoading({
     List<EventEntity> events = const [],
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 }
 
 class EventsLoaded extends EventState {
-  // REMOVED const from constructor
   EventsLoaded({
     required List<EventEntity> events,
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 }
 
 class EventError extends EventState {
   final String message;
-  // REMOVED const from constructor
   EventError({
     required this.message,
     List<EventEntity> events = const [],
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 
   @override
@@ -59,12 +58,11 @@ class EventError extends EventState {
 
 class CreateModalOpen extends EventState {
   final DateTime? selectedDateTime;
-  // REMOVED const from constructor
   CreateModalOpen({
     this.selectedDateTime,
     required List<EventEntity> events,
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 
   @override
@@ -73,12 +71,11 @@ class CreateModalOpen extends EventState {
 
 class DetailModalOpen extends EventState {
   final EventEntity selectedEvent;
-  // REMOVED const from constructor
   DetailModalOpen({
     required this.selectedEvent,
     required List<EventEntity> events,
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 
   @override
@@ -87,12 +84,11 @@ class DetailModalOpen extends EventState {
 
 class EventActionSuccess extends EventState {
   final String message;
-  // REMOVED const from constructor
   EventActionSuccess({
     required this.message,
     required List<EventEntity> events,
     required DateTime focusedDay,
-    CalendarFormat calendarFormat = CalendarFormat.week,
+    CalendarFormat calendarFormat = CalendarFormat.month, // Changed to month
   }) : super(events: events, focusedDay: focusedDay, calendarFormat: calendarFormat);
 
   @override

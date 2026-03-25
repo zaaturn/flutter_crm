@@ -8,7 +8,7 @@ import 'package:my_app/event_management/features/domain/entities/event_entity.da
 class EventChipDesktop extends StatelessWidget {
   final EventEntity event;
   final VoidCallback onTap;
-  final double availableHeight; // ✅ new
+  final double availableHeight;
 
   const EventChipDesktop({
     super.key,

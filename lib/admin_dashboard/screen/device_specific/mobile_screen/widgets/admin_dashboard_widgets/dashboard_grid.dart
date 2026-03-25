@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
-
-// BLOC & STATE IMPORTS
-import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';
-import 'package:my_app/admin_dashboard/bloc/employee_list_event.dart';
-import 'package:my_app/admin_dashboard/bloc/employee_list_state.dart';
-
-
-
-import 'package:my_app/admin_dashboard/repository/employee_list_repository.dart';
+import 'package:my_app/admin_dashboard/screen/project_and_task_options_screen.dart';
 
 import 'dashboard_card.dart';
 import 'dashboard_item.dart';
@@ -24,6 +16,9 @@ class DashboardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SaaS Design Note: We use the 'employees' passed from state
+    // to calculate working/absent counts in the Directory.
+
     final items = [
       const DashboardItem(
         icon: Icons.dashboard_rounded,
@@ -35,55 +30,38 @@ class DashboardGrid extends StatelessWidget {
       DashboardItem(
         icon: Icons.badge_rounded,
         label: 'Employees',
-        bgColor: const Color(0xFFECFDF5),
+        bgColor: const Color(0xFFF0FDF4), // Fixed minor color hex typo
         iconColor: const Color(0xFF10B981),
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => BlocProvider(
-                create: (context) => EmployeeListBloc(
-
-                  repository: EmployeeRepository(),
-                )..add(const FetchEmployees()),
-                child: Scaffold(
+              builder: (_) => Scaffold(
+                backgroundColor: const Color(0xFFF8FAFC), // Modern SaaS Bg
+                appBar: AppBar(
+                  title: const Text(
+                    "Employee Directory",
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
+                  elevation: 0,
+                  centerTitle: true,
                   backgroundColor: Colors.white,
-                  appBar: AppBar(
-                    title: const Text("Employee Directory"),
-                    elevation: 0,
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF0F172A),
-                  ),
-                  body: BlocBuilder<EmployeeListBloc, EmployeeListState>(
-                    builder: (context, state) {
-                      if (state.status == EmployeeListStatus.loading) {
-                        return const Center(
-                          child: CircularProgressIndicator(color: Color(0xFF10B981)),
-                        );
-                      }
-
-                      if (state.status == EmployeeListStatus.failure) {
-
-                        return Center(child: Text(state.errorMessage ?? "An error occurred"));
-                      }
-
-                      return MobileEmployeeSection(
-                        employees: state.employeesWithStatus,
-                        onEmployeeTap: (employee) {
-                          final isOnline = state.liveStatusMap[employee.id] ?? false;
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => EmployeeCardMobile(
-                                employee: employee,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                  foregroundColor: const Color(0xFF0F172A),
+                ),
+                // IMPORTANT: MobileEmployeeSection handles the status filtering internally.
+                // It needs the full 'employees' list from your state.
+                body: MobileEmployeeSection(
+                  employees: employees,
+                  onEmployeeTap: (employee) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EmployeeCardMobile(
+                          employee: employee,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -91,11 +69,17 @@ class DashboardGrid extends StatelessWidget {
         },
       ),
 
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.assignment_rounded,
         label: 'Projects & Tasks',
-        bgColor: Color(0xFFEEF2FF),
-        iconColor: Color(0xFF6366F1),
+        bgColor: const Color(0xFFEEF2FF),
+        iconColor: const Color(0xFF6366F1),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProjectAndTaskOptionsScreen()),
+          );
+        },
       ),
       const DashboardItem(
         icon: Icons.share_rounded,
