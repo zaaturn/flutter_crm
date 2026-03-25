@@ -24,15 +24,18 @@ class EventDetailsModal extends StatelessWidget {
     final tc = EventTypeColor.of(event.eventType);
 
     return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
       decoration: const BoxDecoration(
-        color: Color(0xFFF8FAFC), // Ultra light SaaS grey background
+        color: Color(0xFFF8FAFC),
         borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
       ),
       child: Stack(
         children: [
           CustomScrollView(
+            physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── Dynamic Glass Header ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
@@ -58,8 +61,6 @@ class EventDetailsModal extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // ── The Info Grid ──
               SliverPadding(
                 padding: const EdgeInsets.all(24),
                 sliver: SliverGrid.count(
@@ -73,8 +74,6 @@ class EventDetailsModal extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // ── Description & Link (Wide Cards) ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -87,22 +86,18 @@ class EventDetailsModal extends StatelessWidget {
                         _buildLinkCard(),
                       const SizedBox(height: 24),
                       _buildParticipantSection(),
-                      const SizedBox(height: 140), // Space for bottom dock
+                      const SizedBox(height: 140),
                     ],
                   ),
                 ),
               ),
             ],
           ),
-
-          // ── The Floating Action Dock ──
           _buildFloatingDock(context),
         ],
       ),
     );
   }
-
-  // ── UI WIDGETS ───────────────────────────────────────────
 
   Widget _buildHandle() => Container(
     width: 36, height: 4,
@@ -206,7 +201,7 @@ class EventDetailsModal extends StatelessWidget {
         child: const Row(
           children: [
             Icon(Icons.video_camera_front_rounded, color: Colors.white),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text('Join Meeting', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
@@ -222,28 +217,35 @@ class EventDetailsModal extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("ATTENDEES", style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF94A3B8), letterSpacing: 1.2)),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: event.participants.map((uid) {
-              final user = usersById[uid];
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: const Color(0xFFE2E8F0),
-                      child: Text(user?.name.isNotEmpty == true ? user!.name[0] : '?', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1))),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: event.participants.map((uid) {
+            final user = usersById[uid];
+            return SizedBox(
+              width: 60,
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: const Color(0xFFE2E8F0),
+                    child: Text(
+                      user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : '?',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
                     ),
-                    const SizedBox(height: 6),
-                    Text(user?.name.split(' ')[0] ?? 'User', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF475569))),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    user?.name.split(' ')[0] ?? 'User',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -251,12 +253,14 @@ class EventDetailsModal extends StatelessWidget {
 
   Widget _buildFloatingDock(BuildContext context) {
     return Positioned(
-      bottom: 30, left: 24, right: 24,
+      bottom: 30,
+      left: 24,
+      right: 24,
       child: Container(
         height: 70,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B), // Dark Navy SaaS Dock
+          color: const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
         ),
@@ -286,8 +290,6 @@ class EventDetailsModal extends StatelessWidget {
     );
   }
 
-  // ── HELPERS ─────────────────────────────────────────────
-
   String _fmtTimeRange() => "${DateFormat('h:mm').format(event.start)} - ${DateFormat('h:mm a').format(event.end)}";
 
   Future<void> _launch(String url) async {
@@ -300,11 +302,15 @@ class EventDetailsModal extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text('Remove Event?', style: TextStyle(color: Colors.white)),
         content: const Text('This will delete the event permanently.', style: TextStyle(color: Colors.white70)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Color(0xFFF87171)))),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep', style: TextStyle(color: Colors.white70))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Color(0xFFF87171), fontWeight: FontWeight.bold)),
+          ),
         ],
       ),
     );
