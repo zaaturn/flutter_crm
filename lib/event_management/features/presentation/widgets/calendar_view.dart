@@ -68,7 +68,13 @@ class _CalendarViewMobileState extends State<CalendarViewMobile> {
         rowHeight: 120,
         daysOfWeekHeight: 40,
         onPageChanged: widget.onPageChanged,
-        eventLoader: (day) => widget.events.where((e) => isSameDay(e.start, day)).toList(),
+        eventLoader: (day) {
+          return widget.events.where((e) {
+            return e.start.year == day.year &&
+                e.start.month == day.month &&
+                e.start.day == day.day;
+          }).toList();
+        },
         calendarStyle: _calendarStyle(),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) => _buildDayCell(day, Colors.black87),

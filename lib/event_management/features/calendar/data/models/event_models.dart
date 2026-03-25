@@ -18,8 +18,7 @@ class EventModel extends EventEntity {
   // JSON → Model
   // ─────────────────────────────────────────────
   factory EventModel.fromJson(Map<String, dynamic> json) {
-    // 🔍 DEBUG: Copy this line to see your actual API data in the console!
-     print("API PARTICIPANTS DATA: ${json['participants']}");
+
 
     return EventModel(
       id: json['id'] as int?,
@@ -33,17 +32,16 @@ class EventModel extends EventEntity {
       participants: (json['participants'] as List<dynamic>? ?? [])
           .map((e) {
         if (e is Map<String, dynamic>) {
-          // 1. Try to find nested user data (common in some APIs)
           final userData = e['user'] ?? e['employee'] ?? e;
 
-          // 2. Extract Names from the identified user object
+
           final String firstName = userData['first_name'] ?? '';
           final String lastName = userData['last_name'] ?? '';
           final String username = userData['username'] ?? '';
 
           String fullName = '$firstName $lastName'.trim();
 
-          // 3. Fallback Logic: Name -> Username -> Email -> User ID
+
           if (fullName.isEmpty) {
             fullName = username.isNotEmpty
                 ? username
@@ -57,7 +55,7 @@ class EventModel extends EventEntity {
           );
         }
 
-        // 4. Fallback for raw integers (e.g. [18, 19])
+
         return Participant(
             id: e as int,
             name: 'User $e',
