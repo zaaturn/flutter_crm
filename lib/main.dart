@@ -195,8 +195,17 @@ Future<void> main() async {
 }
 
 Future<void> _initPushNotificationsAfterFirstFrame() async {
-  if (kIsWeb) return;
   try {
+    if (kIsWeb) {
+      // Web: no flutter_local_notifications; use FCM + service worker (see web/index.html).
+      final notificationService = NotificationService();
+      await notificationService.init(navigatorKey);
+      notificationService.listenForegroundMessages(navigatorKey);
+      notificationService.handleNotificationTap(navigatorKey);
+      await notificationService.handleInitialMessage(navigatorKey);
+      return;
+    }
+
     await LocalNotificationService.initialize();
     final notificationService = NotificationService();
     await notificationService.init(navigatorKey);
