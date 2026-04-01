@@ -7,9 +7,9 @@ import 'api_client.dart';
 class NotificationService {
   final ApiClient _api = ApiClient();
 
-  static const String _webVapidKey = "YOUR_KEY";
+  static const String _webVapidKey = "BDl2RpvxVJ442k-TJpCoAFHH3SLFxClV7Zy71uNq_MfRJPWTzi5qRkCPztfD2sIq--7LHESRCHbIVZO1ACehWhM";
 
-  Future<void> init() async {}
+  Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {}
 
   Future<void> registerDevice({required String owner}) async {
     final messaging = FirebaseMessaging.instance;

@@ -14,13 +14,14 @@ import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 // Dashboard
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen.dart';
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
-import 'package:my_app/admin_dashboard/screen/admin_dashboard.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 
+import 'package:my_app/employee_dashboard/screen/employee_feed_screen_desktop.dart';
+import 'package:my_app/dashboards/presentations/screens/feed_screen_mobile.dart';
 
-import 'package:my_app/event_management/features/presentation/screen/calendar_screen.dart';
-import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
+import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_mobile.dart';
+import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_desktop.dart';
 
 
 import 'package:my_app/core/layout/adaptive_layout.dart';
@@ -110,6 +111,18 @@ class AppRouter {
             mobile: const CalendarScreenMobile(),
             tablet: const CalendarScreenMobile(),
             webDesktop: const CalendarScreenDesktop(),
+          ),
+        );
+
+    // =====================
+    // FEED (Shared posts)
+    // =====================
+      case '/feed':
+        return MaterialPageRoute(
+          builder: (_) => AdaptiveLayout(
+            mobile: const FeedScreenMobile(),
+            tablet: const FeedScreenMobile(),
+            webDesktop: const EmployeeFeedScreenDesktop(),
           ),
         );
 

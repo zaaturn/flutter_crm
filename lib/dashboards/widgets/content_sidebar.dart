@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-enum NavSection { sharedItems, cultureBoards, announcements }
+enum NavSection { dashboard, sharedItems, cultureBoards, announcements }
 
 extension NavSectionX on NavSection {
   String get label {
     switch (this) {
+      case NavSection.dashboard:
+        return 'Dashboard';
       case NavSection.sharedItems:
         return 'Shared Items';
       case NavSection.cultureBoards:
@@ -16,8 +18,10 @@ extension NavSectionX on NavSection {
 
   IconData get icon {
     switch (this) {
+      case NavSection.dashboard:
+        return Icons.dashboard_customize_outlined;
       case NavSection.sharedItems:
-        return Icons.share_outlined;
+        return Icons.folder_shared_outlined;
       case NavSection.cultureBoards:
         return Icons.grid_view_rounded;
       case NavSection.announcements:
@@ -43,30 +47,45 @@ class ContentSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 220,
-      color: Colors.white,
+      width: 256,
+      color: Colors.black,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
 
-          // ── Top section ────────────────────────────────────────────
-          if (isCultureBoardsView)
-            _BackRow(onTap: onBack)
-          else
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Text(
-                'Culture Platform',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey[800],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Share',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-              ),
+                SizedBox(height: 6),
+                Text(
+                  'Enterprise Workspace',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+              ],
             ),
+          ),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
+
+          // Back
+          _BackRow(onTap: onBack),
+          const SizedBox(height: 10),
 
           // ── Nav items ──────────────────────────────────────────────
           for (final section in NavSection.values)
@@ -76,12 +95,7 @@ class ContentSidebar extends StatelessWidget {
               isActive: active == section,
               onTap: () => onChanged(section),
             ),
-
-          // ── Bottom back button (sub-pages only) ────────────────────
-          if (!isCultureBoardsView) ...[
-            const Spacer(),
-            _BottomBackButton(onTap: onBack),
-          ],
+          const Spacer(),
         ],
       ),
     );
@@ -103,46 +117,40 @@ class _NavItem extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _cyan = Color(0xFF00BCD4);
-  static const _cyanBg = Color(0xFFE0F7FA);
+  static const _activeBg = Colors.white;
+  static const _inactiveFg = Color(0xFF94A3B8);
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          // ── KEY FIX: solid cyan-tinted background when active ──
-          color: isActive ? _cyanBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isActive
-              ? Border(
-            left: BorderSide(color: _cyan, width: 3),
-          )
-              : const Border(
-            left: BorderSide(color: Colors.transparent, width: 3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: isActive ? _activeBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isActive ? _cyan : const Color(0xFF6B7280),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                color: isActive ? _cyan : const Color(0xFF6B7280),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isActive ? const Color(0xFF0F172A) : _inactiveFg,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
+                  color: isActive ? const Color(0xFF0F172A) : _inactiveFg,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -160,59 +168,20 @@ class _BackRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: Row(
-          children: [
-            const Icon(Icons.arrow_back,
-                size: 16, color: Color(0xFF6B7280)),
-            const SizedBox(width: 6),
+          children: const [
+            Icon(Icons.arrow_back, size: 18, color: Color(0xFF94A3B8)),
+            SizedBox(width: 10),
             Text(
               'Back',
               style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF94A3B8),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Bottom back button (shared items / announcements) ─────────────────────────
-
-class _BottomBackButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _BottomBackButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.arrow_back,
-                  size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 8),
-              Text(
-                'Back',
-                style: TextStyle(
-                    fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
-          ),
         ),
       ),
     );

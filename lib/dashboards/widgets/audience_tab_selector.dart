@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/dashboards/widgets/audience_tab.dart';
 import 'package:my_app/dashboards/presentations/bloc/audience_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/audience_event.dart';
-import 'package:my_app/dashboards/presentations/bloc/audience_state.dart';
 import 'package:my_app/dashboards/widgets/app_color.dart';
 class AudienceTabSelector extends StatelessWidget {
   final AudienceTab activeTab;

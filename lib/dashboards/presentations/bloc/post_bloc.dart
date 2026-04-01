@@ -17,6 +17,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<LoadMorePosts>(_onLoadMore);
     on<MarkPostAsRead>(_onMarkRead);
     on<CreatePostEvent>(_onCreatePost);   // REGISTER EVENT
+    on<FetchPostById>(_onFetchPostById);
+    on<PublishPostRequested>(_onPublish);
   }
 
   Future<void> _onFetchPosts(
@@ -27,11 +29,16 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       currentPage = 1;
 
       final List<PostModel> fetchedPosts =
-      await repository.fetchPosts(page: currentPage);
+      await repository.fetchPosts(
+        page: currentPage,
+        category: event.category,
+        pageSize: event.pageSize,
+      );
 
       posts = fetchedPosts;
 
-      hasMore = fetchedPosts.length == 10;
+      final pageSize = event.pageSize ?? 10;
+      hasMore = fetchedPosts.length == pageSize;
 
       emit(PostLoaded(posts, hasMore));
     } catch (e) {
@@ -47,11 +54,16 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       currentPage++;
 
       final List<PostModel> newPosts =
-      await repository.fetchPosts(page: currentPage);
+      await repository.fetchPosts(
+        page: currentPage,
+        category: event.category,
+        pageSize: event.pageSize,
+      );
 
       posts.addAll(newPosts);
 
-      hasMore = newPosts.length == 10;
+      final pageSize = event.pageSize ?? 10;
+      hasMore = newPosts.length == pageSize;
 
       emit(PostLoaded(posts, hasMore));
     } catch (e) {
@@ -62,6 +74,35 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   Future<void> _onMarkRead(
       MarkPostAsRead event, Emitter<PostState> emit) async {
     await repository.markAsRead(event.postId);
+    // Update UI immediately if we have a loaded list.
+    final s = state;
+    if (s is PostLoaded) {
+      final updated = s.posts
+          .map((p) => p.id == event.postId ? _markRead(p) : p)
+          .toList(growable: false);
+      posts = List<PostModel>.from(updated);
+      emit(PostLoaded(updated, s.hasMore));
+    }
+  }
+
+  PostModel _markRead(PostModel p) {
+    // Minimal copy (PostModel is immutable).
+    return PostModel(
+      id: p.id,
+      title: p.title,
+      link: p.link,
+      content: p.content,
+      category: p.category,
+      createdByFullName: p.createdByFullName,
+      createdByUsername: p.createdByUsername,
+      createdByDesignation: p.createdByDesignation,
+      createdByProfilePhoto: p.createdByProfilePhoto,
+      isPublished: p.isPublished,
+      isPinned: p.isPinned,
+      isRead: true,
+      createdAt: p.createdAt,
+      attachments: p.attachments,
+    );
   }
 
   Future<void> _onCreatePost(
@@ -69,16 +110,49 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       Emitter<PostState> emit,
       ) async {
     try {
-      await repository.createPost(
-        caption: event.title,
-        link: event.description,
+      final created = await repository.createPost(
+        title: event.title,
+        link: event.link,
+        content: event.content,
         category: event.category,
-        file: event.file,
-        departmentIds: event.departmentIds,
-        designationIds: event.designationIds,
+        isAllUsers: event.isAllUsers,
+        targetDepartments: event.departmentIds,
+        targetDesignations: event.designationIds,
+        targetUsers: event.userIds,
+        attachments: event.attachments,
       );
 
-      add(FetchPosts()); // refresh posts after creating
+      if (event.publishAfterCreate) {
+        await repository.publish(created.id);
+      }
+
+      emit(PostCreated(created));
+      add(FetchPosts(category: event.category)); // refresh category after creating
+    } catch (e) {
+      emit(PostError(e.toString()));
+    }
+  }
+
+  Future<void> _onFetchPostById(
+    FetchPostById event,
+    Emitter<PostState> emit,
+  ) async {
+    emit(PostLoading());
+    try {
+      final post = await repository.fetchPostById(event.postId);
+      emit(PostDetailLoaded(post));
+    } catch (e) {
+      emit(PostError(e.toString()));
+    }
+  }
+
+  Future<void> _onPublish(
+    PublishPostRequested event,
+    Emitter<PostState> emit,
+  ) async {
+    try {
+      await repository.publish(event.postId);
+      add(FetchPosts());
     } catch (e) {
       emit(PostError(e.toString()));
     }

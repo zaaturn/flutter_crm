@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 
 class ModrenLevelTaskRow extends StatefulWidget {
@@ -18,31 +19,37 @@ class ModrenLevelTaskRow extends StatefulWidget {
   });
 
   @override
-  State<ModrenLevelTaskRow> createState() => _SaaSLevelTaskRowState();
+  State<ModrenLevelTaskRow> createState() => _ModrenLevelTaskRowState();
 }
 
-class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
+class _ModrenLevelTaskRowState extends State<ModrenLevelTaskRow> {
   bool _isHovered = false;
+
+  // --- Daxarrow Premium Colors ---
+  static const _brandPurple = Color(0xFF7C3AED); // Your main purple
+  static const _purpleLight = Color(0xFFF5F3FF); // Hover background
+  static const _borderPurple = Color(0xFFEDE9FE); // Subtle border
+  static const _textPrimary = Color(0xFF0F172A);
+  static const _textMuted = Color(0xFF64748B);
 
   Color get _priorityColor {
     switch (widget.task.priority.toLowerCase()) {
-      case 'high': return const Color(0xFFFF4757);
-      case 'low': return const Color(0xFF10B981);
-      default: return const Color(0xFFFF9800);
+      case 'high': return const Color(0xFFEF4444); // Red
+      case 'low': return const Color(0xFF10B981); // Green
+      default: return _brandPurple; // Purple for Medium/Default
     }
   }
 
   Color get _statusColor {
     switch (widget.task.status.toLowerCase()) {
       case 'completed': return const Color(0xFF10B981);
-      case 'in_progress': return const Color(0xFF3B82F6);
-      default: return const Color(0xFF94A3B8);
+      case 'in_progress': return _brandPurple;
+      default: return _textMuted;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
     final bool isCompleted = widget.task.status.toLowerCase() == 'completed';
 
     return MouseRegion(
@@ -52,33 +59,31 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: _isHovered ? const Color(0xFFF8FAFC) : Colors.white,
-            border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9), width: 1)),
+            color: _isHovered ? _purpleLight : Colors.white,
+            // Premium Bottom Border
+            border: const Border(
+              bottom: BorderSide(color: _borderPurple, width: 1),
+            ),
           ),
           child: Row(
             children: [
-
               _buildPriorityIndicator(),
-              const SizedBox(width: 16),
-
+              const SizedBox(width: 20),
 
               _buildTitleSection(),
 
-
               _buildAssigneeSection(),
-
 
               _buildStatusBadge(),
 
-
               _buildDueDateSection(),
 
-
+              // Action Area (Approve or Edit/Delete)
               SizedBox(
-                width: 110,
+                width: 120,
                 child: isCompleted
                     ? _buildApproveButton()
                     : _buildHoverActions(),
@@ -90,17 +95,17 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
     );
   }
 
-  // --- SUB-WIDGETS ---
+  // --- UI COMPONENTS ---
 
   Widget _buildPriorityIndicator() => Container(
-    width: 14, height: 14,
+    width: 16, height: 16,
     decoration: BoxDecoration(
-      color: _priorityColor.withOpacity(0.15),
-      borderRadius: BorderRadius.circular(3),
-      border: Border.all(color: _priorityColor.withOpacity(0.5), width: 1),
+      color: _priorityColor.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: _priorityColor.withOpacity(0.3), width: 1),
     ),
     child: Center(
-      child: Container(width: 4, height: 4, decoration: BoxDecoration(color: _priorityColor, shape: BoxShape.circle)),
+      child: Icon(Icons.bolt_rounded, size: 10, color: _priorityColor),
     ),
   );
 
@@ -108,16 +113,33 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
     flex: 4,
     child: Row(
       children: [
-        Text(
-          "TASK-${widget.task.id.toString().padLeft(3, '0')}",
-          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500, fontFamily: 'monospace'),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _borderPurple,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            "T-${widget.task.id}",
+            style: GoogleFonts.plusJakartaSans(
+                color: _brandPurple,
+                fontSize: 10,
+                fontWeight: FontWeight.w800
+            ),
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             widget.task.title,
-            style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: -0.2),
-            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.plusJakartaSans(
+                color: _textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -128,62 +150,94 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
     flex: 2,
     child: Row(
       children: [
-        CircleAvatar(
-          radius: 10, backgroundColor: const Color(0xFFE2E8F0),
-          child: Text(widget.task.assignedToName[0], style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+        Container(
+          width: 24, height: 24,
+          decoration: const BoxDecoration(color: _brandPurple, shape: BoxShape.circle),
+          child: Center(
+            child: Text(
+                widget.task.assignedToName[0].toUpperCase(),
+                style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)
+            ),
+          ),
         ),
-        const SizedBox(width: 8),
-        Flexible(child: Text(widget.task.assignedToName, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13), overflow: TextOverflow.ellipsis)),
+        const SizedBox(width: 10),
+        Flexible(
+            child: Text(
+                widget.task.assignedToName,
+                style: GoogleFonts.plusJakartaSans(color: _textMuted, fontSize: 13, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis
+            )
+        ),
       ],
     ),
   );
 
   Widget _buildStatusBadge() => SizedBox(
-    width: 100,
+    width: 110,
     child: Row(
       children: [
-        Icon(Icons.radio_button_checked, size: 12, color: _statusColor),
-        const SizedBox(width: 6),
-        Text(widget.task.status.toUpperCase(), style: TextStyle(color: _statusColor, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: _statusColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Text(
+            widget.task.status.toUpperCase(),
+            style: GoogleFonts.plusJakartaSans(
+                color: _statusColor,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5
+            )
+        ),
       ],
     ),
   );
 
   Widget _buildDueDateSection() => SizedBox(
-    width: 120,
+    width: 110,
     child: Row(
       children: [
-        const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF94A3B8)),
-        const SizedBox(width: 6),
-        Text(widget.task.dueDate, style: const TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+        const Icon(Icons.calendar_today_rounded, size: 14, color: _textMuted),
+        const SizedBox(width: 8),
+        Text(
+            widget.task.dueDate,
+            style: GoogleFonts.plusJakartaSans(color: _textMuted, fontSize: 12, fontWeight: FontWeight.w600)
+        ),
       ],
     ),
   );
 
-  // ── NEW: APPROVE BUTTON ───────────────────────────────────────────
+  // ── PREMIUM PURPLE APPROVE BUTTON ───────────────────────────────────
   Widget _buildApproveButton() {
     return InkWell(
       onTap: widget.onApprove,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFF10B981), // Solid Green
-          borderRadius: BorderRadius.circular(6),
+            color: _brandPurple, // Solid Daxarrow Purple
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(color: _brandPurple.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))
+            ]
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.check_circle_outline, size: 14, color: Colors.white),
-            SizedBox(width: 4),
-            Text("APPROVE", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            const Icon(Icons.verified_rounded, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+            Text(
+                "APPROVE",
+                style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900)
+            ),
           ],
         ),
       ),
     );
   }
 
-  // ── HOVER ACTIONS (EDIT/DELETE) ──────────────────────────────────
+  // ── HOVER ACTIONS ──────────────────────────────────────────────────
   Widget _buildHoverActions() {
     return AnimatedOpacity(
       opacity: _isHovered ? 1.0 : 0.0,
@@ -191,9 +245,9 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          _rowIconButton(Icons.edit_outlined, const Color(0xFF3B82F6), widget.onEdit),
-          const SizedBox(width: 4),
-          _rowIconButton(Icons.delete_outline, const Color(0xFFEF4444), widget.onDelete),
+          _rowIconButton(Icons.edit_note_rounded, _brandPurple, widget.onEdit),
+          const SizedBox(width: 6),
+          _rowIconButton(Icons.delete_outline_rounded, const Color(0xFFEF4444), widget.onDelete),
         ],
       ),
     );
@@ -202,10 +256,14 @@ class _SaaSLevelTaskRowState extends State<ModrenLevelTaskRow> {
   Widget _rowIconButton(IconData icon, Color color, VoidCallback? action) {
     return InkWell(
       onTap: action,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.all(6.0),
-        child: Icon(icon, size: 16, color: color),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }

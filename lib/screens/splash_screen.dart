@@ -3,8 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'splash_component.dart';
 import 'splash_widget.dart';
-// EXACT TARGET PATHS:
-import 'package:my_app/screens/device_specific/welcome_mobile.dart';
 import 'package:my_app/core/router/startup_gate.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,6 +13,17 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
+  bool _leftSplash = false;
+
+  void _goToStartupGate() {
+    if (_leftSplash || !mounted) return;
+    _leftSplash = true;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const StartupGate()),
+    );
+  }
+
   // Brand Colors
   static const Color kGreen = Color(0xFF4CAF50);
   static const Color kGreenLight = Color(0xFF81C784);
@@ -59,6 +68,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       _particles.add(Particle.spawn(_rng, randomY: true));
     }
     _setupAnimations();
+    // Failsafe if animation tickers stall (e.g. some device states) — never block startup forever.
+    Future.delayed(const Duration(seconds: 8), _goToStartupGate);
     _runSequence();
   }
 
@@ -101,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         .animate(CurvedAnimation(parent: _tagCtrl, curve: Curves.easeOut));
 
     // 8. Loader
-    _loaderCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 7000));
+    _loaderCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 4000));
     _loaderProgress = TweenSequence<double>([
       TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.72), weight: 60),
       TweenSequenceItem(tween: Tween(begin: 0.72, end: 0.90), weight: 25),
@@ -143,14 +154,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     await Future.delayed(const Duration(milliseconds: 400));
     _tagCtrl.forward();
     await Future.delayed(const Duration(milliseconds: 400));
-    _loaderCtrl.forward().then((_) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const StartupGate()),
-        );
-      }
-    });
+    try {
+      await _loaderCtrl.forward();
+    } finally {
+      _goToStartupGate();
+    }
   }
 
   @override

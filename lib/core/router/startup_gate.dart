@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
@@ -19,15 +21,28 @@ class _StartupGateState extends State<StartupGate> {
     });
   }
 
+  static const _storageTimeout = Duration(seconds: 12);
+
   Future<void> _checkAuth() async {
     final storage = SecureStorageService();
 
-    final token = await storage.readToken();
-    final role = await storage.readRole();
+    String? token;
+    String? role;
+
+    try {
+      token = await storage.readToken().timeout(_storageTimeout);
+      role = await storage.readRole().timeout(_storageTimeout);
+    } on TimeoutException {
+      token = null;
+      role = null;
+    } catch (_) {
+      token = null;
+      role = null;
+    }
 
     if (!mounted) return;
 
-    if (token == null) {
+    if (token == null || token.isEmpty) {
       Navigator.pushNamedAndRemoveUntil(
         context,
         '/employeeLogin',

@@ -16,53 +16,41 @@ class UserRepositoryImpl implements UserRepository {
     String? designation,
     String? search,
   }) async {
-    final response = await remote.getUsers(
+    final rawList = await remote.getUsers(
       department: department,
       designation: designation,
       search: search,
     );
 
-    final results = response is Map && response.containsKey('results')
-        ? response['results']
-        : response;
-
-    return (results as List)
-        .map((e) => UserModel.fromJson(e as Map<String, dynamic>))
+    return rawList
+        .map((e) => UserModel.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
   @override
   Future<List<DepartmentModel>> getDepartments({String? search}) async {
-    final response = await remote.getDepartments(search: search);
-
-    final list = response is Map && response.containsKey('results')
-        ? response['results'] as List
-        : response as List;
+    final list = await remote.getDepartments(search: search);
 
     return list.map((e) {
-      final map = e as Map<String, dynamic>;
+      final map = Map<String, dynamic>.from(e as Map);
 
       return DepartmentModel(
-        id: map["id"],     // ← keep the ID
-        name: map["name"], // ← keep the name
+        id: map['id'] is int ? map['id'] as int : int.tryParse('${map['id']}') ?? 0,
+        name: map['name'] as String? ?? '',
       );
     }).toList();
   }
 
   @override
   Future<List<DesignationModel>> getDesignations({String? search}) async {
-    final response = await remote.getDesignations(search: search);
-
-    final list = response is Map && response.containsKey('results')
-        ? response['results'] as List
-        : response as List;
+    final list = await remote.getDesignations(search: search);
 
     return list.map((e) {
-      final map = e as Map<String, dynamic>;
+      final map = Map<String, dynamic>.from(e as Map);
 
       return DesignationModel(
-        id: map["id"],
-        name: map["name"],
+        id: map['id'] is int ? map['id'] as int : int.tryParse('${map['id']}') ?? 0,
+        name: map['name'] as String? ?? '',
       );
     }).toList();
   }

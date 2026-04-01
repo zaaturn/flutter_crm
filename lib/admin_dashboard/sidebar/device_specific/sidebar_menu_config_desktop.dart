@@ -144,10 +144,4 @@ const sidebarMenuConfig = [
     showDividerAfter: true,
   ),
 
-  SidebarMenuItem(
-    title: "Logout",
-    icon: Icons.logout_rounded,
-    action: SidebarAction.logout,
-    tooltip: "Sign out of session",
-  ),
 ];

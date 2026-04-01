@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 
+import 'api_client.dart';
 import 'secure_storage_service.dart';
 
 class AuthService {
@@ -14,7 +14,6 @@ class AuthService {
   String.fromEnvironment('BASE_URL', defaultValue: 'http://192.168.1.13:8000');
 
   static String get _accountsBase => "$_base/api/accounts/crm";
-  static String get _notificationBase => "$_base/api/leaves";
 
   // =========================
   // LOGIN
@@ -23,6 +22,10 @@ class AuthService {
       String username,
       String password,
       ) async {
+    // Prevent cross-user leakage (stale user_id/user_json/role from prior sessions).
+    await _storage.clearAll();
+    ApiClient().forceUnauthenticated();
+
     final response = await http.post(
       Uri.parse("$_accountsBase/login/"),
       headers: {"Content-Type": "application/json"},
@@ -41,9 +44,9 @@ class AuthService {
     // ─────────────────────────
     // SAVE AUTH DATA
     // ─────────────────────────
-    await _storage.clearTokens();
     await _storage.saveToken(data["access"]);
     await _storage.saveRefreshToken(data["refresh"]);
+    ApiClient().forceAuthenticated();
 
     if (data["user"] != null) {
       await _storage.saveUser(data["user"]);
@@ -75,5 +78,6 @@ class AuthService {
     }
 
     await _storage.clearAll();
+    ApiClient().forceUnauthenticated();
   }
 }

@@ -2,7 +2,7 @@
     <base href="$FLUTTER_BASE_HREF">
 
     <meta charset="UTF-8">
-    <meta name="flutter-renderer" content="canvaskit">
+    <meta name="flutter-renderer" content="auto">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
     <meta name="description" content="A new Flutter project.">
 
@@ -14,6 +14,9 @@
     <link rel="icon" type="image/png" href="logo_dax.png">
     <title>DaxarrowTeams</title>
     <link rel="manifest" href="manifest.json">
+  
+  
+  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
   <style id="splash-screen-style">
     html {
       height: 100%
@@ -22,7 +25,7 @@
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #0C0C0C;
+      background-color: #FFFFFF;
           background-size: 100% 100%;
     }
 
@@ -79,7 +82,6 @@
       document.body.style.background = "transparent";
     }
   </script>
-  <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 
 <body>
@@ -88,6 +90,7 @@
       <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
       <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
   </picture>
+  
 
 <script>
     // This function is called from your Flutter NotificationService
@@ -128,6 +131,13 @@
     }
 </script>
 
+<script>
+  // flutter_native_splash injects this overlay; it only disappears when JS removes it.
+  // Flutter dispatches this event after the first frame is rendered.
+  window.addEventListener('flutter-first-frame', function () {
+    removeSplashFromWeb();
+  });
+</script>
 <script src="flutter_bootstrap.js" async=""></script>
 
 

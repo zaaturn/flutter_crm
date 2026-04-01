@@ -28,7 +28,7 @@ import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 
-import 'package:my_app/event_management/features/presentation/screen/calendar_screen_desktop.dart';
+import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_desktop.dart';
 
 import 'package:my_app/admin_dashboard/screen/device_specific/employee_list_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';

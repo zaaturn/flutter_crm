@@ -239,8 +239,6 @@ class DesktopSectionCardWithHeader extends StatelessWidget {
   }
 }
 
-/// Compact Desktop Section Card
-/// Lighter version with less padding for smaller content
 class DesktopSectionCardCompact extends StatelessWidget {
   final Widget child;
   final EdgeInsets? margin;
@@ -286,8 +284,6 @@ class DesktopSectionCardCompact extends StatelessWidget {
   }
 }
 
-/// Gradient Desktop Section Card
-/// Card with gradient background
 class DesktopSectionCardGradient extends StatelessWidget {
   final Widget child;
   final List<Color>? gradientColors;
@@ -349,8 +345,7 @@ class DesktopSectionCardGradient extends StatelessWidget {
   }
 }
 
-/// Desktop Section Card with Stats
-/// Card optimized for displaying statistics/metrics
+
 class DesktopSectionCardStats extends StatelessWidget {
   final String title;
   final String value;

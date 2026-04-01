@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'api_client.dart';
+import 'notification_payload_router.dart';
 
 class NotificationService {
   final ApiClient _api = ApiClient();
@@ -13,15 +15,46 @@ class NotificationService {
   String get _base => _api.baseLeaves;
 
   final FlutterLocalNotificationsPlugin _local =
-  FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();
 
-  Future<void> init() async {
+  GlobalKey<NavigatorState>? _navigatorKey;
+
+  static const _androidChannelId = 'crm_push_channel';
+  static const _androidChannelName = 'Tasks & events';
+
+  Future<void> init(GlobalKey<NavigatorState> navigatorKey) async {
+    _navigatorKey = navigatorKey;
     if (kIsWeb) return;
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: android);
 
-    await _local.initialize(settings);
+    await _local.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _onLocalNotificationResponse,
+    );
+
+    const channel = AndroidNotificationChannel(
+      _androidChannelId,
+      _androidChannelName,
+      importance: Importance.high,
+      playSound: true,
+    );
+    await _local
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  void _onLocalNotificationResponse(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload == null || payload.isEmpty || _navigatorKey == null) return;
+    try {
+      final data = NotificationPayloadRouter.normalizeRaw(
+        jsonDecode(payload),
+      );
+      NotificationPayloadRouter.handle(data, _navigatorKey!);
+    } catch (_) {}
   }
 
   Future<void> registerDevice({required String owner}) async {
@@ -57,47 +90,56 @@ class NotificationService {
   }
 
   void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-      final notification = message.notification;
-      if (notification == null) return;
+      final title = message.notification?.title ??
+          message.data['title']?.toString() ??
+          'Notification';
+      final body = message.notification?.body ??
+          message.data['body']?.toString() ??
+          '';
 
       const androidDetails = AndroidNotificationDetails(
-        'general_notifications',
-        'General Notifications',
+        _androidChannelId,
+        _androidChannelName,
         importance: Importance.max,
         priority: Priority.high,
       );
 
+      final payload = jsonEncode(message.data);
+
       await _local.show(
         message.hashCode,
-        notification.title,
-        notification.body,
+        title,
+        body,
         const NotificationDetails(android: androidDetails),
+        payload: payload,
       );
     });
   }
 
   void handleNotificationTap(GlobalKey<NavigatorState> navigatorKey) {
+    _navigatorKey = navigatorKey;
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      _navigateFromMessage(message, navigatorKey);
+      _navigateFromMessage(message);
     });
   }
 
   Future<void> handleInitialMessage(GlobalKey<NavigatorState> navigatorKey) async {
-    final message = await FirebaseMessaging.instance.getInitialMessage();
-    if (message != null) _navigateFromMessage(message, navigatorKey);
+    _navigatorKey = navigatorKey;
+    final message = await FirebaseMessaging.instance
+        .getInitialMessage()
+        .timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => null,
+        );
+    if (message != null) _navigateFromMessage(message);
   }
 
-  void _navigateFromMessage(RemoteMessage message, GlobalKey<NavigatorState> navigatorKey) {
-    final data = message.data;
-    if (!data.containsKey('event_id')) return;
-
-    final int eventId = int.tryParse(data['event_id'].toString()) ?? -1;
-    if (eventId == -1) return;
-
-    navigatorKey.currentState?.pushNamed(
-      '/employeeDashboard',
-      arguments: {'openCalendar': true, 'eventId': eventId},
-    );
+  void _navigateFromMessage(RemoteMessage message) {
+    final key = _navigatorKey;
+    if (key == null) return;
+    final data = Map<String, dynamic>.from(message.data);
+    NotificationPayloadRouter.handle(data, key);
   }
 }

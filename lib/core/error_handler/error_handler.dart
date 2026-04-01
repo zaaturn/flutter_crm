@@ -6,7 +6,6 @@ class ErrorHandler {
     if (err is DioException) {
       final response = err.response;
 
-      // Status code handling
       if (response != null) {
         switch (response.statusCode) {
           case 500:

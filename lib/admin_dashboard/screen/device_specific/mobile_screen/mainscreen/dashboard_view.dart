@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
+import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/header.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/welcome_section.dart';
@@ -66,21 +69,35 @@ class _DashboardViewState extends State<DashboardView> {
         children: [
           const Header(),
           Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  WelcomeSection(
-                    firstName: state.user?.firstName ?? (state.username ?? 'Admin'),
-                    lastName: state.user?.lastName ?? '',
-                  ),
+            child: RefreshIndicator(
+              onRefresh: () async {
+                context
+                    .read<AdminDashboardBloc>()
+                    .add(const AdminDashboardRefreshed());
+                context.read<DashboardBloc>().add(DashboardRefreshRequested());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    WelcomeSection(
+                      firstName:
+                          state.user?.firstName ?? (state.username ?? 'Admin'),
+                      lastName: state.user?.lastName ?? '',
+                    ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                  DashboardGrid(employees: displayList),
-                ],
+                    DashboardGrid(employees: displayList),
+
+                    const SizedBox(height: 24),
+                    const MainDashboardEventsPanel(),
+                  ],
+                ),
               ),
             ),
           ),

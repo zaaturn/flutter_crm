@@ -8,6 +8,18 @@ import 'package:my_app/dashboards/presentations/bloc/audience_state.dart';
 class AudienceItemList extends StatelessWidget {
   const AudienceItemList({super.key});
 
+  bool? _selectAllValue(AudienceLoaded state) {
+    if (state.items.isEmpty) return false;
+    final sel = state.selectionFor(state.activeTab);
+    var selectedCount = 0;
+    for (final item in state.items) {
+      if (sel.contains(item)) selectedCount++;
+    }
+    if (selectedCount == 0) return false;
+    if (selectedCount == state.items.length) return true;
+    return null; // indeterminate
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AudienceBloc, AudienceState>(
@@ -66,18 +78,101 @@ class AudienceItemList extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            itemCount: state.items.length,
-            itemBuilder: (_, i) {
-              final item = state.items[i];
-              final checked = state.selected.contains(item);
-              return _CheckItem(
-                label: item,
-                checked: checked,
-                onTap: () => context.read<AudienceBloc>().add(AudienceItemToggled(item)),
-              );
-            },
+          final selectAllValue = _selectAllValue(state);
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+                child: InkWell(
+                  onTap: () {
+                    final next = !(selectAllValue ?? false);
+                    context
+                        .read<AudienceBloc>()
+                        .add(AudienceSelectAllToggled(select: next));
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            tristate: true,
+                            value: selectAllValue,
+                            onChanged: (v) => context
+                                .read<AudienceBloc>()
+                                .add(AudienceSelectAllToggled(select: v ?? true)),
+                            activeColor: const Color(0xFF00BCD4),
+                            side: const BorderSide(
+                              color: Color(0xFFD1D5DB),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Select all',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF111827),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${state.selectionFor(state.activeTab).length} selected',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF6B7280),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  // Fixed extent keeps scrolling smooth for big lists (1000+).
+                  itemExtent: 44,
+                  cacheExtent: 900,
+                  itemCount: state.items.length,
+                  itemBuilder: (_, i) {
+                    final item = state.items[i];
+                    final checked =
+                        state.selectionFor(state.activeTab).contains(item);
+                    return _CheckItem(
+                      label: item,
+                      checked: checked,
+                      onTap: () => context
+                          .read<AudienceBloc>()
+                          .add(AudienceItemToggled(item)),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         }
 

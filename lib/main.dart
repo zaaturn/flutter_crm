@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'firebase_options.dart';
 
@@ -25,13 +26,20 @@ import 'admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'admin_dashboard/repository/admin_repository.dart';
 
 // Calendar / Events
-import 'event_management/features/presentation/bloc/event_bloc.dart';
-import 'event_management/features/calendar/data/repositories/event_repository_impl.dart';
-import 'event_management/features/calendar/data/datasources/event_remote_datasource_impl.dart';
-import 'event_management/features/domain/usecases/create_event.dart' as create_ev;
-import 'event_management/features/domain/usecases/update_event.dart' as update_ev;
-import 'event_management/features/domain/usecases/delete_event.dart' as delete_ev;
-import 'event_management/features/domain/usecases/get_events.dart' as get_ev;
+import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
+import 'package:my_app/event_management/features/dashboard/data/repositories/dashboard_repositories_impl.dart';
+import 'package:my_app/event_management/features/dashboard/domain/usecases/fetch_dashboard_usecase.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/events/data/datasources/event_local_datasource.dart';
+import 'package:my_app/event_management/features/events/data/datasources/event_remote_datasource.dart';
+import 'package:my_app/event_management/features/events/data/repositories/event_repository_impl.dart';
+import 'package:my_app/event_management/features/events/domain/usecases/create_event_usecase.dart';
+import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
+import 'package:my_app/event_management/features/notification/data/datasource/notification_datasource.dart';
+import 'package:my_app/event_management/features/notification/data/repositories/notification_repository_impl.dart';
+import 'package:my_app/event_management/features/notification/domain/usecases/fetch_notification_usecases.dart';
+import 'package:my_app/event_management/features/notification/domain/usecases/mark_read_usecases.dart';
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 // Dashboards Feature
 import 'dashboards/data/datasource/post_remote_datasource.dart';
@@ -47,6 +55,8 @@ import 'dashboards/presentations/bloc/audience_bloc.dart';
 import 'services/flutter_local_notification_service.dart';
 import 'services/notification_service.dart';
 import 'core/router/app_router.dart';
+import 'core/web_splash_remove.dart'
+    if (dart.library.html) 'core/web_splash_remove_web.dart';
 import 'services/api_client.dart';
 
 // Client
@@ -67,30 +77,32 @@ Future<void> main() async {
 
   GoogleFonts.config.allowRuntimeFetching = true;
 
+  await Hive.initFlutter();
+
   // Firebase Init
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
-
-  if (!kIsWeb) {
-    await LocalNotificationService.initialize();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e, st) {
+    debugPrint('Firebase.initializeApp failed: $e\n$st');
   }
 
-  final notificationService = NotificationService();
-  await notificationService.init();
-  notificationService.listenForegroundMessages(navigatorKey);
-  notificationService.handleNotificationTap(navigatorKey);
-  await notificationService.handleInitialMessage(navigatorKey);
+  // Top-level background handler is for mobile isolates; on web it can error or block startup.
+  if (!kIsWeb) {
+    FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+  }
 
   // Shared API Client
   final apiClient = ApiClient();
 
-  // Event Repository
-  final eventRepo = EventRepositoryImpl(
-    EventRemoteDatasourceImpl(),
-  );
+  final eventRemote = EventRemoteDataSourceImpl(apiClient.dio);
+  final eventLocal = EventLocalDataSourceImpl();
+  final eventRepo = EventRepositoryImpl(eventRemote, eventLocal);
+
+  final notificationDataSource = NotificationDataSourceImpl(apiClient.dio);
+  final notificationRepository =
+      NotificationRepositoryImpl(notificationDataSource);
 
   // Create remote datasources
   final postRemoteDataSource = PostRemoteDataSource(apiClient);
@@ -107,7 +119,6 @@ Future<void> main() async {
         RepositoryProvider(create: (_) => EmployeeRepository()),
         RepositoryProvider(create: (_) => LeaveApiService()),
         RepositoryProvider(create: (_) => AdminRepository()),
-        RepositoryProvider<EventRepositoryImpl>.value(value: eventRepo),
         RepositoryProvider(create: (_) => ClientRepository()),
         RepositoryProvider<PostRepository>.value(value: postRepository),
         RepositoryProvider<UserRepository>.value(value: userRepository),
@@ -131,11 +142,31 @@ Future<void> main() async {
             ),
           ),
           BlocProvider<EventBloc>(
-            create: (context) => EventBloc(
-              createEvent: create_ev.CreateEvent(eventRepo),
-              updateEvent: update_ev.UpdateEvent(eventRepo),
-              deleteEvent: delete_ev.DeleteEvent(eventRepo),
-              getEvents: get_ev.GetEvents(eventRepo),
+            create: (_) => EventBloc(
+              createEvent: CreateEventUseCase(eventRepo),
+              updateEvent: UpdateEventUseCase(eventRepo),
+              deleteEvent: DeleteEventUseCase(eventRepo),
+              fetchEvents: FetchEventsUseCase(eventRepo),
+              getEventById: GetEventByIdUseCase(eventRepo),
+              detectConflict: DetectConflictUseCase(),
+              searchEvents: SearchEventsUseCase(eventRepo),
+              acceptEventInvite: AcceptEventInviteUseCase(eventRepo),
+              declineEventInvite: DeclineEventInviteUseCase(eventRepo),
+            ),
+          ),
+          BlocProvider<CalendarBloc>(create: (_) => CalendarBloc()),
+          BlocProvider<DashboardBloc>(
+            create: (_) => DashboardBloc(
+              fetchDashboard: FetchDashboardUseCase(
+                DashboardRepositoryImpl(eventRepo),
+              ),
+            ),
+          ),
+          BlocProvider<NotificationBloc>(
+            create: (_) => NotificationBloc(
+              fetchNotifications:
+                  FetchNotificationsUseCase(notificationRepository),
+              markRead: MarkReadUseCase(notificationRepository),
             ),
           ),
           BlocProvider<ClientBloc>(
@@ -150,10 +181,73 @@ Future<void> main() async {
             ),
           ),
         ],
-        child: const MyApp(),
+        child: const _NotificationAppResumeRefresh(child: MyApp()),
       ),
     ),
   );
+
+  // Native splash (flutter_native_splash) stays up until Flutter paints. Local notifications +
+  // FCM `getInitialMessage()` can block `main()` — run them after the first frame instead.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    removeWebHtmlSplashOverlay();
+    unawaited(_initPushNotificationsAfterFirstFrame());
+  });
+}
+
+Future<void> _initPushNotificationsAfterFirstFrame() async {
+  if (kIsWeb) return;
+  try {
+    await LocalNotificationService.initialize();
+    final notificationService = NotificationService();
+    await notificationService.init(navigatorKey);
+    notificationService.listenForegroundMessages(navigatorKey);
+    notificationService.handleNotificationTap(navigatorKey);
+    await notificationService.handleInitialMessage(navigatorKey);
+  } catch (e, st) {
+    debugPrint('Push notification setup failed: $e\n$st');
+  }
+}
+
+/// Refreshes `GET /api/notifications/` when the app returns to foreground.
+class _NotificationAppResumeRefresh extends StatefulWidget {
+  final Widget child;
+
+  const _NotificationAppResumeRefresh({required this.child});
+
+  @override
+  State<_NotificationAppResumeRefresh> createState() =>
+      _NotificationAppResumeRefreshState();
+}
+
+class _NotificationAppResumeRefreshState
+    extends State<_NotificationAppResumeRefresh> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = navigatorKey.currentContext;
+        if (ctx == null || !ctx.mounted) return;
+        try {
+          ctx.read<NotificationBloc>().add(NotificationLoadRequested());
+        } catch (_) {}
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class MyApp extends StatelessWidget {
@@ -168,6 +262,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         fontFamily: 'PlusJakartaSans',
         fontFamilyFallback: const [
+          'NotoSansSymbols2',
           'NotoSans',
           'DMMono',
         ],

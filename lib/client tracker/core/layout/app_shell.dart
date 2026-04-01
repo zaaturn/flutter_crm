@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:my_app/client tracker/core/constants/app_theme.dart';
-import 'package:my_app/client tracker/core/constants/crm_widget.dart';
+
+// --- FEATURE IMPORTS ---
 import '../../features/dashboard/screen/dashboard_screen.dart';
 import '../../features/clients/screen/add_client_screen.dart';
 import '../../features/clients/screen/client_list_screen.dart';
 import 'package:my_app/client tracker/features/payment/screen/payment_tracker_screen.dart';
 import '../../features/clients/bloc/client_bloc.dart';
 import '../../features/clients/bloc/client_event.dart';
+
+import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
+
+class AppColors {
+  static const Color brandPurple   = Color(0xFF7C3AED); // Main Purple
+  static const Color sidebar       = Color(0xFF000000); // Deep Black
+  static const Color sidebarActive = Color(0xFF1A1A1A); // Active Dark Grey
+  static const Color bg            = Color(0xFFF8FAFC); // Light Slate BG
+  static const Color surface       = Color(0xFFFFFFFF); // White
+  static const Color border        = Color(0xFFEDE9FE); // Lavender Border
+  static const Color textMain      = Color(0xFF0F172A); // Dark Slate
+  static const Color textMuted     = Color(0xFF64748B); // Slate Grey
+}
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -34,19 +47,30 @@ class _AppShellState extends State<AppShell> {
     if (i == 2) context.read<ClientBloc>().add(LoadClientsEvent());
   }
 
+  void _handleBack() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AdminDashboardDesktop()),
+          (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: Row(
         children: [
-          // ── SIDEBAR always visible ──────────────
+
           _Sidebar(selected: _idx, onTap: _go),
-          // ── CONTENT ────────────────────────────
+
           Expanded(
             child: Column(
               children: [
-                _TopBar(idx: _idx, onAdd: () => _go(1)),
+                _TopBar(
+                  idx: _idx,
+                  onAdd: () => _go(1),
+                  onBack: _handleBack,
+                ),
                 Expanded(child: _page()),
               ],
             ),
@@ -58,12 +82,18 @@ class _AppShellState extends State<AppShell> {
 }
 
 // ════════════════════════════════════════════════════
-// TOP BAR
+// TOP BAR (With Back Button & Purple Cap Button)
 // ════════════════════════════════════════════════════
 class _TopBar extends StatelessWidget {
   final int idx;
   final VoidCallback onAdd;
-  const _TopBar({required this.idx, required this.onAdd});
+  final VoidCallback onBack;
+
+  const _TopBar({
+    required this.idx,
+    required this.onAdd,
+    required this.onBack,
+  });
 
   static const _titles = ['Dashboard', 'Add New Client', 'All Clients', 'Payment Tracker'];
   static const _subs   = ['Overview of your Clients', 'Clients › Add Client', 'Clients › List', 'Finance › Monthly Payments'];
@@ -71,32 +101,98 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 1.5)),
       ),
       child: Row(
         children: [
+          // ── BACK BUTTON ──
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textMain, size: 24),
+            tooltip: 'Back to Admin Dashboard',
+          ),
+          const SizedBox(width: 16),
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_titles[idx], style: AppTextStyles.subheading),
-              Text(_subs[idx],   style: AppTextStyles.small),
+              Text(
+                _titles[idx],
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMain,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _subs[idx],
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textMuted,
+                ),
+              ),
             ],
           ),
           const Spacer(),
-          CrmButton('+ Add Client', onTap: onAdd),
+          _PurpleCrmButton(label: '+ Add Client', onTap: onAdd),
         ],
       ),
     );
   }
 }
 
+class _PurpleCrmButton extends StatefulWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _PurpleCrmButton({required this.label, required this.onTap});
+
+  @override
+  State<_PurpleCrmButton> createState() => _PurpleCrmButtonState();
+}
+
+class _PurpleCrmButtonState extends State<_PurpleCrmButton> {
+  bool _hover = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit:  (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: _hover ? const Color(0xFF6D28D9) : AppColors.brandPurple,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.brandPurple.withOpacity(0.2),
+                blurRadius: 12, offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Text(
+            widget.label,
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ════════════════════════════════════════════════════
-// SIDEBAR
+// SIDEBAR (Deep Black & Rounded Highlights)
 // ════════════════════════════════════════════════════
 class _Sidebar extends StatelessWidget {
   final int selected;
@@ -106,63 +202,56 @@ class _Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 248,
+      width: 260,
       child: Container(
         color: AppColors.sidebar,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Logo
-            Container(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
-              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
               child: Row(
                 children: [
                   Container(
-                    width: 38, height: 38,
+                    width: 42, height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [BoxShadow(
-                        color: AppColors.primary.withOpacity(.4),
-                        blurRadius: 12, offset: const Offset(0, 4),
-                      )],
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     alignment: Alignment.center,
-                    child: const Text('🏢', style: TextStyle(fontSize: 18)),
+                    child: const Icon(Icons.auto_awesome_motion_rounded, color: AppColors.brandPurple, size: 22),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Client Tracker', style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
-                      Text('Track Your Client', style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white38, fontSize: 11)),
+                          color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                      Text('Daxarrow ', style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Nav items
+            // Navigation Items
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 children: [
                   _label('MAIN'),
-                  _tile(0, '📊', 'Dashboard',      null),
+                  _tile(0, Icons.grid_view_rounded, 'Dashboard', null),
+                  const SizedBox(height: 12),
                   _label('CLIENTS'),
-                  _tile(1, '➕', 'Add Client',      null),
-                  _tile(2, '👥', 'All Clients',null),
+                  _tile(1, Icons.person_add_alt_1_rounded, 'Add Client', null),
+                  _tile(2, Icons.group_rounded, 'All Clients',null),
+                  const SizedBox(height: 12),
                   _label('FINANCE'),
-                  _tile(3, '💳', 'Payment Tracker', null),
+                  _tile(3, Icons.account_balance_wallet_rounded, 'Payment Tracker', null),
                 ],
               ),
             ),
-
           ],
         ),
       ),
@@ -170,15 +259,15 @@ class _Sidebar extends StatelessWidget {
   }
 
   Widget _label(String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(10, 14, 10, 6),
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
     child: Text(text, style: GoogleFonts.plusJakartaSans(
-        color: Colors.white30, fontSize: 10,
-        fontWeight: FontWeight.w700, letterSpacing: 1.2)),
+        color: Colors.white24, fontSize: 10,
+        fontWeight: FontWeight.w800, letterSpacing: 1.5)),
   );
 
-  Widget _tile(int idx, String emoji, String label, String? badge) {
+  Widget _tile(int idx, IconData icon, String label, String? badge) {
     return _SidebarTile(
-      idx: idx, emoji: emoji, label: label, badge: badge,
+      idx: idx, icon: icon, label: label, badge: badge,
       selected: selected, onTap: onTap,
     );
   }
@@ -186,13 +275,14 @@ class _Sidebar extends StatelessWidget {
 
 class _SidebarTile extends StatefulWidget {
   final int idx, selected;
-  final String emoji, label;
+  final IconData icon;
+  final String label;
   final String? badge;
   final ValueChanged<int> onTap;
 
   const _SidebarTile({
     required this.idx, required this.selected,
-    required this.emoji, required this.label,
+    required this.icon, required this.label,
     required this.badge, required this.onTap,
   });
 
@@ -213,39 +303,40 @@ class _SidebarTileState extends State<_SidebarTile> {
       child: GestureDetector(
         onTap: () => widget.onTap(widget.idx),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.only(bottom: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: active
                 ? AppColors.sidebarActive
-                : _hover ? const Color(0x18FFFFFF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: active
-                ? const Border(left: BorderSide(color: AppColors.primary, width: 3))
-                : null,
+                : _hover ? Colors.white.withOpacity(0.05) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              Text(widget.emoji, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 10),
+              Icon(
+                  widget.icon,
+                  size: 20,
+                  color: active ? AppColors.brandPurple : Colors.white54
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(widget.label,
                     style: GoogleFonts.plusJakartaSans(
                       color: active ? Colors.white : Colors.white60,
-                      fontSize: 13.5,
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 14,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     )),
               ),
               if (widget.badge != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.brandPurple.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(widget.badge!, style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700)),
+                      color: AppColors.brandPurple, fontSize: 10, fontWeight: FontWeight.w800)),
                 ),
             ],
           ),

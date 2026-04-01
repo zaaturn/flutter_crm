@@ -1,41 +1,62 @@
-class AppException implements Exception {
+
+class ServerException implements Exception {
   final String message;
   final int? statusCode;
+  final Map<String, dynamic>? errors;
 
-  const AppException({required this.message, this.statusCode});
+  const ServerException(
+      this.message, {
+        this.statusCode,
+        this.errors,
+      });
 
   @override
-  String toString() => 'AppException: $message (status $statusCode)';
+  String toString() =>
+      'ServerException($statusCode): $message'
+          '${errors != null ? ' | errors: $errors' : ''}';
 }
 
-/// The server returned an unexpected status code.
-class ServerException extends AppException {
-  const ServerException({required String message, int? statusCode})
-      : super(message: message, statusCode: statusCode);
+class NetworkException implements Exception {
+  final String message;
+  const NetworkException([this.message = 'No internet connection']);
+
+  @override
+  String toString() => 'NetworkException: $message';
 }
 
-/// The device has no internet / DNS failed / connection refused.
-class NetworkException extends AppException {
-  const NetworkException({String message = 'No internet connection.'})
-      : super(message: message);
+class CacheException implements Exception {
+  final String message;
+  const CacheException([this.message = 'Cache read/write error']);
+
+  @override
+  String toString() => 'CacheException: $message';
 }
 
-/// JSON could not be parsed into the expected model.
-class ParseException extends AppException {
-  const ParseException({required String message})
-      : super(message: message);
+class AuthException implements Exception {
+  final String message;
+  const AuthException([this.message = 'Authentication failed']);
+
+  @override
+  String toString() => 'AuthException: $message';
 }
 
-/// A 404 from the backend.
-class NotFoundException extends AppException {
-  const NotFoundException({String message = 'Resource not found.'})
-      : super(message: message, statusCode: 404);
+class NotFoundException implements Exception {
+  final String message;
+  const NotFoundException([this.message = 'Resource not found']);
+
+  @override
+  String toString() => 'NotFoundException: $message';
 }
 
-/// Validation errors returned by Django (400).
-class ValidationException extends AppException {
-  final Map<String, dynamic> errors;
+class ValidationException implements Exception {
+  final String message;
+  final Map<String, List<String>> fieldErrors;
 
-  const ValidationException({required this.errors})
-      : super(message: 'Validation failed', statusCode: 400);
+  const ValidationException(
+      this.message, {
+        this.fieldErrors = const {},
+      });
+
+  @override
+  String toString() => 'ValidationException: $message | $fieldErrors';
 }

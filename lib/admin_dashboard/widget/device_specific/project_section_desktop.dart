@@ -343,7 +343,6 @@ class _DesktopProjectSectionState extends State<DesktopProjectSection> {
   }
 }
 
-/// Individual Project Card Widget
 class _ProjectCard extends StatelessWidget {
   final Project project;
   final bool isDark;

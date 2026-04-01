@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 class DashboardTopBar extends StatelessWidget {
   final VoidCallback onProfileClick;
@@ -8,67 +13,91 @@ class DashboardTopBar extends StatelessWidget {
     required this.onProfileClick,
   });
 
-  // SaaS CRM Design Constants
-  static const Color _slate900 = Color(0xFF1E293B);
-  static const Color _slate500 = Color(0xFF94A3B8);
-  static const Color _slate100 = Color(0xFFF1F5F9);
-  static const Color _primaryBlue = Color(0xFF137FEC);
-  static const Color _borderSlate = Color(0xFFE2E8F0);
+  static const Color _bgWhite = Color(0xFFFFFFFF);
+  static const Color _textMain = Color(0xFF0F172A);
+  static const Color _textMuted = Color(0xFF475569);
+  static const Color _purple = Color(0xFF7C3AED);
+  static const Color _purpleLight = Color(0xFFF5F3FF);
+  static const Color _borderLight = Color(0xFFEDE9FE);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      height: 80,
+      decoration: const BoxDecoration(
+        color: _bgWhite,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // 1. WELCOME BACK TEXT
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  "Welcome Back,",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: _slate900,
-                    letterSpacing: -0.5,
+          BlocBuilder<EmployeeBloc, EmployeeState>(
+            builder: (context, state) {
+              final userName = state.employee?.username ?? 'User';
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Dashboard",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: _textMain,
+                      letterSpacing: -0.8,
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Check your progress today",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: _slate500,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Text(
+                        "Welcome back,",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        userName.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: _purple,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
 
-          // 2. SEARCH BAR
-          Expanded(
-            flex: 4,
-            child: _buildSearchBar(),
-          ),
 
-          const SizedBox(width: 40),
-
-          // 3. ACTION ICONS & PROFILE
           Row(
             children: [
-              const _TopBarIcon(
-                icon: Icons.notifications_none_rounded,
-                badge: 2,
-              ),
-              const SizedBox(width: 24),
 
-              // PROFILE CIRCLE
-              _buildProfileCircle(),
+              BlocBuilder<NotificationBloc, NotificationState>(
+                builder: (context, state) {
+                  return _SaaSIconButton(
+                    icon: Icons.notifications_rounded,
+
+                    count: state.unreadCount,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(width: 16),
+
+              _buildDynamicProfile(),
             ],
           ),
         ],
@@ -76,102 +105,126 @@ class DashboardTopBar extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: _slate100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _borderSlate.withOpacity(0.5)),
-      ),
-      child: const TextField(
-        decoration: InputDecoration(
-          hintText: "Search anything...",
-          hintStyle: TextStyle(color: _slate500, fontSize: 13),
-          prefixIcon:
-          Icon(Icons.search_rounded, color: _slate500, size: 18),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 10),
-        ),
-      ),
-    );
-  }
+  Widget _buildDynamicProfile() {
+    return BlocBuilder<EmployeeBloc, EmployeeState>(
+      builder: (context, state) {
+        final name = state.employee?.username ?? 'User';
+        final initials = name.length >= 2
+            ? name.substring(0, 2).toUpperCase()
+            : name.toUpperCase();
 
-  Widget _buildProfileCircle() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onProfileClick,
-        child: Stack(
-          alignment: Alignment.bottomRight,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: _primaryBlue, width: 2),
-                image: const DecorationImage(
-                  image: NetworkImage(
-                    "https://ui-avatars.com/api/?name=User&background=137FEC&color=fff",
-                  ),
-                  fit: BoxFit.cover,
-                ),
-              ),
+        return InkWell(
+          onTap: onProfileClick,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _purpleLight,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _borderLight),
             ),
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                color: _primaryBlue,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add,
-                size: 10,
-                color: Colors.white,
-              ),
-            )
-          ],
-        ),
-      ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _purple,
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _purple.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, right: 4),
+                  child: Icon(Icons.expand_more_rounded, color: _purple, size: 20),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _TopBarIcon extends StatelessWidget {
+class _SaaSIconButton extends StatelessWidget {
   final IconData icon;
-  final int badge;
+  final int count;
+  final VoidCallback onTap;
 
-  const _TopBarIcon({
+  const _SaaSIconButton({
     required this.icon,
-    this.badge = 0,
+    this.count = 0,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Icon(
-          icon,
-          color: const Color(0xFF64748B),
-          size: 24,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 42,
+        width: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F3FF),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEDE9FE)),
         ),
-        if (badge > 0)
-          Positioned(
-            top: -2,
-            right: -2,
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEF4444),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none, // Allows the badge to pop out slightly
+          children: [
+            const Icon(Icons.notifications_rounded, color: Color(0xFF7C3AED), size: 22),
+
+            // Only show the badge if count > 0
+            if (count > 0)
+              Positioned(
+                top: -4,
+                right: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444), // Red badge
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$count',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }

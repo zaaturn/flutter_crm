@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 
 class ModernTaskCard extends StatelessWidget {
@@ -15,21 +16,17 @@ class ModernTaskCard extends StatelessWidget {
     this.onDelete,
   });
 
+  static const _brandPurple = Color(0xFF7C3AED);
+  static const _textPrimary = Color(0xFF0F172A);
+  static const _textMuted = Color(0xFF64748B);
+  static const _borderPurple = Color(0xFFDDD6FE);
+
   Color _getStatusColor(String status) {
     switch (status.trim().toLowerCase()) {
-      case 'completed':
-        return const Color(0xFF10B981);
-      case 'in_progress':
-        return const Color(0xFF3B82F6);
-      default:
-        return const Color(0xFFF59E0B);
+      case 'completed': return const Color(0xFF10B981);
+      case 'in_progress': return _brandPurple;
+      default: return const Color(0xFFF59E0B);
     }
-  }
-
-  Color _getPriorityColor(String p) {
-    if (p.toLowerCase() == 'high') return const Color(0xFFFF4757);
-    if (p.toLowerCase() == 'low') return const Color(0xFF10B981);
-    return const Color(0xFFFF9800);
   }
 
   @override
@@ -37,81 +34,101 @@ class ModernTaskCard extends StatelessWidget {
     final statusColor = _getStatusColor(task.status);
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF334155) : Colors.white,
-        borderRadius: BorderRadius.circular(10),
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? const Color(0xFF475569) : const Color(0xFFE6E8EC),
+          color: isDark ? _brandPurple.withOpacity(0.3) : _borderPurple,
+          width: 1.2,
         ),
       ),
       child: InkWell(
         onTap: () => onTap?.call(task),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: const Color(0xFF2563EB),
-                    child: Text(
-                      task.assignedToName.isNotEmpty
-                          ? task.assignedToName[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       task.title,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? Colors.white
-                            : const Color(0xFF1A1A2E),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : _textPrimary,
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    onPressed: () => onDelete?.call(task),
-                  ),
-                  Badge(
-                    label: task.priority,
-                    color: _getPriorityColor(task.priority),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => onDelete?.call(task),
+                    child: Icon(Icons.archive_outlined,
+                        size: 20,
+                        color: Colors.red.withOpacity(0.7)
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 16,
-                runSpacing: 10,
+              const SizedBox(height: 8),
+
+
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _brandPurple.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.person_pin_rounded, size: 14, color: _brandPurple),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Assign to: ",
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _brandPurple,
+                      ),
+                    ),
+                    Text(
+                      task.assignedToName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: _brandPurple,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 44),
-                  Text(task.assignedToName,
-                      style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF6B7280))),
-                  StatusChip(status: task.status, color: statusColor),
+                  _StatusChip(status: task.status, color: statusColor),
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          size: 14, color: Color(0xFF6B7280)),
+                      const Icon(Icons.calendar_today_rounded, size: 12, color: _textMuted),
                       const SizedBox(width: 6),
-                      Text(task.dueDate,
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF6B7280))),
+                      Text(
+                        task.dueDate,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _textMuted,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -124,62 +141,26 @@ class ModernTaskCard extends StatelessWidget {
   }
 }
 
-class Badge extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const Badge({super.key, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: color),
-      ),
-    );
-  }
-}
-
-class StatusChip extends StatelessWidget {
+class _StatusChip extends StatelessWidget {
   final String status;
   final Color color;
-
-  const StatusChip(
-      {super.key, required this.status, required this.color});
+  const _StatusChip({required this.status, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration:
-            BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(status,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color)),
-        ],
+      child: Text(
+        status.toUpperCase(),
+        style: GoogleFonts.plusJakartaSans(
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          color: color,
+        ),
       ),
     );
   }

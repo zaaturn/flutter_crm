@@ -20,8 +20,20 @@ class AudienceItemToggled extends AudienceEvent {
   AudienceItemToggled(this.item);
 }
 
-/// "Clear All" button pressed.
-class AudienceSelectionCleared extends AudienceEvent {}
+/// Select/deselect all currently visible items for the active tab.
+///
+/// This respects the current search/filter, so "Select all" only applies to the
+/// loaded `items` list, not the entire database.
+class AudienceSelectAllToggled extends AudienceEvent {
+  final bool select;
+  AudienceSelectAllToggled({required this.select});
+}
+
+/// Clear targeting selections. If [onlyTab] is set, only that dimension is cleared.
+class AudienceSelectionCleared extends AudienceEvent {
+  final AudienceTab? onlyTab;
+  AudienceSelectionCleared({this.onlyTab});
+}
 
 /// Internal — fired by debounce timer; not dispatched by UI.
 class AudienceFetchDebounced extends AudienceEvent {

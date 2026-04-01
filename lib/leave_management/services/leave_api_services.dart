@@ -1,4 +1,5 @@
 import 'package:my_app/services/api_client.dart';
+import 'package:my_app/core/error_handler/error_handler.dart';
 
 import '../models/leave_type.dart';
 import '../models/leave_balance.dart';
@@ -11,14 +12,14 @@ class LeaveApiService {
   final ApiClient _api = ApiClient();
 
   // ===============================
-  // COMMON SAFE EXECUTOR
+  // COMMON SAFE EXECUTOR (FIXED)
   // ===============================
   Future<T> _safeRequest<T>(Future<T> Function() request) async {
     try {
       return await request();
     } catch (e) {
-      print("API ERROR: $e");
-      throw Exception("Something went wrong. Please try again.");
+      // 🔥 Use your centralized error handler
+      throw Exception(ErrorHandler.format(e));
     }
   }
 
@@ -83,7 +84,7 @@ class LeaveApiService {
   }
 
   // ===============================
-  // ALL LEAVES (NEW - YOUR DJANGO)
+  // ALL LEAVES
   // ===============================
   Future<List<LeaveRequest>> getAllLeaves() async {
     return _safeRequest(() async {
@@ -119,7 +120,7 @@ class LeaveApiService {
   }
 
   // ===============================
-  // UPDATE LEAVE (NEW)
+  // UPDATE LEAVE
   // ===============================
   Future<String> updateLeave({
     required int leaveId,
@@ -152,7 +153,7 @@ class LeaveApiService {
   }
 
   // ===============================
-  // DELETE LEAVE (NEW)
+  // DELETE LEAVE
   // ===============================
   Future<String> deleteLeave(int leaveId) async {
     return _safeRequest(() async {
@@ -178,7 +179,7 @@ class LeaveApiService {
   }
 
   // ===============================
-  // PENDING LEAVES (ADMIN)
+  // PENDING LEAVES
   // ===============================
   Future<List<LeaveRequest>> getPendingLeaves() async {
     return _safeRequest(() async {
@@ -237,7 +238,7 @@ class LeaveApiService {
   }
 
   // ===============================
-  // DASHBOARD COUNTS (FIXED URL)
+  // DASHBOARD
   // ===============================
   Future<LeaveDashboardModel> getDashboardCounts() async {
     return _safeRequest(() async {

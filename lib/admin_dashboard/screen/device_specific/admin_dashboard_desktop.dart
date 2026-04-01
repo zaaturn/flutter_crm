@@ -10,6 +10,7 @@ import 'package:my_app/admin_dashboard/sidebar/device_specific/sidebar_widgets_d
 import 'package:my_app/admin_dashboard/widget/device_specific/welcome_header_desktop.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/task_section_desktop.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_section_desktop.dart';
+// Note: Ensure the path to DashboardCalendar matches where you saved the code from our previous step
 import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.dart';
 
 class AdminDashboardDesktop extends StatelessWidget {
@@ -90,9 +91,9 @@ class _AdminDashboardDesktopViewState
               ),
             ),
 
-            // ================= RIGHT PANEL (CALENDAR ONLY) =================
+            // ================= RIGHT PANEL (CALENDAR AT TOP) =================
             Container(
-              width: 360,
+              width: 380,
               decoration: BoxDecoration(
                 color: Colors.white,
                 border: Border(
@@ -100,8 +101,16 @@ class _AdminDashboardDesktopViewState
                 ),
               ),
               child: const Padding(
-                padding: EdgeInsets.all(24),
-                child: DashboardCalendar(),
+                padding: EdgeInsets.fromLTRB(12, 20, 12, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // The Calendar now sits at the very top
+                    Expanded(
+                      child: DashboardCalendar(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

@@ -1,7 +1,5 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../model/employee.dart';
 import '../model/project.dart';
@@ -10,8 +8,8 @@ import '../model/task.dart';
 import '../model/user.dart';
 
 import 'package:my_app/services/api_client.dart';
-import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/services/notification_service.dart';
+import 'package:my_app/core/error_handler/error_handler.dart';
 
 class AdminProfile {
   final String username;
@@ -24,15 +22,14 @@ class AdminProfile {
 
   factory AdminProfile.fromJson(Map<String, dynamic> json) {
     return AdminProfile(
-      username: json['username'],
-      role: json['role'],
+      username: json['username']?.toString() ?? '',
+      role: json['role']?.toString() ?? '',
     );
   }
 }
 
 class AdminRepository {
   final ApiClient _api = ApiClient();
-  final SecureStorageService _storage = SecureStorageService();
   final NotificationService _notification = NotificationService();
 
   static const String _base =
@@ -49,65 +46,72 @@ class AdminRepository {
   }
 
   Future<AdminProfile> fetchProfile() async {
-    final res = await _api.get("${_accountsBase}me/");
-    return AdminProfile.fromJson(res);
+    try {
+      final res = await _api.get("${_accountsBase}me/");
+      return AdminProfile.fromJson(res);
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
   }
 
   Future<List<Employee>> fetchLiveEmployees() async {
-    final raw = await _api.getList("${_crmBase}live-status/");
-    return raw
-        .map((e) => Employee.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    try {
+      final raw = await _api.getList("${_crmBase}live-status/");
+      return raw
+          .map((e) => Employee.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
   }
 
   Future<List<User>> fetchEmployees() async {
-    List<User> allUsers = [];
-    String? url = "${_accountsBase}employees/";
+    try {
+      List<User> allUsers = [];
+      String? url = "${_accountsBase}employees/";
 
-    while (url != null) {
-      final res = await _api.get(url);
-      final List<dynamic> results = res['results'];
-      allUsers.addAll(
-        results.map((e) => User.fromJson(Map<String, dynamic>.from(e))).toList(),
-      );
-      url = res['next'];
+      while (url != null) {
+        final res = await _api.get(url);
+        final List<dynamic> results = res['results'];
+        allUsers.addAll(
+          results.map((e) => User.fromJson(Map<String, dynamic>.from(e))).toList(),
+        );
+        url = res['next'];
+      }
+
+      return allUsers;
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
     }
-    return allUsers;
   }
 
   Future<List<Project>> fetchProjects() async {
-    final raw = await _api.getList("${_crmBase}projects/");
-    return raw
-        .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    try {
+      final raw = await _api.getList("${_crmBase}projects/");
+      return raw
+          .map((e) => Project.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
   }
 
   Future<List<DashboardEvent>> fetchEvents() async {
-    final token = await _storage.readToken();
-    final response = await http.get(
-      Uri.parse(_eventBase),
-      headers: {
-        "Content-Type": "application/json",
-        if (token != null && token.isNotEmpty) "Authorization": "Bearer $token",
-      },
-    );
+    try {
+      final data = await _api.get(_eventBase);
 
-    if (response.statusCode == 200) {
-      final decoded = json.decode(response.body);
-      if (decoded is Map<String, dynamic> && decoded.containsKey("results")) {
-        final List<dynamic> results = decoded["results"];
+      final results = data['results'] ?? data;
+
+      if (results is List) {
         return results
-            .map((e) => DashboardEvent.fromJson(Map<String, dynamic>.from(e)))
+            .map((e) =>
+            DashboardEvent.fromJson(Map<String, dynamic>.from(e)))
             .toList();
       }
-      if (decoded is List) {
-        return decoded
-            .map((e) => DashboardEvent.fromJson(Map<String, dynamic>.from(e)))
-            .toList();
-      }
+
       return [];
-    } else {
-      throw Exception("API Error ${response.statusCode}");
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
     }
   }
 
@@ -119,63 +123,41 @@ class AdminRepository {
     required String dueDate,
     PlatformFile? attachment,
   }) async {
-    final token = await _storage.readToken();
-    if (token == null || token.isEmpty) throw Exception("User not authenticated");
+    try {
+      final formData = FormData.fromMap({
+        "assigned_to": assignedTo,
+        "title": title,
+        "description": description,
+        "priority": priority.toUpperCase(),
+        "due_date": dueDate,
+        if (attachment != null && attachment.path != null)
+          "attachment": await MultipartFile.fromFile(
+            attachment.path!,
+            filename: attachment.name,
+          ),
+      });
 
-    final uri = Uri.parse("${_taskBase}tasks/create/");
-    final request = http.MultipartRequest("POST", uri);
-    request.headers["Authorization"] = "Bearer $token";
-
-    request.fields.addAll({
-      "assigned_to": assignedTo.toString(),
-      "title": title,
-      "description": description,
-      "priority": priority.toUpperCase(),
-      "due_date": dueDate,
-    });
-
-    if (attachment != null) {
-      if (kIsWeb) {
-        request.files.add(http.MultipartFile.fromBytes(
-          "attachment",
-          attachment.bytes!,
-          filename: attachment.name,
-        ));
-      } else {
-        request.files.add(await http.MultipartFile.fromPath(
-          "attachment",
-          attachment.path!,
-        ));
-      }
-    }
-
-    final response = await request.send();
-    if (response.statusCode != 201) {
-      final body = await response.stream.bytesToString();
-      throw Exception("API Error ${response.statusCode}: $body");
+      await _api.post("${_taskBase}tasks/create/", body: formData);
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
     }
   }
 
   Future<List<Task>> fetchTasks() async {
-    final raw = await _api.getList("${_crmBase}tasks/");
-    return raw.map((e) => Task.fromJson(Map<String, dynamic>.from(e))).toList();
+    try {
+      final raw = await _api.getList("${_crmBase}tasks/");
+      return raw.map((e) => Task.fromJson(Map<String, dynamic>.from(e))).toList();
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
   }
 
+
   Future<void> approveTask(int taskId) async {
-    final token = await _storage.readToken();
-    if (token == null || token.isEmpty) throw Exception("User not authenticated");
-
-    final response = await http.post(
-      Uri.parse("${_crmBase}tasks/approve/$taskId/"),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    if (response.statusCode != 200) {
-      final decoded = json.decode(response.body);
-      throw Exception(decoded['detail'] ?? "Failed to approve task");
+    try {
+      await _api.post("${_crmBase}tasks/approve/$taskId/");
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
     }
   }
 }

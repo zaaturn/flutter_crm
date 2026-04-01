@@ -13,6 +13,17 @@ class PostLoaded extends PostState {
   PostLoaded(this.posts, this.hasMore);
 }
 
+class PostDetailLoaded extends PostState {
+  final PostModel post;
+  PostDetailLoaded(this.post);
+}
+
+/// Emitted after a post is created (and optionally published) successfully.
+class PostCreated extends PostState {
+  final PostModel post;
+  PostCreated(this.post);
+}
+
 class PostError extends PostState {
   final String message;
 

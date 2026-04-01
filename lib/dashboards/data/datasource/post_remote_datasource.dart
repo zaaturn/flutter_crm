@@ -6,70 +6,91 @@ class PostRemoteDataSource {
 
   PostRemoteDataSource(this.apiClient);
 
-  Future<dynamic> fetchPosts(int page) {
-    return apiClient.get(
-      '/api/posts/',
-      queryParameters: {
-        'page': page,
-      },
-    );
+  static const String _base = '/api/shared/posts/';
+
+  Future<dynamic> fetchPosts({
+    required int page,
+    String? category,
+    int? pageSize,
+  }) {
+    final qp = <String, dynamic>{
+      'page': page,
+      if (category != null && category.trim().isNotEmpty) 'category': category,
+      if (pageSize != null) 'page_size': pageSize,
+    };
+    return apiClient.get(_base, queryParameters: qp);
+  }
+
+  Future<Map<String, dynamic>> fetchPostById(int id) {
+    return apiClient.get('$_base$id/');
   }
 
   Future<void> markAsRead(int id) async {
-    await apiClient.post(
-      '/api/posts/$id/mark_read/',
-    );
+    await apiClient.post('$_base$id/mark_read/');
   }
 
-  Future<void> createPost({
-    required String caption,
+  Future<void> publish(int id) async {
+    await apiClient.patch('$_base$id/publish/');
+  }
+
+  Future<List> fetchSeenBy(int id) async {
+    return apiClient.getList('$_base$id/seen_by/');
+  }
+
+  Future<Map<String, dynamic>> createPost({
+    String? title,
     String? link,
+    required String content,
     required String category,
-    MultipartFile? file,
-    List<int>? userIds,
-    List<int>? departmentIds,
-    List<int>? designationIds,
+    bool isAllUsers = false,
+    List<int>? targetUsers,
+    List<int>? targetDepartments,
+    List<int>? targetDesignations,
+    List<MultipartFile>? attachments,
   }) async {
 
     FormData form = FormData();
 
-    form.fields.add(MapEntry("title", "Shared item"));
-    form.fields.add(MapEntry("content", "${caption.trim()}\n${link ?? ""}"));
+    if (title != null && title.trim().isNotEmpty) {
+      form.fields.add(MapEntry("title", title.trim()));
+    }
+    if (link != null && link.trim().isNotEmpty) {
+      form.fields.add(MapEntry("link", link.trim()));
+    }
+    form.fields.add(MapEntry("content", content.trim()));
     form.fields.add(MapEntry("category", category));
+    form.fields.add(MapEntry("is_all_users", isAllUsers ? "true" : "false"));
 
     /// USERS
-    if (userIds != null) {
-      for (var id in userIds) {
+    if (targetUsers != null) {
+      for (var id in targetUsers) {
         form.fields.add(MapEntry("target_users", id.toString()));
       }
     }
 
     /// DEPARTMENTS
-    if (departmentIds != null) {
-      for (var id in departmentIds) {
+    if (targetDepartments != null) {
+      for (var id in targetDepartments) {
         form.fields.add(MapEntry("target_departments", id.toString()));
       }
     }
 
     /// DESIGNATIONS
-    if (designationIds != null) {
-      for (var id in designationIds) {
+    if (targetDesignations != null) {
+      for (var id in targetDesignations) {
         form.fields.add(MapEntry("target_designations", id.toString()));
       }
     }
 
-    /// FILE
-    if (file != null) {
-      form.files.add(
-        MapEntry(
-          "attachments",
-          file,
-        ),
-      );
+    /// ATTACHMENTS (multiple)
+    if (attachments != null) {
+      for (final f in attachments) {
+        form.files.add(MapEntry("attachments", f));
+      }
     }
 
-    await apiClient.post(
-      "/api/posts/",
+    return await apiClient.post(
+      _base,
       body: form,
     );
   }

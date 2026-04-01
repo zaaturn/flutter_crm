@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
@@ -23,9 +24,14 @@ class DesktopTaskSectionModern extends StatefulWidget {
 }
 
 class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
-  final ScrollController _scrollController = ScrollController();
   late List<Task> _localTasks;
   String _selectedFilter = 'all';
+  bool _isExpanded = true; // Controls the visibility of the list
+
+  // --- Brand Colors ---
+  static const _brandPurple = Color(0xFF7C3AED);
+  static const _purpleLight = Color(0xFFF5F3FF);
+  static const _borderPurple = Color(0xFFDDD6FE);
 
   @override
   void initState() {
@@ -39,78 +45,11 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
     _localTasks = List.from(widget.tasks);
   }
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   List<Task> get _filteredTasks {
     if (_selectedFilter == 'all') return _localTasks;
     return _localTasks
         .where((task) => task.status.trim().toLowerCase() == _selectedFilter)
         .toList();
-  }
-
-  int _getCountForFilter(String filter) {
-    if (filter == 'all') return _localTasks.length;
-    return _localTasks
-        .where((t) => t.status.trim().toLowerCase() == filter)
-        .length;
-  }
-
-  // ── ARCHIVE DOUBLE CONFIRMATION DIALOG ──
-  void _showArchiveConfirmation(BuildContext context, Task task) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.archive_outlined, color: Color(0xFF10B981)),
-            SizedBox(width: 10),
-            Text("Archive Task?", style: TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Are you sure you want to approve and archive \"${task.title}\"?"),
-            const SizedBox(height: 12),
-            const Text(
-              "This action is permanent and will remove the task from the active workspace for all users.",
-              style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.4),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            onPressed: () {
-              // 1. Dispatch BLoC event to archive on Backend
-              context.read<AdminDashboardBloc>().add(ApproveTaskRequested(taskId: task.id));
-
-              // 2. Optimistic UI update (remove locally immediately)
-              setState(() {
-                _localTasks.removeWhere((t) => t.id == task.id);
-              });
-
-              Navigator.pop(ctx);
-            },
-            child: const Text("Confirm & Archive", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -121,117 +60,136 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        // --- ADDED PURPLE BORDER ---
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? _brandPurple.withOpacity(0.3) : _borderPurple,
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: _brandPurple.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHeader(isDark),
-          Divider(
-              height: 1,
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE8E8ED)),
-          const SizedBox(height: 20),
-          _buildFilterTabs(isDark),
-          const SizedBox(height: 20),
-          _buildTaskList(filteredTasks, isDark),
+          _buildPremiumHeader(isDark),
+
+          // Animated Visibility for the Dropdown content
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Column(
+              children: [
+                const Divider(height: 1, color: _borderPurple),
+                _buildTaskList(filteredTasks, isDark),
+              ],
+            ),
+            crossFadeState: _isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 300),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(bool isDark) {
+  Widget _buildPremiumHeader(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
+          // Icon Box
           Container(
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF0D3199), Color(0xFF1E40AF)]),
+              color: _brandPurple,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.task_alt_rounded, color: Colors.white, size: 24),
+            child: const Icon(Icons.auto_awesome_motion_rounded, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 16),
+
+          // Title Logic
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Projects & Tasks',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : const Color(0xFF1A1A2E))),
-                Text('${_localTasks.length} total tasks',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF8B8B9A))),
+                Text(
+                  'Workspace Tasks',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+                Text(
+                  'Viewing ${_selectedFilter.replaceAll('_', ' ')} items',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFilterTabs(bool isDark) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
-        children: [
-          _buildFilterTab('all', 'All Tasks', isDark),
-          const SizedBox(width: 8),
-          _buildFilterTab('pending', 'Pending', isDark),
-          const SizedBox(width: 8),
-          _buildFilterTab('in_progress', 'In Progress', isDark),
-          const SizedBox(width: 8),
-          _buildFilterTab('completed', 'Completed', isDark),
-        ],
-      ),
-    );
-  }
+          // --- THE DROPDOWN BUTTON ---
+          _buildFilterDropdown(isDark),
 
-  Widget _buildFilterTab(String filter, String label, bool isDark) {
-    final isSelected = _selectedFilter == filter;
-    final count = _getCountForFilter(filter);
+          const SizedBox(width: 12),
 
-    return InkWell(
-      onTap: () => setState(() => _selectedFilter = filter),
-      borderRadius: BorderRadius.circular(8),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF3B4DE0) : const Color(0xFFEEF0FF))
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Text(label,
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected
-                        ? (isDark ? Colors.white : const Color(0xFF3B4DE0))
-                        : const Color(0xFF6B6B7B))),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? (isDark ? Colors.white24 : const Color(0xFF3B4DE0))
-                    : const Color(0xFFE8E8ED),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text('$count',
-                  style: const TextStyle(fontSize: 12, color: Colors.white)),
+          // Expand/Collapse Toggle
+          IconButton(
+            onPressed: () => setState(() => _isExpanded = !_isExpanded),
+            icon: Icon(
+              _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+              color: _brandPurple,
             ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _purpleLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _borderPurple),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedFilter,
+          icon: const Icon(Icons.filter_list_rounded, color: _brandPurple, size: 18),
+          dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+            color: _brandPurple,
+          ),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                _selectedFilter = newValue;
+                _isExpanded = true; // Auto expand when filter changes
+              });
+            }
+          },
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text("All Categories")),
+            DropdownMenuItem(value: 'pending', child: Text("Pending Only")),
+            DropdownMenuItem(value: 'in_progress', child: Text("In Progress")),
+            DropdownMenuItem(value: 'completed', child: Text("Completed")),
           ],
         ),
       ),
@@ -240,44 +198,72 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
 
   Widget _buildTaskList(List<Task> filteredTasks, bool isDark) {
     if (filteredTasks.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(60),
-        child: Center(child: Text('No tasks found in this category')),
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox_rounded, color: _brandPurple.withOpacity(0.2), size: 48),
+            const SizedBox(height: 12),
+            Text(
+              'No tasks in this category',
+              style: GoogleFonts.plusJakartaSans(color: Colors.grey, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: const EdgeInsets.all(20),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 480),
+        constraints: const BoxConstraints(maxHeight: 500),
         child: ListView.separated(
-          controller: _scrollController,
-          itemCount: filteredTasks.length,
           shrinkWrap: true,
+          itemCount: filteredTasks.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final task = filteredTasks[index];
-            final bool isCompleted = task.status.trim().toLowerCase() == 'completed';
-
             return ModernTaskCard(
               task: task,
               isDark: isDark,
               onTap: widget.onTaskTap,
               onDelete: (taskToArchive) {
-                if (isCompleted) {
+                if (task.status.trim().toLowerCase() == 'completed') {
                   _showArchiveConfirmation(context, taskToArchive);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Only completed tasks can be archived and approved."),
-                      backgroundColor: Colors.orange,
-                    ),
+                    const SnackBar(content: Text("Only completed tasks can be archived.")),
                   );
                 }
               },
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _showArchiveConfirmation(BuildContext context, Task task) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text("Confirm Archive", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
+        content: Text("Do you want to archive \"${task.title}\"? This action is permanent."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: _brandPurple, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            onPressed: () {
+              context.read<AdminDashboardBloc>().add(ApproveTaskRequested(taskId: task.id));
+              setState(() => _localTasks.removeWhere((t) => t.id == task.id));
+              Navigator.pop(ctx);
+            },
+            child: const Text("Archive Now", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }

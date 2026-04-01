@@ -6,10 +6,11 @@ class DashboardSharedItemsSection extends StatelessWidget {
 
   const DashboardSharedItemsSection({super.key, required this.items});
 
-  // SaaS Design Palette
-  static const Color _primaryBlue = Color(0xFF137FEC);
-  static const Color _textMain = Color(0xFF1E293B);
-  static const Color _textMuted = Color(0xFF94A3B8);
+  // --- Professional Purple SaaS Palette ---
+  static const Color _primaryPurple = Color(0xFF7C3AED);
+  static const Color _accentPurple = Color(0xFFF5F3FF);
+  static const Color _textMain = Color(0xFF1E1B4B);
+  static const Color _textMuted = Color(0xFF6366F1);
 
   @override
   Widget build(BuildContext context) {
@@ -17,30 +18,44 @@ class DashboardSharedItemsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Heading Section
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4.0),
-          child: Text(
-            "Shared Items", // Changed heading as requested
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: _textMain,
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: _primaryPurple,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "Shared Items",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: _textMain,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
 
-        // Single Glass Container for all items
+        // Single Glass Container
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.65),
+            color: Colors.white.withOpacity(0.8),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.4)),
+            border: Border.all(color: _primaryPurple.withOpacity(0.1)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: _primaryPurple.withOpacity(0.06),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -55,7 +70,7 @@ class DashboardSharedItemsSection extends StatelessWidget {
               separatorBuilder: (context, index) => Divider(
                 height: 1,
                 thickness: 1,
-                color: Colors.black.withOpacity(0.05),
+                color: _primaryPurple.withOpacity(0.05),
                 indent: 16,
                 endIndent: 16,
               ),
@@ -68,70 +83,93 @@ class DashboardSharedItemsSection extends StatelessWidget {
   }
 
   Widget _buildSharedItemRow(SharedItemModel item) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center, // Center aligned like activity rows
-        children: [
-          // Icon Circle
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: _primaryBlue.withOpacity(0.1),
-              shape: BoxShape.circle,
+    return InkWell( // Added ripple for professional feel
+      onTap: () {},
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            // Icon Circle with Gradient or Solid Purple
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _accentPurple,
+                borderRadius: BorderRadius.circular(14), // Squircle look
+              ),
+              child: const Icon(
+                Icons.folder_shared_rounded, // Swapped for a more "Shared" vibe
+                color: _primaryPurple,
+                size: 22,
+              ),
             ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: _primaryBlue,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
 
-          // Item Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: _textMain,
+            // Item Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _textMain,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Shared by ${item.sharedBy}",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: _textMuted,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        "Shared by ",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _textMuted.withOpacity(0.7),
+                        ),
+                      ),
+                      Text(
+                        item.sharedBy,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _primaryPurple,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Trailing Arrow (Optional, common in this UI style)
-          Icon(
-            Icons.chevron_right_rounded,
-            color: _textMuted.withOpacity(0.5),
-            size: 20,
-          ),
-        ],
+            // Trailing Arrow
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: _primaryPurple.withOpacity(0.3),
+              size: 14,
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return const Padding(
-      padding: EdgeInsets.all(40),
+    return Padding(
+      padding: const EdgeInsets.all(48),
       child: Center(
-        child: Text(
-          "No shared items available",
-          style: TextStyle(color: _textMuted, fontSize: 14),
+        child: Column(
+          children: [
+            Icon(Icons.auto_awesome_motion_rounded, color: _primaryPurple.withOpacity(0.2), size: 40),
+            const SizedBox(height: 12),
+            const Text(
+              "No shared items yet",
+              style: TextStyle(
+                color: _textMuted,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );

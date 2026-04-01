@@ -5,13 +5,21 @@ import 'package:flutter/material.dart';
 import 'secure_storage_service.dart';
 
 class ApiClient {
-  // --- Singleton Pattern ---
+
   ApiClient._internal() {
     _init();
-    _checkInitialAuth(); // Check auth status on startup
+    _checkInitialAuth();
   }
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
+
+  static const String _baseRaw = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://192.168.1.13:8000',
+  );
+
+  /// Base URL with trailing slashes stripped (avoids `//api/...` URLs).
+  String get _rootBase => _baseRaw.replaceAll(RegExp(r'/+$'), '');
 
   // --- Dependencies & State ---
   final SecureStorageService _storage = SecureStorageService();
@@ -30,30 +38,47 @@ class ApiClient {
   // This synchronous getter fixes your BLoC errors
   bool get isAuthenticated => _isAuthenticated;
 
+  /// Allows non-Dio login/logout flows to keep auth state in sync.
+  void forceAuthenticated() => _isAuthenticated = true;
+  void forceUnauthenticated() => _isAuthenticated = false;
+
+  /// Shared [Dio] for feature modules (e.g. event management) that use `/api/...` paths.
+  Dio get dio => _dio;
+
   Future<void> _checkInitialAuth() async {
     final token = await _storage.readToken();
     _isAuthenticated = token != null && token.isNotEmpty;
   }
 
   // --- Endpoints ---
-  static const String _base =
-  String.fromEnvironment('BASE_URL', defaultValue: 'http://192.168.1.13:8000');
-
-  String get baseAccounts => "$_base/api/accounts/crm";
-  String get baseEmployee => "$_base/api/employee/crm";
-  String get baseLeaves => "$_base/api/leaves";
+  String get baseAccounts => '$_rootBase/api/accounts/crm';
+  String get baseEmployee => '$_rootBase/api/employee/crm';
+  String get baseLeaves => '$_rootBase/api/leaves';
 
   // --- Initialization & Interceptors ---
   void _init() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: _base,
+        baseUrl: _rootBase,
         connectTimeout: const Duration(seconds: 20),
         receiveTimeout: const Duration(seconds: 20),
         responseType: ResponseType.json,
         headers: {"Accept": "application/json"},
       ),
     );
+
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: true,
+          error: true,
+        ),
+      );
+    }
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -112,29 +137,32 @@ class ApiClient {
 
             _isRefreshing = true;
             ApiClient.showLoader();
-            final newToken = await _performTokenRefresh();
-            ApiClient.hideLoader();
-            _isRefreshing = false;
+            try {
+              final newToken = await _performTokenRefresh();
 
-            if (newToken != null) {
-              _isAuthenticated = true;
-              final opts = error.requestOptions;
-              opts.headers["Authorization"] = "Bearer $newToken";
-              try {
-                final response = await _dio.fetch(opts);
-                return handler.resolve(response);
-              } catch (_) {
-                return handler.reject(error);
+              if (newToken != null) {
+                _isAuthenticated = true;
+                final opts = error.requestOptions;
+                opts.headers["Authorization"] = "Bearer $newToken";
+                try {
+                  final response = await _dio.fetch(opts);
+                  return handler.resolve(response);
+                } catch (_) {
+                  return handler.reject(error);
+                }
+              } else {
+                _isAuthenticated = false;
+                await _storage.clearTokens();
+                return handler.reject(
+                  DioException(
+                    requestOptions: error.requestOptions,
+                    error: "Session expired. Please login again.",
+                  ),
+                );
               }
-            } else {
-              _isAuthenticated = false;
-              await _storage.clearTokens();
-              return handler.reject(
-                DioException(
-                  requestOptions: error.requestOptions,
-                  error: "Session expired. Please login again.",
-                ),
-              );
+            } finally {
+              ApiClient.hideLoader();
+              _isRefreshing = false;
             }
           }
           handler.next(error);
@@ -240,6 +268,27 @@ class ApiClient {
       }) async {
     try {
       final response = await _dio.put(
+        url,
+        data: body ?? {},
+        queryParameters: queryParameters,
+        cancelToken: _masterCancelToken,
+      );
+      return _parseMap(response.data);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  // ===============================
+  // PATCH METHOD
+  // ===============================
+  Future<Map<String, dynamic>> patch(
+    String url, {
+    Object? body,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      final response = await _dio.patch(
         url,
         data: body ?? {},
         queryParameters: queryParameters,

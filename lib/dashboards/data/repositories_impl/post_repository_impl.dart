@@ -9,12 +9,30 @@ class PostRepositoryImpl implements PostRepository {
   PostRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<List<PostModel>> fetchPosts({int page = 1}) async {
-    final response = await remoteDataSource.fetchPosts(page);
+  Future<List<PostModel>> fetchPosts({
+    int page = 1,
+    String? category,
+    int? pageSize,
+  }) async {
+    final response = await remoteDataSource.fetchPosts(
+      page: page,
+      category: category,
+      pageSize: pageSize,
+    );
 
-    final List results = response.data['results'];
+    final data = response;
+    final List results =
+        data is List ? data : (data['results'] as List? ?? const []);
 
-    return results.map((json) => PostModel.fromJson(json)).toList();
+    return results
+        .map((json) => PostModel.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+
+  @override
+  Future<PostModel> fetchPostById(int postId) async {
+    final data = await remoteDataSource.fetchPostById(postId);
+    return PostModel.fromJson(Map<String, dynamic>.from(data));
   }
 
   @override
@@ -23,22 +41,38 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<void> createPost({
-    required String caption,
+  Future<void> publish(int postId) async {
+    await remoteDataSource.publish(postId);
+  }
+
+  @override
+  Future<List<dynamic>> fetchSeenBy(int postId) async {
+    final data = await remoteDataSource.fetchSeenBy(postId);
+    return List<dynamic>.from(data);
+  }
+
+  @override
+  Future<PostModel> createPost({
+    String? title,
     String? link,
+    required String content,
     required String category,
-    MultipartFile? file,
-    List<int>? userIds,
-    List<int>? departmentIds,
-    List<int>? designationIds,
+    bool isAllUsers = false,
+    List<int>? targetUsers,
+    List<int>? targetDepartments,
+    List<int>? targetDesignations,
+    List<MultipartFile>? attachments,
   }) async {
-    await remoteDataSource.createPost(
-      caption: caption,
+    final data = await remoteDataSource.createPost(
+      title: title,
       link: link,
+      content: content,
       category: category,
-      file: file,
-      userIds: userIds,
-      departmentIds: departmentIds,
-      designationIds: designationIds,
+      isAllUsers: isAllUsers,
+      targetUsers: targetUsers,
+      targetDepartments: targetDepartments,
+      targetDesignations: targetDesignations,
+      attachments: attachments,
     );
+    return PostModel.fromJson(Map<String, dynamic>.from(data));
   }}

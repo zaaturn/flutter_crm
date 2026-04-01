@@ -7,17 +7,17 @@ class AppConstants {
   );
 
   // API endpoints
-  static const String clients     = '/api/clients/';
-  static const String services    = '/api/services/';
-  static const String credentials = '/api/credentials/';
-  static const String payments    = '/api/payments/';
-  static const String dashboard   = '/api/dashboard/';
+  static const String clients     = '/api/client/clients/';
+  static const String services    = '/api/client/services/';
+  static const String credentials = '/api/client/credentials/';
+  static const String payments    = '/api/client/payments/';
+  static const String dashboard   = '/api/client/dashboard/';
   static const String events      = '/api/events/';
 
-  static String clientById(int id)           => '/api/clients/$id/';
-  static String servicesByClient(int cid)    => '/api/services/client/$cid/';
-  static String credentialsByClient(int cid) => '/api/credentials/client/$cid/';
-  static String paymentById(int id)          => '/api/payments/$id/';
+  static String clientById(int id)           => '/api/client/clients/$id/';
+  static String servicesByClient(int cid)    => '/api/client/services/client/$cid/';
+  static String credentialsByClient(int cid) => '/api/client/credentials/client/$cid/';
+  static String paymentById(int id)          => '/api/client/payments/$id/';
 
   static const List<String> platforms = [
     'youtube',

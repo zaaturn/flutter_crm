@@ -11,7 +11,8 @@ import '../sidebar/sidebar_drawer.dart';
 import '../widget/welcome_header.dart';
 import '../widget/employee_section.dart';
 import '../widget/task_section.dart';
-import '../widget/event_section.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
 
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/mobile_employee_section.dart';
@@ -288,6 +289,7 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
         context
             .read<AdminDashboardBloc>()
             .add(const AdminDashboardRefreshed());
+        context.read<DashboardBloc>().add(DashboardRefreshRequested());
       },
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -312,8 +314,8 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
             _AnimatedCard(child: TaskSection(tasks: state.tasks)),
             const SizedBox(height: 20),
 
-            // Events
-            _AnimatedCard(child: EventSection(events: state.events)),
+            // Events (Event Management API — today + upcoming)
+            _AnimatedCard(child: const MainDashboardEventsPanel()),
           ],
         ),
       ),

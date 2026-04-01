@@ -12,11 +12,16 @@ class DashboardEvent {
   });
 
   factory DashboardEvent.fromJson(Map<String, dynamic> json) {
+    DateTime parseDt(dynamic v) {
+      final s = v?.toString();
+      if (s == null || s.isEmpty) return DateTime.now();
+      return DateTime.tryParse(s)?.toLocal() ?? DateTime.now();
+    }
     return DashboardEvent(
       id: json['id'].toString(),
-      title: json['title'] ?? '',
-      start: DateTime.parse(json['start']).toLocal(),
-      end: DateTime.parse(json['end']).toLocal(),
+      title: json['title']?.toString() ?? '',
+      start: parseDt(json['start']),
+      end: parseDt(json['end']),
     );
   }
 }

@@ -13,7 +13,9 @@ import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_wi
 import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/list_view.dart';
 
 class EmployeeTaskTrackerScreen extends StatefulWidget {
-  const EmployeeTaskTrackerScreen({super.key});
+  final int? focusTaskId;
+
+  const EmployeeTaskTrackerScreen({super.key, this.focusTaskId});
 
   @override
   State<EmployeeTaskTrackerScreen> createState() =>
@@ -39,6 +41,14 @@ class _EmployeeTaskTrackerScreenState
   static const _high = Color(0xFFEF4444);
   static const _medium = Color(0xFFF97316);
   static const _low = Color(0xFF10B981);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focusTaskId != null) {
+      _isBoardView = false;
+    }
+  }
 
   @override
   void dispose() {
@@ -111,7 +121,7 @@ class _EmployeeTaskTrackerScreenState
   Widget build(BuildContext context) {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
-        final tasks = state.tasks ?? [];
+        final tasks = state.tasks;
         final filtered = _filtered(tasks);
 
         final pending =

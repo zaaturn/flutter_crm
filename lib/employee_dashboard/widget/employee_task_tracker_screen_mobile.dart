@@ -7,17 +7,27 @@ import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
 import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
-import 'package:my_app/employee_dashboard/utils/design_tokens.dart';
-
 class EmployeeTaskTrackerScreenMobile extends StatefulWidget {
-  const EmployeeTaskTrackerScreenMobile({super.key});
+  /// Highlights the task row when opened from a notification.
+  final int? focusTaskId;
+
+  const EmployeeTaskTrackerScreenMobile({super.key, this.focusTaskId});
 
   @override
-  State<EmployeeTaskTrackerScreenMobile> createState() => _EmployeeTaskTrackerScreenMobileState();
+  State<EmployeeTaskTrackerScreenMobile> createState() =>
+      _EmployeeTaskTrackerScreenMobileState();
 }
 
 class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScreenMobile> {
   bool _isBoardView = true;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.focusTaskId != null) {
+      _isBoardView = false;
+    }
+  }
   String? _selectedStatus;
   String? _selectedPriority;
   final TextEditingController _searchCtrl = TextEditingController();
@@ -57,7 +67,7 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
   Widget build(BuildContext context) {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
-        final allTasks = state.tasks ?? [];
+        final allTasks = state.tasks;
         final filteredTasks = _getFilteredTasks(allTasks);
 
         return Scaffold(
@@ -150,7 +160,10 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: tasks.length,
-      itemBuilder: (context, index) => _MobileTaskCard(task: tasks[index]),
+      itemBuilder: (context, index) => _MobileTaskCard(
+        task: tasks[index],
+        highlight: widget.focusTaskId == tasks[index].id,
+      ),
     );
   }
 
@@ -207,7 +220,10 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
             ),
             ...columnTasks.map((task) => Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: _MobileTaskCard(task: task),
+              child: _MobileTaskCard(
+              task: task,
+              highlight: widget.focusTaskId == task.id,
+            ),
             )),
           ],
         ),
@@ -301,7 +317,12 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
 // ── DYNAMIC TASK CARD (AUTO-ADJUSTS SIZE) ──────────────────────────────────
 class _MobileTaskCard extends StatelessWidget {
   final TaskModel task;
-  const _MobileTaskCard({required this.task});
+  final bool highlight;
+
+  const _MobileTaskCard({
+    required this.task,
+    this.highlight = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -311,9 +332,18 @@ class _MobileTaskCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: highlight ? const Color(0xFF5452F6) : Colors.grey.shade100,
+          width: highlight ? 2.5 : 1,
+        ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+          BoxShadow(
+            color: highlight
+                ? const Color(0xFF5452F6).withOpacity(0.12)
+                : Colors.black.withOpacity(0.02),
+            blurRadius: highlight ? 16 : 10,
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: Column(

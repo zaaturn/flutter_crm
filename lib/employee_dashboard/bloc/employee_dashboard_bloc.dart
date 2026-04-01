@@ -6,13 +6,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'employee_dashboard_event.dart';
 import 'employee_dashboard_state.dart';
 import '../repository/employee_dashboard_repository.dart';
-import 'package:my_app/services/api_client.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
 
 class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repo;
 
   Timer? _pollingTimer;
+  final SecureStorageService _storage = SecureStorageService();
 
   EmployeeBloc({required this.repo})
       : super(EmployeeState(loading: true)) {
@@ -34,8 +35,13 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       LoadDashboard event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (!ApiClient().isAuthenticated) return;
+    // Never rely on ApiClient().isAuthenticated here (it can be stale right after login).
+    // If there is no token, we reset state so we never show the previous user's profile.
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) {
+      emit(EmployeeState(loading: false));
+      return;
+    }
 
     emit(state.copyWith(loading: true, error: null));
 
@@ -45,8 +51,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       final tasks = await repo.fetchTasks();
       final sharedItems = await repo.fetchSharedItems();
       final events = await repo.fetchEvents();
-
-      if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
@@ -58,8 +62,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         error: null,
       ));
     } catch (err) {
-      if (!ApiClient().isAuthenticated) return;
-
       emit(state.copyWith(
         loading: false,
         error: ErrorHandler.format(err),
@@ -74,16 +76,17 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ToggleCheckInEvent event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (!ApiClient().isAuthenticated) return;
+    final userId = await _storage.readUserId();
+    if (userId == null || userId.isEmpty) {
+      emit(state.copyWith(error: "Session expired. Please login again."));
+      return;
+    }
 
     emit(state.copyWith(loading: true, error: null));
 
     try {
       await repo.toggleCheckIn();
       final attendance = await repo.fetchAttendance();
-
-      if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
@@ -105,8 +108,11 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ToggleBreakEvent event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (!ApiClient().isAuthenticated) return;
+    final userId = await _storage.readUserId();
+    if (userId == null || userId.isEmpty) {
+      emit(state.copyWith(error: "Session expired. Please login again."));
+      return;
+    }
 
     emit(state.copyWith(loading: true, error: null));
 
@@ -125,8 +131,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       await repo.toggleBreak();
 
       final attendance = await repo.fetchAttendance();
-
-      if (!ApiClient().isAuthenticated) return;
 
       emit(state.copyWith(
         loading: false,
@@ -158,8 +162,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     _pollingTimer = Timer.periodic(
       const Duration(seconds: 12),
           (_) async {
-
-        if (!ApiClient().isAuthenticated) {
+        final token = await _storage.readToken();
+        if (token == null || token.isEmpty) {
           _pollingTimer?.cancel();
           _pollingTimer = null;
           return;
@@ -167,8 +171,6 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
         try {
           final tasks = await repo.fetchTasks();
-
-          if (!ApiClient().isAuthenticated) return;
 
           emit(state.copyWith(tasks: tasks));
         } catch (err) {
@@ -198,8 +200,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       UpdateTaskStatus event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (!ApiClient().isAuthenticated) return;
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) return;
 
     final optimisticTasks = state.tasks.map((task) {
       if (task.id == event.taskId) {
@@ -213,7 +215,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       await repo.updateTaskStatus(event.taskId, event.status);
     } catch (err) {
-      if (!ApiClient().isAuthenticated) return;
+      final token = await _storage.readToken();
+      if (token == null || token.isEmpty) return;
 
       emit(state.copyWith(
         error: ErrorHandler.format(err),
@@ -230,8 +233,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       RegisterNotificationDevice event,
       Emitter<EmployeeState> emit,
       ) async {
-
-    if (!ApiClient().isAuthenticated) return;
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) return;
 
     try {
       final messaging = FirebaseMessaging.instance;
