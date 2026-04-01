@@ -14,8 +14,24 @@
     <link rel="icon" type="image/png" href="logo_dax.png">
     <title>DaxarrowTeams</title>
     <link rel="manifest" href="manifest.json">
-  
-  
+
+  <!-- FCM Web Push: register BEFORE flutter_bootstrap so this worker wins over Flutter's caching SW.
+       For production/hosted builds run: flutter build web --release --pwa-strategy=none
+       (see build_web_for_fcm.bat). Otherwise Flutter may register flutter_service_worker.js at "/" and break push. -->
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      navigator.serviceWorker
+        .register('/firebase-messaging-sw.js', { scope: '/', updateViaCache: 'none' })
+        .then(function (reg) {
+          console.log('[FCM] firebase-messaging-sw.js active:', reg.scope);
+        })
+        .catch(function (err) {
+          console.error('[FCM] Service worker registration failed:', err);
+        });
+    })();
+  </script>
+
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
   <style id="splash-screen-style">
     html {
@@ -90,45 +106,49 @@
       <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
       <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
   </picture>
-  
 
 <script>
-    // This function is called from your Flutter NotificationService
-    window.showWebNotification = function(title, body) {
-      console.log("Triggering Foreground Notification Bridge...");
-
+    // Foreground FCM: prefer the Notification API (works even if the wrong SW is active).
+    window.showWebNotification = function (title, body) {
+      var t = title || 'Notification';
+      var b = body || '';
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          var n = new Notification(t, {
+            body: b,
+            icon: '/icons/Icon-192.png',
+            badge: '/icons/Icon-192.png',
+            tag: 'foreground-fcm',
+            renotify: true,
+          });
+          n.onclick = function () {
+            window.focus();
+            n.close();
+          };
+          return;
+        } catch (e) {
+          console.warn('[FCM] Notification() failed, falling back to SW:', e);
+        }
+      }
       if (!('serviceWorker' in navigator)) {
-        console.warn("Service Workers are not supported in this browser.");
+        console.warn('[FCM] No Notification permission and no service workers.');
         return;
       }
-      navigator.serviceWorker.ready.then(function(registration) {
-        registration.showNotification(title, {
-          body: body,
-          icon: '/icons/Icon-192.png',
-          badge: '/icons/Icon-192.png', // The small icon in the Android status bar
-          vibrate: [200, 100, 200],      // Essential for mobile user attention
-          tag: 'foreground-alert',       // Prevents notification spamming by replacing existing ones
-          renotify: true                 // Re-vibrate even if the tag is the same
+      navigator.serviceWorker.ready
+        .then(function (registration) {
+          return registration.showNotification(t, {
+            body: b,
+            icon: '/icons/Icon-192.png',
+            badge: '/icons/Icon-192.png',
+            vibrate: [200, 100, 200],
+            tag: 'foreground-alert',
+            renotify: true,
+          });
+        })
+        .catch(function (err) {
+          console.error('[FCM] showNotification via SW failed:', err);
         });
-      }).catch(function(err) {
-        console.error("Service Worker was not ready for notification:", err);
-      });
     };
-</script>
-
-<script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        // Register the Firebase Messaging service worker
-        navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/'
-        }).then(function(reg) {
-            console.log('Firebase Service Worker registered with scope:', reg.scope);
-        }).catch(function(err) {
-            console.error('Firebase Service Worker registration failed:', err);
-        });
-      });
-    }
 </script>
 
 <script>

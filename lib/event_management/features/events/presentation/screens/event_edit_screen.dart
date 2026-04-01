@@ -17,6 +17,7 @@ import '../widgets/event_create/event_details_card.dart';
 import '../widgets/event_create/event_inspiration_card.dart';
 import '../widgets/event_create/event_schedule_card.dart';
 import '../widgets/event_create/event_settings_card.dart';
+import '../utils/event_snackbar.dart';
 import '../widgets/event_create/event_type_of_entry_section.dart';
 import '../widgets/participant_picker.dart';
 
@@ -94,8 +95,8 @@ class _EventEditScreenState extends State<EventEditScreen> {
           try {
             ctx.read<DashboardBloc>().add(DashboardRefreshRequested());
           } catch (_) {}
-          Navigator.of(ctx).pop();
-          ScaffoldMessenger.of(ctx).showSnackBar(
+          popRouteThenShowSnackBar(
+            ctx,
             SnackBar(
               content: Text('Event "${state.event.title}" updated'),
             ),

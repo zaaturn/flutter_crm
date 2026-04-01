@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
@@ -126,7 +128,8 @@ class EventRepositoryImpl implements EventRepository {
     try {
       final model = _asEventModel(event);
       final created = await remote.createEvent(model);
-      await local.cacheEvent(created);
+      // Don't block UI on disk cache; snackbar/state emit as soon as HTTP returns.
+      unawaited(local.cacheEvent(created));
       return Right(created);
     } catch (e) {
       return Left(_mapException(e));
@@ -138,7 +141,7 @@ class EventRepositoryImpl implements EventRepository {
     try {
       final model = _asEventModel(event);
       final updated = await remote.updateEvent(model);
-      await local.cacheEvent(updated);
+      unawaited(local.cacheEvent(updated));
       return Right(updated);
     } catch (e) {
       return Left(_mapException(e));

@@ -20,6 +20,7 @@ import '../widgets/event_create/event_schedule_card.dart';
 import '../widgets/event_create/event_settings_card.dart';
 import '../widgets/event_create/event_type_of_entry_section.dart';
 import '../widgets/participant_picker.dart';
+import '../utils/event_snackbar.dart';
 
 /// Event composer: layout widgets live under `widgets/event_create/`.
 class EventCreateScreen extends StatefulWidget {
@@ -87,8 +88,8 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
           try {
             ctx.read<DashboardBloc>().add(DashboardRefreshRequested());
           } catch (_) {}
-          Navigator.of(ctx).pop();
-          ScaffoldMessenger.of(ctx).showSnackBar(
+          popRouteThenShowSnackBar(
+            ctx,
             SnackBar(content: Text('Event "${state.event.title}" created!')),
           );
         } else if (state is EventConflictDetected) {

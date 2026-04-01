@@ -9,6 +9,7 @@ import 'package:my_app/event_management/features/events/presentation/screens/eve
 import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
 import '../bloc/event_bloc.dart';
+import '../utils/event_snackbar.dart';
 
 class QuickAddSheet extends StatefulWidget {
   final DateTime selectedDate;
@@ -97,8 +98,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
       listener: (ctx, state) {
         if (state is EventCreated) {
           setState(() => _isSaving = false);
-          Navigator.pop(ctx);
-
+          final createdId = state.event.id;
+          final createdTitle = state.event.title;
+          final nav = Navigator.of(ctx);
           try {
             ctx.read<CalendarBloc>().add(CalendarRefreshRequested());
           } catch (_) {}
@@ -111,15 +113,16 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 );
           } catch (_) {}
 
-          ScaffoldMessenger.of(ctx).showSnackBar(
+          popRouteThenShowSnackBar(
+            ctx,
             SnackBar(
-              content: Text('Event "${state.event.title}" created'),
+              content: Text('Event "$createdTitle" created'),
               action: SnackBarAction(
                 label: 'View',
                 onPressed: () {
-                  Navigator.of(ctx).push<void>(
+                  nav.push<void>(
                     MaterialPageRoute<void>(
-                      builder: (_) => EventDetailScreen(eventId: state.event.id),
+                      builder: (_) => EventDetailScreen(eventId: createdId),
                     ),
                   );
                 },
