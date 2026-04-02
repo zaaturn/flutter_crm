@@ -29,8 +29,8 @@ messaging.onBackgroundMessage(function (payload) {
   const { title, body } = notificationTitleBody(payload);
   return self.registration.showNotification(title, {
     body: body,
-    icon: '/icons/Icon-192.png',
-    badge: '/icons/Icon-192.png',
+    icon: '/icons/logo_dax.png',
+    badge: '/icons/logo_dax.png',
     data: payload.data || {},
   });
 });

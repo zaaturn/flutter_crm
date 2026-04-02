@@ -118,11 +118,26 @@ class EmployeeRepository implements IEmployeeRepository {
   // STATUS PARSER
   // =========================
   LiveStatus _parseStatus(dynamic s) {
-    switch (s) {
+    final v = s?.toString().trim().toLowerCase();
+    switch (v) {
       case 'working':
+      case 'work':
+      case 'checked_in':
+      case 'checkin':
+      case 'online':
         return LiveStatus.working;
       case 'break':
+      case 'on_break':
+      case 'break_time':
+      case 'paused':
         return LiveStatus.breakTime;
+      case 'loggedout':
+      case 'logged_out':
+      case 'logout':
+      case 'checked_out':
+      case 'checkout':
+      case 'offline':
+        return LiveStatus.loggedOut;
       default:
         return LiveStatus.loggedOut;
     }

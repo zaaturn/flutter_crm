@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,7 @@ class _AdminDashboardView extends StatefulWidget {
 
 class _AdminDashboardViewState extends State<_AdminDashboardView> {
   int _selectedIndex = 0;
+  Timer? _liveStatusTimer;
 
   final List<_NavItem> _navItems = const [
     _NavItem(icon: Icons.home_rounded, label: 'HOME'),
@@ -125,6 +127,22 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
       iconColor: Color(0xFFD946EF),
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep "Live Attendance" fresh without user pull-to-refresh.
+    _liveStatusTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!mounted) return;
+      context.read<AdminDashboardBloc>().add(const AdminDashboardRefreshed());
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveStatusTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

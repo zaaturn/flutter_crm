@@ -88,6 +88,10 @@ class Employee {
   }
 
   factory Employee.fromJson(Map<String, dynamic> json) {
+    final onBreak = json['on_break'] == true ||
+        json['is_on_break'] == true ||
+        json['break'] == true ||
+        json['break_time'] == true;
     return Employee(
       id: json['id'] ?? 0,
       name: json['name']?.toString() ?? '',
@@ -104,7 +108,7 @@ class Employee {
       dateOfJoining: json['date_of_joining']?.toString(),
       isActive: json['is_active'] ?? true,
       profilePhoto: json['profile_photo']?.toString(),
-      liveStatus: _parseLiveStatus(json['status']),
+      liveStatus: onBreak ? LiveStatus.breakTime : _parseLiveStatus(json['status']),
       checkIn: json['check_in']?.toString() ?? '-',
       checkOut: json['check_out']?.toString() ?? '-',
 
@@ -141,11 +145,26 @@ class Employee {
   }
 
   static LiveStatus _parseLiveStatus(dynamic s) {
-    switch (s) {
+    final v = s?.toString().trim().toLowerCase();
+    switch (v) {
       case 'working':
+      case 'work':
+      case 'checked_in':
+      case 'checkin':
+      case 'online':
         return LiveStatus.working;
       case 'break':
+      case 'on_break':
+      case 'break_time':
+      case 'paused':
         return LiveStatus.breakTime;
+      case 'loggedout':
+      case 'logged_out':
+      case 'logout':
+      case 'checked_out':
+      case 'checkout':
+      case 'offline':
+        return LiveStatus.loggedOut;
       default:
         return LiveStatus.loggedOut;
     }

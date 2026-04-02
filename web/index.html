@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-title" content="DaxarrowTeams">
     <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-    <link rel="icon" type="image/png" href="logo_dax.png">
+    <link rel="icon" type="image/png" href="icons/logo_dax.png">
     <title>DaxarrowTeams</title>
     <link rel="manifest" href="manifest.json">
 
@@ -149,6 +149,24 @@
           console.error('[FCM] showNotification via SW failed:', err);
         });
     };
+</script>
+
+<script>
+  // #region agent log
+  // Lightweight runtime logger for debug mode (no secrets/PII).
+  window.__agentLog = function (payload) {
+    try {
+      fetch('http://127.0.0.1:7413/ingest/6f955913-4647-4fc8-9cb6-024e741bba9a', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Debug-Session-Id': '25d2da',
+        },
+        body: JSON.stringify(payload),
+      }).catch(function () {});
+    } catch (e) {}
+  };
+  // #endregion
 </script>
 
 <script>
