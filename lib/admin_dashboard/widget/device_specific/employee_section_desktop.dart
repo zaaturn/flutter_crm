@@ -83,7 +83,7 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
-              Icons.sensors_rounded, // Better "Live" feel icon
+              Icons.sensors_rounded,
               color: _brandPurple,
               size: 22,
             ),

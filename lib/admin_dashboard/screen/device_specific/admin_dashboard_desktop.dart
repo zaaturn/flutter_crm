@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,11 +36,22 @@ class _AdminDashboardDesktopView extends StatefulWidget {
 
 class _AdminDashboardDesktopViewState
     extends State<_AdminDashboardDesktopView> {
+  Timer? _liveStatusTimer;
 
   @override
   void initState() {
     super.initState();
     context.read<AdminDashboardBloc>().add(AdminDashboardStarted());
+    _liveStatusTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!mounted) return;
+      context.read<AdminDashboardBloc>().add(const AdminDashboardRefreshed());
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveStatusTimer?.cancel();
+    super.dispose();
   }
 
   @override
