@@ -88,10 +88,20 @@ class Employee {
   }
 
   factory Employee.fromJson(Map<String, dynamic> json) {
-    final onBreak = json['on_break'] == true ||
-        json['is_on_break'] == true ||
-        json['break'] == true ||
-        json['break_time'] == true;
+    bool truthy(dynamic v) {
+      if (v == null) return false;
+      if (v is bool) return v;
+      if (v is num) return v != 0;
+      final s = v.toString().trim().toLowerCase();
+      return s == 'true' || s == '1' || s == 'yes' || s == 'y';
+    }
+
+    final onBreak = truthy(json['on_break']) ||
+        truthy(json['is_on_break']) ||
+        truthy(json['is_break']) ||
+        truthy(json['break']) ||
+        truthy(json['break_time']) ||
+        truthy(json['onBreak']);
     return Employee(
       id: json['id'] ?? 0,
       name: json['name']?.toString() ?? '',
@@ -108,7 +118,8 @@ class Employee {
       dateOfJoining: json['date_of_joining']?.toString(),
       isActive: json['is_active'] ?? true,
       profilePhoto: json['profile_photo']?.toString(),
-      liveStatus: onBreak ? LiveStatus.breakTime : _parseLiveStatus(json['status']),
+      liveStatus:
+          onBreak ? LiveStatus.breakTime : _parseLiveStatus(json['status']),
       checkIn: json['check_in']?.toString() ?? '-',
       checkOut: json['check_out']?.toString() ?? '-',
 

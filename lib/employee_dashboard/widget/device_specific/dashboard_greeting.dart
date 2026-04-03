@@ -14,152 +14,162 @@ class DashboardGreeting extends StatefulWidget {
 }
 
 class _DashboardGreetingState extends State<DashboardGreeting> {
-  Timer? _expiryTimer;
-  late Future<_GreetingData> _dataFuture;
+  late PageController _pageController;
+  Timer? _carouselTimer;
+  int _currentPage = 0;
+
+  List<Widget> _displayCards = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _dataFuture = _loadData();
+    _pageController = PageController(initialPage: 0);
+    _initData();
   }
 
   @override
   void dispose() {
-    _expiryTimer?.cancel();
+    _carouselTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
-  bool _isFresh(PostModel p) {
-    final now = DateTime.now();
-    final difference = now.difference(p.createdAt);
-    // Post is fresh if it was created less than 24 hours ago
-    return difference.inHours < 24 && !difference.isNegative;
-  }
+  Future<void> _initData() async {
+    try {
+      final postRepo = context.read<PostRepository>();
+      final storage = SecureStorageService();
 
-  Future<_GreetingData> _loadData() async {
-    final postRepo = context.read<PostRepository>();
-    final storage = SecureStorageService();
+      final results = await Future.wait([
+        postRepo.fetchPosts(category: 'quote', pageSize: 1),
+        postRepo.fetchPosts(category: 'announcement', pageSize: 1),
+        storage.readUser(),
+      ]);
 
-    // Fetch posts and user data in parallel
-    final results = await Future.wait([
-      postRepo.fetchPosts(category: 'quote', pageSize: 1),
-      postRepo.fetchPosts(category: 'announcement', pageSize: 1),
-      storage.readUser(),
-      storage.readUserId(),
-    ]);
+      final quotes = results[0] as List<PostModel>;
+      final announcements = results[1] as List<PostModel>;
+      final rawUser = results[2] as Map<String, dynamic>?;
 
-    final quotes = results[0] as List<PostModel>;
-    final announcements = results[1] as List<PostModel>;
+      if (!mounted) return;
 
-    final rawUser = results[2] as Map<String, dynamic>?;
-    final rawUserId = results[3] as String?;
+      final user = rawUser != null ? UserModel.fromJson(rawUser) : null;
+      List<Widget> cards = [];
 
-    final user = rawUser != null
-        ? UserModel.fromJson(rawUser)
-        : UserModel(
-      id: int.tryParse(rawUserId ?? '') ?? 0,
-      username: 'User',
-      email: '',
-      fullName: null,
-    );
-
-    final quote = quotes.isNotEmpty && _isFresh(quotes.first) ? quotes.first : null;
-    final ann = announcements.isNotEmpty && _isFresh(announcements.first) ? announcements.first : null;
-
-    // Calculate the next time we need to refresh (when the current post expires)
-    _setupRefreshTimer(quote, ann);
-
-    return _GreetingData(user: user, quote: quote, announcement: ann);
-  }
-
-  void _setupRefreshTimer(PostModel? q, PostModel? a) {
-    _expiryTimer?.cancel();
-    final now = DateTime.now();
-    List<DateTime> expiryTimes = [];
-
-    if (q != null) expiryTimes.add(q.createdAt.add(const Duration(hours: 24)));
-    if (a != null) expiryTimes.add(a.createdAt.add(const Duration(hours: 24)));
-
-    if (expiryTimes.isNotEmpty) {
-      expiryTimes.sort();
-      final nextExpiry = expiryTimes.first;
-      final delay = nextExpiry.difference(now);
-
-      if (delay > Duration.zero) {
-        _expiryTimer = Timer(delay, () {
-          if (mounted) setState(() => _dataFuture = _loadData());
-        });
+      // 1. Add Announcement if exists (Purple Theme)
+      if (announcements.isNotEmpty) {
+        cards.add(_AnnouncementCard(announcement: announcements.first));
       }
+
+      // 2. Add Quote if exists (Purple Theme)
+      if (quotes.isNotEmpty) {
+        cards.add(_QuoteCard(quote: quotes.first));
+      }
+
+      // 3. Add Default Greeting (Purple Theme)
+      cards.add(_GreetingCard(user: user));
+
+      setState(() {
+        _displayCards = cards;
+        _isLoading = false;
+      });
+
+      if (_displayCards.length > 1) {
+        _startAutoSlider();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _startAutoSlider() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (_pageController.hasClients) {
+        _currentPage++;
+        _pageController.animateToPage(
+          _currentPage,
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_GreetingData>(
-      future: _dataFuture,
-      builder: (context, snap) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 600),
-          child: _buildState(snap),
-        );
-      },
+    if (_isLoading) return const _GreetingShimmer();
+    if (_displayCards.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView.builder(
+            controller: _pageController,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: _displayCards[index % _displayCards.length],
+              );
+            },
+            onPageChanged: (index) => setState(() => _currentPage = index),
+          ),
+        ),
+        if (_displayCards.length > 1) ...[
+          const SizedBox(height: 12),
+          _buildPageIndicator(),
+        ]
+      ],
     );
   }
 
-  Widget _buildState(AsyncSnapshot<_GreetingData> snap) {
-    if (snap.connectionState == ConnectionState.waiting) return const _GreetingShimmer();
-    if (snap.hasError || snap.data == null) return const _GreetingError();
-
-    final data = snap.data!;
-
-    if (data.announcement != null) {
-      return _AnnouncementCard(announcement: data.announcement!);
-    } else if (data.quote != null) {
-      return _QuoteCard(quote: data.quote!);
-    } else {
-      return _GreetingCard(user: data.user);
-    }
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_displayCards.length, (index) {
+        bool isActive = (_currentPage % _displayCards.length) == index;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 6,
+          width: isActive ? 22 : 6,
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF7B39FD) : Colors.grey.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(10),
+          ),
+        );
+      }),
+    );
   }
 }
 
-// ─── Data bundle ─────────────────────────────────────────────────────────────
-class _GreetingData {
-  const _GreetingData({required this.user, this.quote, this.announcement});
-  final UserModel user;
-  final PostModel? quote;
-  final PostModel? announcement;
-}
+// ─── Shared Base Design (Restored Purple Gradient) ───────────────────────────
+class _BillboardBase extends StatelessWidget {
+  final Widget child;
+  final IconData backgroundIcon;
+  final VoidCallback? onTap;
 
-// ─── Modern Card Base ────────────────────────────────────────────────────────
-class _ModernBase extends StatelessWidget {
-  const _ModernBase({
-    required this.colors,
-    required this.icon,
+  const _BillboardBase({
     required this.child,
+    required this.backgroundIcon,
     this.onTap,
   });
-
-  final List<Color> colors;
-  final IconData icon;
-  final Widget child;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: double.infinity,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          gradient: LinearGradient(
-            colors: colors,
+          // RESTORED PURPLE THEME
+          gradient: const LinearGradient(
+            colors: [Color(0xFF8E44AD), Color(0xFF7B39FD)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: colors.first.withOpacity(0.3),
+              color: const Color(0xFF7B39FD).withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -169,9 +179,13 @@ class _ModernBase extends StatelessWidget {
         child: Stack(
           children: [
             Positioned(
-              right: -20,
-              bottom: -20,
-              child: Icon(icon, size: 140, color: Colors.white.withOpacity(0.12)),
+              right: -15,
+              bottom: -15,
+              child: Icon(
+                backgroundIcon,
+                size: 140,
+                color: Colors.white.withOpacity(0.12),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(24),
@@ -184,169 +198,128 @@ class _ModernBase extends StatelessWidget {
   }
 }
 
-// ─── State 1: Default Greeting (Morning/Afternoon/Evening) ──────────────────
-class _GreetingCard extends StatelessWidget {
-  const _GreetingCard({required this.user});
-  final UserModel user;
-
-  @override
-  Widget build(BuildContext context) {
-    final hour = DateTime.now().hour;
-    final String label;
-    final List<Color> palette;
-    final IconData icon;
-
-    if (hour < 12) {
-      label = 'Good morning';
-      palette = [const Color(0xFFFF9A8B), const Color(0xFFFF6A88)];
-      icon = Icons.wb_twilight_rounded;
-    } else if (hour < 18) {
-      label = 'Good afternoon';
-      palette = [const Color(0xFFF6D365), const Color(0xFFFDA085)];
-      icon = Icons.wb_sunny_rounded;
-    } else {
-      label = 'Good evening';
-      palette = [const Color(0xFF2E3192), const Color(0xFF1BFFFF)];
-      icon = Icons.nights_stay_rounded;
-    }
-
-    return _ModernBase(
-      colors: palette,
-      icon: icon,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Colors.white.withOpacity(0.8),
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Hello, ${user.fullName ?? user.username}',
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            "Welcome back! Check your latest updates below.",
-            style: TextStyle(fontSize: 14, color: Colors.white70),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── State 2: Quote of the Day ───────────────────────────────────────────────
-class _QuoteCard extends StatelessWidget {
-  const _QuoteCard({required this.quote});
-  final PostModel quote;
-
-  @override
-  Widget build(BuildContext context) {
-    return _ModernBase(
-      colors: [const Color(0xFF6A11CB), const Color(0xFF2575FC)],
-      icon: Icons.format_quote_rounded,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'QUOTE OF THE DAY',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '"${_body(quote)}"',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              fontStyle: FontStyle.italic,
-              color: Colors.white,
-              height: 1.4,
-            ),
-          ),
-          if ((quote.createdByFullName ?? '').isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              '— ${quote.createdByFullName}',
-              style: const TextStyle(fontSize: 14, color: Colors.white70, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ─── State 3: Announcements ──────────────────────────────────────────────────
+// ─── Announcement Card ───────────────────────────────────────────────────────
 class _AnnouncementCard extends StatelessWidget {
-  const _AnnouncementCard({required this.announcement});
   final PostModel announcement;
+  const _AnnouncementCard({required this.announcement});
 
   @override
   Widget build(BuildContext context) {
-    return _ModernBase(
-      colors: [const Color(0xFFED213A), const Color(0xFF93291E)],
-      icon: Icons.campaign_rounded,
+    return _BillboardBase(
+      backgroundIcon: Icons.campaign_rounded,
       onTap: () => Navigator.of(context).pushNamed('/feed'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.bolt, color: Colors.yellow, size: 18),
-              const SizedBox(width: 4),
-              Text(
-                'IMPORTANT ANNOUNCEMENT',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white.withOpacity(0.9),
-                  letterSpacing: 1,
-                ),
-              ),
-            ],
+          Text(
+            'IMPORTANT ANNOUNCEMENT',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: Colors.white.withOpacity(0.8),
+              letterSpacing: 1.2,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             _body(announcement),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
+              color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: Colors.white,
               height: 1.2,
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 20),
+          const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
               'Read More',
-              style: TextStyle(color: Color(0xFF93291E), fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(
+                color: Color(0xFF7B39FD),
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Quote Card ──────────────────────────────────────────────────────────────
+class _QuoteCard extends StatelessWidget {
+  final PostModel quote;
+  const _QuoteCard({required this.quote});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BillboardBase(
+      backgroundIcon: Icons.format_quote_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'DAILY QUOTE',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '"${_body(quote)}"',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 19,
+              fontWeight: FontWeight.w600,
+              fontStyle: FontStyle.italic,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if ((quote.createdByFullName ?? '').isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              '— ${quote.createdByFullName}',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ]
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Default Greeting ────────────────────────────────────────────────────────
+class _GreetingCard extends StatelessWidget {
+  final UserModel? user;
+  const _GreetingCard({this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return _BillboardBase(
+      backgroundIcon: Icons.waving_hand_rounded,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'WELCOME BACK',
+            style: TextStyle(fontSize: 10, color: Colors.white70, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Hello, ${user?.fullName ?? user?.username ?? "User"}!',
+            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          const Text('You have new updates to check.', style: TextStyle(color: Colors.white70, fontSize: 14)),
         ],
       ),
     );
@@ -354,47 +327,25 @@ class _AnnouncementCard extends StatelessWidget {
 }
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
-class _GreetingShimmer extends StatelessWidget {
-  const _GreetingShimmer();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 140,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Center(child: CircularProgressIndicator(color: Colors.grey.shade400)),
-    );
-  }
-}
-
-class _GreetingError extends StatelessWidget {
-  const _GreetingError();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.red.shade100),
-        borderRadius: BorderRadius.circular(24),
-        color: Colors.red.shade50,
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.error_outline, color: Colors.red),
-          SizedBox(width: 12),
-          Text('Failed to load greeting.', style: TextStyle(color: Colors.redAccent)),
-        ],
-      ),
-    );
-  }
-}
-
 String _body(PostModel post) {
   final t = (post.title ?? '').trim();
   if (t.isNotEmpty) return t;
   final c = post.content.trim();
   return c.isNotEmpty ? c : 'New update posted.';
+}
+
+class _GreetingShimmer extends StatelessWidget {
+  const _GreetingShimmer();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 160,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+    );
+  }
 }
