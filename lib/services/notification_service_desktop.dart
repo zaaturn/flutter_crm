@@ -1,12 +1,17 @@
 import 'dart:js' as js;
+import 'dart:js_util' as js_util;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 import 'api_client.dart';
 import 'notification_payload_router.dart';
 
-/// Web (Chrome) FCM: foreground uses JS bridge in `web/index.html` (`showWebNotification`).
+/// Web (Chrome / Edge / Firefox): background delivery via [web/firebase-messaging-sw.js];
+/// foreground via [FirebaseMessaging.onMessage] and `showWebNotification` in [web/index.html].
 class NotificationService {
   final ApiClient _api = ApiClient();
 
@@ -32,6 +37,8 @@ class NotificationService {
       return;
     }
 
+    await _waitForServiceWorkerReady();
+
     final token = await messaging.getToken(
       vapidKey: _webVapidKey,
     );
@@ -45,6 +52,19 @@ class NotificationService {
         'platform': 'web',
       },
     );
+  }
+
+  Future<void> _waitForServiceWorkerReady() async {
+    try {
+      final navigator = js.context['navigator'];
+      if (navigator == null) return;
+      final sw = js_util.getProperty<Object?>(navigator, 'serviceWorker');
+      if (sw == null) return;
+      final ready = js_util.callMethod<Object>(sw, 'ready', const []);
+      await js_util.promiseToFuture<void>(ready);
+    } catch (_) {
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   void listenForTokenRefresh({required String owner}) {
@@ -64,19 +84,64 @@ class NotificationService {
   void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final title = message.notification?.title ??
-          message.data['title']?.toString() ??
-          'Notification';
-      final body = message.notification?.body ??
-          message.data['body']?.toString() ??
-          '';
-
-      if (title.isEmpty && body.isEmpty) return;
+      final parts = _webNotificationContent(message);
+      if (parts.$1.isEmpty && parts.$2.isEmpty) return;
 
       try {
-        js.context.callMethod('showWebNotification', [title, body]);
+        js.context.callMethod('showWebNotification', [
+          parts.$1,
+          parts.$2,
+          parts.$3,
+          parts.$4,
+        ]);
       } catch (_) {}
+
+      _refreshNotificationList(navigatorKey);
     });
+  }
+
+  /// (title, body, imageUrl or null, tag)
+  (String, String, String?, String) _webNotificationContent(RemoteMessage message) {
+    final n = message.notification;
+    final d = message.data;
+    var title = n?.title ?? _dataStr(d, 'title') ?? _dataStr(d, 'headline') ?? '';
+    var body = n?.body ??
+        _dataStr(d, 'body') ??
+        _dataStr(d, 'message') ??
+        _dataStr(d, 'content') ??
+        '';
+    if (title.isEmpty && body.isEmpty) {
+      return ('Notification', 'You have a new message', null, _tagFor(message));
+    }
+    if (title.isEmpty) title = 'Notification';
+
+    final image = _dataStr(d, 'image') ?? _dataStr(d, 'image_url');
+    return (title, body, image, _tagFor(message));
+  }
+
+  String? _dataStr(Map<String, dynamic> d, String key) {
+    final v = d[key];
+    if (v == null) return null;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : s;
+  }
+
+  String _tagFor(RemoteMessage message) {
+    final id = (message.messageId ?? '').trim();
+    if (id.isNotEmpty) return 'fcm-$id';
+    final mid = message.data['message_id'] ?? message.data['fcm_message_id'];
+    if (mid != null && mid.toString().isNotEmpty) {
+      return 'fcm-${mid.toString()}';
+    }
+    return 'fcm-${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  void _refreshNotificationList(GlobalKey<NavigatorState> navigatorKey) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    try {
+      ctx.read<NotificationBloc>().add(NotificationLoadRequested());
+    } catch (_) {}
   }
 
   void handleNotificationTap(GlobalKey<NavigatorState> navigatorKey) {

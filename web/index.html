@@ -109,18 +109,26 @@
 
 <script>
     // Foreground FCM: prefer the Notification API (works even if the wrong SW is active).
-    window.showWebNotification = function (title, body) {
+    // Foreground FCM while the tab is active (Flutter [onMessage] calls this).
+    window.showWebNotification = function (title, body, imageUrl, tag) {
       var t = title || 'Notification';
       var b = body || '';
+      var tg = tag || 'fcm-foreground';
+      var opts = {
+        body: b,
+        icon: '/icons/Icon-192.png',
+        badge: '/icons/Icon-192.png',
+        tag: tg,
+        renotify: true,
+      };
+      if (imageUrl) {
+        try {
+          opts.image = imageUrl;
+        } catch (e) {}
+      }
       if ('Notification' in window && Notification.permission === 'granted') {
         try {
-          var n = new Notification(t, {
-            body: b,
-            icon: '/icons/Icon-192.png',
-            badge: '/icons/Icon-192.png',
-            tag: 'foreground-fcm',
-            renotify: true,
-          });
+          var n = new Notification(t, opts);
           n.onclick = function () {
             window.focus();
             n.close();
@@ -140,8 +148,9 @@
             body: b,
             icon: '/icons/Icon-192.png',
             badge: '/icons/Icon-192.png',
+            image: imageUrl || undefined,
             vibrate: [200, 100, 200],
-            tag: 'foreground-alert',
+            tag: tg,
             renotify: true,
           });
         })

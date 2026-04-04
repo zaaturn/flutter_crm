@@ -200,11 +200,12 @@ Future<void> main() async {
 Future<void> _initPushNotificationsAfterFirstFrame() async {
   try {
     if (kIsWeb) {
-      // Web: no flutter_local_notifications; use FCM + service worker (see web/index.html).
+      // Web: background = firebase-messaging-sw.js; foreground = onMessage + showWebNotification.
       final notificationService = NotificationService();
       await notificationService.init(navigatorKey);
       notificationService.listenForegroundMessages(navigatorKey);
       notificationService.handleNotificationTap(navigatorKey);
+      notificationService.listenForTokenRefresh(owner: 'web');
       await notificationService.handleInitialMessage(navigatorKey);
       return;
     }

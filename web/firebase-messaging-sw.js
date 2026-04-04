@@ -1,6 +1,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
+// Activate this worker immediately so background push can show without waiting for tab refresh.
+self.addEventListener('install', function () {
+  self.skipWaiting();
+});
+self.addEventListener('activate', function (event) {
+  event.waitUntil(self.clients.claim());
+});
+
 firebase.initializeApp({
   apiKey: 'AIzaSyBAwXxy3UIPTzV7JHmgBbVKzuWHU-wsKa4',
   appId: '1:1016540886778:web:f09d71d458516a952c7b43',
@@ -27,11 +35,21 @@ function notificationTitleBody(payload) {
 
 messaging.onBackgroundMessage(function (payload) {
   const { title, body } = notificationTitleBody(payload);
+  const n = payload.notification || {};
+  const image = n.image || (payload.data && payload.data.image) || undefined;
+  const tag =
+    (payload.data && (payload.data.message_id || payload.data.fcm_message_id)) ||
+    payload.messageId ||
+    'fcm-bg';
   return self.registration.showNotification(title, {
     body: body,
     icon: '/icons/logo_dax.png',
     badge: '/icons/logo_dax.png',
-    data: payload.data || {},
+    image: image,
+    data: Object.assign({ click_action: '/' }, payload.data || {}),
+    tag: String(tag),
+    renotify: true,
+    requireInteraction: false,
   });
 });
 
