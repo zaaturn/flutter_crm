@@ -46,9 +46,9 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
   void _toggleProfilePanel() {}
 
   void _goBack() {
-    Navigator.of(context).pushNamedAndRemoveUntil(
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/employeeDashboard',
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -60,7 +60,7 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
       context.read<EmployeeBloc>().add(StopTaskPolling());
     } catch (_) {}
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/employeeLogin',
       (route) => false,
     );

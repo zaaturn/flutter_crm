@@ -50,10 +50,12 @@ class PendingLeavesLoaded extends LeaveState {
   PendingLeavesLoaded(this.leaves);
 }
 
-/// Generic success for actions
+/// Generic success for actions (e.g. apply / update leave).
 class LeaveActionSuccess extends LeaveState {
   final String message;
-  LeaveActionSuccess(this.message);
+  /// Present when PATCH update returns `response['leave']`.
+  final LeaveRequest? updatedLeave;
+  LeaveActionSuccess(this.message, [this.updatedLeave]);
 }
 
 class LeaveDetailsLoaded extends LeaveState {

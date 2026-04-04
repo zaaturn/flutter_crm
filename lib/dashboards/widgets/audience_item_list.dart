@@ -154,7 +154,7 @@ class AudienceItemList extends StatelessWidget {
                 child: ListView.builder(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  // Fixed extent keeps scrolling smooth for big lists (1000+).
+
                   itemExtent: 44,
                   cacheExtent: 900,
                   itemCount: state.items.length,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/dashboards/data/models/user_model.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class GreetingHeader extends StatefulWidget {
@@ -9,7 +10,7 @@ class GreetingHeader extends StatefulWidget {
 }
 
 class _GreetingHeaderState extends State<GreetingHeader> {
-  String username = "";
+  String _displayName = '';
 
   @override
   void initState() {
@@ -24,15 +25,12 @@ class _GreetingHeaderState extends State<GreetingHeader> {
     if (!mounted) return;
 
 
-    String rawUsername = (user?["username"] ?? "").toString().trim();
-
-
-    String cleanName = rawUsername.contains('@')
-        ? rawUsername.split('@').first
-        : rawUsername;
+    final label = user != null
+        ? UserModel.fromJson(Map<String, dynamic>.from(user)).displayLabel
+        : 'there';
 
     setState(() {
-      username = cleanName;
+      _displayName = label;
     });
   }
 
@@ -47,7 +45,7 @@ class _GreetingHeaderState extends State<GreetingHeader> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Welcome back, $username 👋",
+          "Welcome back, $_displayName 👋",
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.w600,

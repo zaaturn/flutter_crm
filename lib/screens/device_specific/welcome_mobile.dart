@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/auth/auth_navigation.dart';
 import 'package:my_app/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -51,7 +52,6 @@ class _LoginScreenState extends State<LoginScreenmobile>
     setState(() { _loading = true; _error = null; });
     try {
       final res  = await _auth.login(_userCtrl.text.trim(), _passCtrl.text.trim());
-      final role = res["role"]?.toString().toLowerCase() ?? "employee";
       try {
         final s = await FirebaseMessaging.instance.requestPermission(
             alert: true, badge: true, sound: true);
@@ -62,9 +62,7 @@ class _LoginScreenState extends State<LoginScreenmobile>
         }
       } catch (e) { debugPrint("Push: $e"); }
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context,
-          role == "admin" ? '/adminDashboard' : '/employeeDashboard',
-              (r) => false);
+      await AuthNavigation.navigateAfterLogin(context, res);
     } catch (_) {
       setState(() => _error = "Invalid credentials. Please try again.");
     } finally {

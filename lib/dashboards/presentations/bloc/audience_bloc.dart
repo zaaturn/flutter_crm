@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:my_app/dashboards/widgets/audience_tab.dart';
+import 'package:my_app/dashboards/domain/models/user_entity.dart';
 import 'package:my_app/dashboards/domain/repository/user_repository.dart';
 import 'audience_event.dart';
 import 'audience_state.dart';
@@ -199,32 +200,71 @@ class AudienceBloc extends Bloc<AudienceEvent, AudienceState> {
     }
   }
 
+  static String _normPrefix(String query) => query.trim().toLowerCase();
+
+  static bool _nameStartsWith(String raw, String qLower) {
+    if (qLower.isEmpty) return true;
+    return raw.trim().toLowerCase().startsWith(qLower);
+  }
+
+  static bool _userMatchesNamePrefix(UserEntity u, String qLower) {
+    if (qLower.isEmpty) return true;
+    if (_nameStartsWith(u.displayLabel, qLower)) return true;
+    if (u.fullName != null && _nameStartsWith(u.fullName!, qLower)) {
+      return true;
+    }
+    if (u.firstName != null && _nameStartsWith(u.firstName!, qLower)) {
+      return true;
+    }
+    if (u.lastName != null && _nameStartsWith(u.lastName!, qLower)) return true;
+    final combined = [u.firstName, u.lastName]
+        .whereType<String>()
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .join(' ');
+    if (combined.isNotEmpty && _nameStartsWith(combined, qLower)) return true;
+    if (_nameStartsWith(u.username, qLower)) return true;
+    if (_nameStartsWith(u.email, qLower)) return true;
+    return false;
+  }
+
   Future<List<String>> _loadItems({
     required AudienceTab tab,
     required String query,
   }) async {
-    final search = query.isEmpty ? null : query;
+    // Do not pass `search` to the API — several backends 400 or use non-prefix
+    // semantics. We fetch lists (users already fully paginated) and filter here
+    // so typing "sum" shows every name that *starts with* "sum" (case-insensitive).
+    final qLower = _normPrefix(query);
 
     switch (tab) {
       case AudienceTab.byDepartment:
-        final list = await userRepository.getDepartments(search: search);
-        for (final d in list) {
+        final list = await userRepository.getDepartments(search: null);
+        final filtered = qLower.isEmpty
+            ? list
+            : list.where((d) => _nameStartsWith(d.name, qLower)).toList();
+        for (final d in filtered) {
           _departmentIdMap[d.name] = d.id;
         }
-        return list.map((d) => d.name).toList();
+        return filtered.map((d) => d.name).toList();
 
       case AudienceTab.byDesignation:
-        final list = await userRepository.getDesignations(search: search);
-        for (final d in list) {
+        final list = await userRepository.getDesignations(search: null);
+        final filtered = qLower.isEmpty
+            ? list
+            : list.where((d) => _nameStartsWith(d.name, qLower)).toList();
+        for (final d in filtered) {
           _designationIdMap[d.name] = d.id;
         }
-        return list.map((d) => d.name).toList();
+        return filtered.map((d) => d.name).toList();
 
       case AudienceTab.specificUsers:
-        // CRM employee listing (`…/employees/`), fully paginated in [UserRemoteDataSource].
-        final list = await userRepository.getUsers(search: search);
+        final list = await userRepository.getUsers(search: null);
+        final filtered = qLower.isEmpty
+            ? list
+            : list.where((u) => _userMatchesNamePrefix(u, qLower)).toList();
         final names = <String>[];
-        for (final u in list) {
+        for (final u in filtered) {
           var label = u.displayLabel;
           if (_userIdMap.containsKey(label) &&
               _userIdMap[label] != u.id) {

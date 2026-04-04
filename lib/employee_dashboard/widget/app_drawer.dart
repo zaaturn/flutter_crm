@@ -100,12 +100,10 @@ class AppDrawer extends StatelessWidget {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
         final emp = state.employee;
-        final username = emp?.username?.toString() ?? "";
-        final displayName = username.contains("@")
-            ? username.split("@").first.capitalize()
-            : username.capitalize();
+        final displayName =
+            emp == null ? 'Employee' : emp.displayName;
 
-        final empId = emp?.employeeId?.toString() ?? "---";
+        final empId = emp == null ? '---' : emp.employeeId;
         final photoUrl = emp?.profilePhoto;
 
         return Container(
@@ -140,7 +138,7 @@ class AppDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                displayName.isNotEmpty ? displayName : "Employee",
+                displayName,
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,

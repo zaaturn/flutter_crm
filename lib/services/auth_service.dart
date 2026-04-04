@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/auth/profile_remote_sync.dart';
+
 import 'api_client.dart';
 import 'secure_storage_service.dart';
 
@@ -53,12 +56,26 @@ class AuthService {
       await _storage.saveUserId(data["user"]["id"].toString());
     }
 
-    if (data["role"] != null) {
-      await _storage.saveRole(data["role"]);
-    }
-
+    await ProfileRemoteSync.applyAuthPayload(data);
 
     return data;
+  }
+
+  /// Refresh profile from server (same shape as login extensions).
+  Future<AuthSession> fetchMe() => ProfileRemoteSync.fetchMe();
+
+  Future<AuthSession?> readStoredSession() async {
+    final raw = await _storage.readAuthSessionJson();
+    return AuthSession.fromStorageString(raw);
+  }
+
+  Future<void> setActiveDashboard(ActiveDashboard dash) async {
+    await _storage.saveActiveDashboard(dash.storageValue);
+  }
+
+  Future<ActiveDashboard?> readActiveDashboard() async {
+    final s = await _storage.readActiveDashboard();
+    return ActiveDashboardStorage.fromString(s);
   }
 
   // =========================

@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/auth/profile_remote_sync.dart';
+import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class StartupGate extends StatefulWidget {
@@ -27,43 +30,93 @@ class _StartupGateState extends State<StartupGate> {
     final storage = SecureStorageService();
 
     String? token;
-    String? role;
+    String? activeDashboardRaw;
 
     try {
       token = await storage.readToken().timeout(_storageTimeout);
-      role = await storage.readRole().timeout(_storageTimeout);
+      activeDashboardRaw = await storage.readActiveDashboard().timeout(_storageTimeout);
     } on TimeoutException {
       token = null;
-      role = null;
+      activeDashboardRaw = null;
     } catch (_) {
       token = null;
-      role = null;
+      activeDashboardRaw = null;
     }
 
     if (!mounted) return;
 
     if (token == null || token.isEmpty) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
         '/employeeLogin',
-            (route) => false,
+        (route) => false,
       );
       return;
     }
 
-    if (role == "admin") {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/adminDashboard',
-            (route) => false,
-      );
-    } else {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        '/employeeDashboard',
-            (route) => false,
-      );
+    await ProfileRemoteSync.syncFromServer();
+
+    String? roleStr;
+    String? sessionJson;
+    var legacySuperuser = false;
+
+    try {
+      sessionJson = await storage.readAuthSessionJson().timeout(_storageTimeout);
+      roleStr = await storage.readRole().timeout(_storageTimeout);
+      legacySuperuser = await storage.readIsSuperuser().timeout(_storageTimeout);
+    } on TimeoutException {
+      sessionJson = null;
+      roleStr = null;
+      legacySuperuser = false;
+    } catch (_) {
+      sessionJson = null;
+      roleStr = null;
+      legacySuperuser = false;
     }
+
+    if (!mounted) return;
+
+    final session = AuthSession.fromStorageString(sessionJson);
+    final isSuperuser =
+        session?.isSuperuser == true || (session == null && legacySuperuser);
+    final role = (session?.role ?? roleStr ?? 'employee').toLowerCase();
+
+    if (isSuperuser) {
+      await AuthService().setActiveDashboard(ActiveDashboard.admin);
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/adminDashboard',
+        (route) => false,
+      );
+      return;
+    }
+
+    if (role == 'admin') {
+      final active = ActiveDashboardStorage.fromString(activeDashboardRaw);
+      if (active == null) {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/dashboardChooser',
+          (route) => false,
+        );
+        return;
+      }
+      if (active == ActiveDashboard.admin) {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/adminDashboard',
+          (route) => false,
+        );
+      } else {
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/employeeDashboard',
+          (route) => false,
+        );
+      }
+      return;
+    }
+
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/employeeDashboard',
+      (route) => false,
+    );
   }
 
   @override

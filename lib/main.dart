@@ -55,6 +55,7 @@ import 'dashboards/presentations/bloc/audience_bloc.dart';
 import 'services/flutter_local_notification_service.dart';
 import 'services/notification_service.dart';
 import 'core/router/app_router.dart';
+import 'core/scaffold_messenger_scope.dart';
 import 'core/web_splash_remove.dart'
     if (dart.library.html) 'core/web_splash_remove_web.dart';
 import 'services/api_client.dart';
@@ -181,7 +182,9 @@ Future<void> main() async {
             ),
           ),
         ],
-        child: const _NotificationAppResumeRefresh(child: MyApp()),
+        child: const _NotificationAppResumeRefresh(
+          child: _GlobalLoaderOverlay(child: MyApp()),
+        ),
       ),
     ),
   );
@@ -259,6 +262,39 @@ class _NotificationAppResumeRefreshState
   Widget build(BuildContext context) => widget.child;
 }
 
+/// Global API loading mask **above** [MaterialApp] so the [Navigator] subtree is never
+/// replaced with a [SizedBox] or rebuilt in a way that leaves `_history` empty (Flutter 3.22+).
+class _GlobalLoaderOverlay extends StatelessWidget {
+  final Widget child;
+
+  const _GlobalLoaderOverlay({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: ApiClient.loader,
+      child: child,
+      builder: (_, loading, app) {
+        return Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.topLeft,
+          children: [
+            app!,
+            if (loading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black26,
+                  alignment: Alignment.center,
+                  child: const CircularProgressIndicator(),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -266,6 +302,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'DaxarrowTeams',
       theme: ThemeData(
@@ -276,40 +313,8 @@ class MyApp extends StatelessWidget {
           'DMMono',
         ],
       ),
-      initialRoute: '/',
+      home: const MobileSplashEntry(),
       onGenerateRoute: AppRouter.generateRoute,
-      builder: (context, child) {
-        return LoaderWrapper(
-          child: child ?? const SizedBox(),
-        );
-      },
-    );
-  }
-}
-
-class LoaderWrapper extends StatelessWidget {
-  final Widget child;
-
-  const LoaderWrapper({super.key, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: ApiClient.loader,
-      builder: (_, loading, __) {
-        return Stack(
-          children: [
-            child,
-            if (loading)
-              Container(
-                color: Colors.black26,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-          ],
-        );
-      },
     );
   }
 }

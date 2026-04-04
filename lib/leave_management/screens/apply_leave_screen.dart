@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/main.dart' show navigatorKey;
 import '../block/leave_bloc.dart';
 import '../block/leave_event.dart';
 import '../block/leave_state.dart';
@@ -69,7 +71,12 @@ class _ApplyLeaveViewState extends State<_ApplyLeaveView> {
                 backgroundColor: Colors.green,
               ),
             );
-            Navigator.pop(context);
+            // Root [Navigator] via [navigatorKey]; avoid context from this route on web.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              final rootCtx = navigatorKey.currentContext ?? context;
+              EmployeeDashboardNavigator.dashboard(rootCtx);
+            });
           }
 
           if (state is LeaveError) {

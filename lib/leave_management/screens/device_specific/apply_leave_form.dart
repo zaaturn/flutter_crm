@@ -11,10 +11,14 @@ class ApplyLeaveForm extends StatefulWidget {
   final List<LeaveType> leaveTypes;
   final LeaveRequest? existingLeave;
 
+  /// Desktop dialog: `true` (default). Modal bottom sheet: `false` so only the sheet pops.
+  final bool useRootNavigatorForPop;
+
   const ApplyLeaveForm({
     super.key,
     required this.leaveTypes,
     this.existingLeave,
+    this.useRootNavigatorForPop = true,
   });
 
   @override
@@ -27,10 +31,17 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
   LeaveType? _selectedLeaveType;
   DateTime? _startDate;
   DateTime? _endDate;
+  String _duration = 'FULL';
 
   final _reasonController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
+
+  static String _normalizeDuration(String raw) {
+    final u = raw.trim().toUpperCase();
+    if (u == 'HALF') return 'HALF';
+    return 'FULL';
+  }
 
   @override
   void initState() {
@@ -38,20 +49,22 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
     if (widget.existingLeave != null) {
       final leave = widget.existingLeave!;
 
-      _reasonController.text = leave.reason ?? "";
+      _reasonController.text = leave.reason;
       _startDate = leave.startDate;
       _endDate = leave.endDate;
+      _duration = _normalizeDuration(leave.duration);
 
       _startDateController.text = DateFormat('yyyy-MM-dd').format(leave.startDate);
       _endDateController.text = DateFormat('yyyy-MM-dd').format(leave.endDate);
 
       if (widget.leaveTypes.isNotEmpty) {
-        try {
-          _selectedLeaveType = widget.leaveTypes.firstWhere(
-                (type) => type.id == leave.leaveType,
-          );
-        } catch (_) {
-          _selectedLeaveType = null;
+        final id = leave.leaveType?.id;
+        if (id != null) {
+          try {
+            _selectedLeaveType = widget.leaveTypes.firstWhere((type) => type.id == id);
+          } catch (_) {
+            _selectedLeaveType = null;
+          }
         }
       }
     }
@@ -65,9 +78,20 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
     super.dispose();
   }
 
+  void _clampDurationToType() {
+    final t = _selectedLeaveType;
+    if (t != null && !t.allowHalfDay && _duration == 'HALF') {
+      _duration = 'FULL';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LeaveBloc, LeaveState>(
+      listenWhen: (prev, current) {
+        if (widget.existingLeave == null) return false;
+        return current is LeaveActionSuccess || current is LeaveError;
+      },
       listener: (context, state) {
         if (state is LeaveActionSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -77,19 +101,17 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
               behavior: SnackBarBehavior.floating,
             ),
           );
-
-          // 1. Close the dialog immediately
-          Navigator.of(context, rootNavigator: true).pop();
-
-          // 2. CRITICAL FIX: Reset state back to 'Loaded' so the second edit works
-          // This removes the "LeaveActionSuccess" state which causes the loader loop
-          context.read<LeaveBloc>().add(const LoadLeaveTypes());
-
-          // 3. Refresh the list on the background screen
-          context.read<LeaveBloc>().add(const LoadMyLeaves(status: 'PENDING'));
+          Navigator.of(
+            context,
+            rootNavigator: widget.useRootNavigatorForPop,
+          ).pop(state.updatedLeave);
         } else if (state is LeaveError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
         }
       },
@@ -98,17 +120,19 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInputGroup("Leave Category", _buildLeaveTypeDropdown()),
+            _buildInputGroup('Leave Category', _buildLeaveTypeDropdown()),
             const SizedBox(height: 24),
             Row(
               children: [
-                Expanded(child: _buildInputGroup("Start Date", _buildDatePicker(true))),
+                Expanded(child: _buildInputGroup('Start Date', _buildDatePicker(true))),
                 const SizedBox(width: 24),
-                Expanded(child: _buildInputGroup("End Date", _buildDatePicker(false))),
+                Expanded(child: _buildInputGroup('End Date', _buildDatePicker(false))),
               ],
             ),
             const SizedBox(height: 24),
-            _buildInputGroup("Reason for Leave", _buildReasonField()),
+            _buildInputGroup('Duration', _buildDurationDropdown()),
+            const SizedBox(height: 24),
+            _buildInputGroup('Reason for Leave', _buildReasonField()),
             const SizedBox(height: 32),
             _buildSubmitSection(),
           ],
@@ -121,7 +145,14 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF374151))),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF374151),
+          ),
+        ),
         const SizedBox(height: 8),
         child,
       ],
@@ -135,22 +166,49 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.all(16),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
       focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF2563EB))),
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF2563EB)),
+      ),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
 
   Widget _buildLeaveTypeDropdown() {
     return DropdownButtonFormField<LeaveType>(
-      value: _selectedLeaveType, // Changed from initialValue to value for better state tracking
+      value: _selectedLeaveType,
       decoration: _inputDecoration(Icons.category_outlined),
-      items: widget.leaveTypes.map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
-      onChanged: (v) => setState(() => _selectedLeaveType = v),
+      items: widget.leaveTypes
+          .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
+          .toList(),
+      onChanged: (v) {
+        setState(() {
+          _selectedLeaveType = v;
+          _clampDurationToType();
+        });
+      },
       validator: (v) => v == null ? 'Required' : null,
+    );
+  }
+
+  Widget _buildDurationDropdown() {
+    final allowHalf = _selectedLeaveType?.allowHalfDay ?? true;
+    final effective = (!allowHalf && _duration == 'HALF') ? 'FULL' : _duration;
+
+    return DropdownButtonFormField<String>(
+      value: effective,
+      decoration: _inputDecoration(Icons.schedule_outlined),
+      items: [
+        const DropdownMenuItem(value: 'FULL', child: Text('Full day')),
+        if (allowHalf)
+          const DropdownMenuItem(value: 'HALF', child: Text('Half day')),
+      ],
+      onChanged: (v) {
+        if (v != null) setState(() => _duration = v);
+      },
     );
   }
 
@@ -168,8 +226,10 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
     return TextFormField(
       controller: _reasonController,
       maxLines: 3,
-      decoration: _inputDecoration(Icons.edit_note).copyWith(hintText: "Brief explanation..."),
-      validator: (v) => v!.isEmpty ? 'Required' : null,
+      decoration: _inputDecoration(Icons.edit_note).copyWith(
+        hintText: 'Brief explanation…',
+      ),
+      validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
     );
   }
 
@@ -192,7 +252,7 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: Text(widget.existingLeave == null ? "Submit Request" : "Update Request"),
+            child: Text(widget.existingLeave == null ? 'Submit Request' : 'Resubmit'),
           ),
         );
       },
@@ -221,27 +281,31 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
   }
 
   void _submit() {
-    if (_formKey.currentState!.validate()) {
-      if (widget.existingLeave != null) {
-        context.read<LeaveBloc>().add(
-          UpdateLeave(
-            leaveId: widget.existingLeave!.id!,
-            leaveTypeId: _selectedLeaveType!.id,
-            startDate: _startDate!,
-            endDate: _endDate!,
-            reason: _reasonController.text.trim(),
-          ),
-        );
-      } else {
-        context.read<LeaveBloc>().add(
-          ApplyLeave(
-            leaveTypeId: _selectedLeaveType!.id,
-            startDate: _startDate!,
-            endDate: _endDate!,
-            reason: _reasonController.text.trim(),
-          ),
-        );
-      }
+    _clampDurationToType();
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedLeaveType == null || _startDate == null || _endDate == null) return;
+
+    if (widget.existingLeave != null) {
+      context.read<LeaveBloc>().add(
+            UpdateLeave(
+              leaveId: widget.existingLeave!.id!,
+              leaveTypeId: _selectedLeaveType!.id,
+              startDate: _startDate!,
+              endDate: _endDate!,
+              reason: _reasonController.text.trim(),
+              duration: _duration,
+            ),
+          );
+    } else {
+      context.read<LeaveBloc>().add(
+            ApplyLeave(
+              leaveTypeId: _selectedLeaveType!.id,
+              startDate: _startDate!,
+              endDate: _endDate!,
+              reason: _reasonController.text.trim(),
+              duration: _duration,
+            ),
+          );
     }
   }
 }

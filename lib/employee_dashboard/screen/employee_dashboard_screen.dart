@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
 
 import '../bloc/employee_dashboard_bloc.dart';
@@ -33,6 +34,12 @@ class _EmployeeDashboardScreenState
     bloc.add(LoadDashboard());
     bloc.add(StartTaskPolling());
     bloc.add(RegisterNotificationDevice());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        context.read<NotificationBloc>().add(NotificationLoadRequested());
+      } catch (_) {}
+    });
   }
 
   @override
@@ -77,6 +84,9 @@ class _DashboardBody extends StatelessWidget {
           onRefresh: () async {
             context.read<EmployeeBloc>().add(LoadDashboard());
             context.read<DashboardBloc>().add(DashboardRefreshRequested());
+            try {
+              context.read<NotificationBloc>().add(NotificationLoadRequested());
+            } catch (_) {}
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

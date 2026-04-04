@@ -43,12 +43,14 @@ class ApplyLeave extends LeaveEvent {
   final DateTime startDate;
   final DateTime endDate;
   final String? reason;
+  final String duration;
 
   const ApplyLeave({
     required this.leaveTypeId,
     required this.startDate,
     required this.endDate,
     this.reason,
+    this.duration = 'FULL',
   });
 
   @override
@@ -57,6 +59,7 @@ class ApplyLeave extends LeaveEvent {
     startDate,
     endDate,
     reason,
+    duration,
   ];
 }
 
@@ -106,14 +109,16 @@ class UpdateLeave extends LeaveEvent {
   final int leaveTypeId;
   final DateTime startDate;
   final DateTime endDate;
-  final String? reason;
+  final String reason;
+  final String duration;
 
   const UpdateLeave({
     required this.leaveId,
     required this.leaveTypeId,
     required this.startDate,
     required this.endDate,
-    this.reason,
+    required this.reason,
+    this.duration = 'FULL',
   });
 
   @override
@@ -123,5 +128,6 @@ class UpdateLeave extends LeaveEvent {
     startDate,
     endDate,
     reason,
+    duration,
   ];
 }

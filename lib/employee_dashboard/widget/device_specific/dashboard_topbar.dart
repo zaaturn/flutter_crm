@@ -33,7 +33,7 @@ class DashboardTopBar extends StatelessWidget {
         children: [
           BlocBuilder<EmployeeBloc, EmployeeState>(
             builder: (context, state) {
-              final userName = state.employee?.username ?? 'User';
+              final userName = state.employee?.displayName ?? 'User';
               return Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +60,7 @@ class DashboardTopBar extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        userName.toUpperCase(),
+                        userName,
                         style: const TextStyle(
                           fontSize: 13,
                           color: _purple,
@@ -108,10 +108,7 @@ class DashboardTopBar extends StatelessWidget {
   Widget _buildDynamicProfile() {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
-        final name = state.employee?.username ?? 'User';
-        final initials = name.length >= 2
-            ? name.substring(0, 2).toUpperCase()
-            : name.toUpperCase();
+        final initials = state.employee?.avatarInitials ?? 'U';
 
         return InkWell(
           onTap: onProfileClick,

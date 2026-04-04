@@ -92,6 +92,18 @@ class LeaveRequest {
     if (leaveTypeField is Map<String, dynamic>) {
       parsedLeaveType = LeaveType.fromJson(leaveTypeField);
       parsedLeaveTypeName = leaveTypeField['name'];
+    } else if (leaveTypeField is int) {
+      final name = json['leave_type_name']?.toString() ??
+          json['leave_type_label']?.toString() ??
+          'Leave';
+      parsedLeaveType = LeaveType(
+        id: leaveTypeField,
+        code: json['leave_type_code']?.toString() ?? '',
+        name: name,
+        allowHalfDay: json['allow_half_day'] ?? true,
+        isPaid: json['is_paid'] ?? true,
+      );
+      parsedLeaveTypeName = name;
     } else if (leaveTypeField is String) {
       parsedLeaveTypeName = leaveTypeField;
     }

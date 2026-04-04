@@ -27,6 +27,8 @@ import 'package:my_app/event_management/features/calendar/presentation/screen/ca
 import 'package:my_app/core/layout/adaptive_layout.dart';
 import 'package:my_app/core/router/startup_gate.dart';
 
+import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
+import 'package:my_app/auth/screens/superadmin_users_screen.dart';
 
 import 'package:my_app/screens/splash_screen.dart';
 
@@ -88,6 +90,16 @@ class AppRouter {
             tablet: const AdminDashboardMobile(),
             webDesktop: const AdminDashboardDesktop(),
           ),
+        );
+
+      case '/dashboardChooser':
+        return MaterialPageRoute(
+          builder: (_) => const DashboardChooserScreen(),
+        );
+
+      case '/superadmin':
+        return MaterialPageRoute(
+          builder: (_) => const SuperadminUsersScreen(),
         );
 
     // =====================

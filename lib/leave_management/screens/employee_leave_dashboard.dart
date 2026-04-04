@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../block/leave_bloc.dart';
-import '../block/leave_event.dart';
 import '../block/leave_state.dart';
 import "package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart";
 import "package:my_app/employee_dashboard/widget/bottom_nav.dart";
@@ -24,12 +23,6 @@ class _EmployeeLeaveDashboardScreenState
   static const _bg = Colors.white;
 
   @override
-  void initState() {
-    super.initState();
-    context.read<LeaveBloc>().add(LoadMyLeaves());
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
@@ -40,10 +33,8 @@ class _EmployeeLeaveDashboardScreenState
         // --- ADDED BACK BUTTON HERE ---
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textMain, size: 20),
-          onPressed: () {
-            // Explicitly navigate back to the Main Dashboard
-            EmployeeDashboardNavigator.dashboard(context);
-          },
+          onPressed: () =>
+              EmployeeDashboardNavigator.leaveBackToMain(context),
         ),
         titleSpacing: 0, // Reduces space after back button
         title: const Text(
@@ -135,10 +126,14 @@ class _EmployeeLeaveDashboardScreenState
   Widget _buildStatusOverviewCard() {
     return BlocBuilder<LeaveBloc, LeaveState>(
       builder: (context, state) {
-        int pendingCount = 0;
-        if (state is MyLeavesLoaded) {
-          pendingCount = state.leaves.where((e) => e.status == "PENDING").length;
-        }
+        final bloc = context.read<LeaveBloc>();
+        final leaves =
+            state is MyLeavesLoaded ? state.leaves : bloc.myLeavesSnapshot;
+        final pendingCount = leaves
+            .where((e) => e.status.toUpperCase() == 'PENDING')
+            .length;
+        final loadingFresh = leaves.isEmpty &&
+            (state is MyLeavesLoading || state is LeaveInitial);
 
         return Container(
           padding: const EdgeInsets.all(24),
@@ -174,13 +169,28 @@ class _EmployeeLeaveDashboardScreenState
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                "$pendingCount",
-                style: const TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.w900,
-                  color: _indigo,
-                  letterSpacing: -1,
+              SizedBox(
+                height: 50,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: loadingFresh
+                      ? const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: _indigo,
+                          ),
+                        )
+                      : Text(
+                          '$pendingCount',
+                          style: const TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            color: _indigo,
+                            letterSpacing: -1,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 12),

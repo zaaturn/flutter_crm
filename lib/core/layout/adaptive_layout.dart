@@ -13,6 +13,15 @@ class AdaptiveLayout extends StatelessWidget {
     required this.webDesktop,
   });
 
+  static const double mobileBreakpoint = 600;
+  static const double tabletBreakpoint = 1024;
+
+  bool _isRealMobile(BuildContext context) {
+    return !kIsWeb &&
+        (Theme.of(context).platform == TargetPlatform.android ||
+            Theme.of(context).platform == TargetPlatform.iOS);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -21,24 +30,21 @@ class AdaptiveLayout extends StatelessWidget {
 
         debugPrint("LAYOUT WIDTH: $width | isWeb: $kIsWeb");
 
-
-        if (!kIsWeb) {
-          if (width >= 700) {
+        if (_isRealMobile(context)) {
+          if (width < mobileBreakpoint) {
+            return mobile;
+          } else {
             return tablet;
           }
-          return mobile;
         }
 
-
-        if (width >= 1000) {
+        if (width >= tabletBreakpoint) {
+          return webDesktop;
+        } else if (width >= mobileBreakpoint) {
+          return tablet;
+        } else {
           return webDesktop;
         }
-
-        if (width >= 700) {
-          return tablet;
-        }
-
-        return mobile;
       },
     );
   }

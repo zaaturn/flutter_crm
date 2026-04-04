@@ -15,7 +15,6 @@ import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_greet
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_task_section.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_workstatus_card.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.dart';
-import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 
 // ======================= SERVICES & SCREENS =======================
@@ -25,6 +24,7 @@ import 'package:my_app/leave_management/screens/device_specific/employee_leave_d
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 class EmployeeDashboardDesktop extends StatefulWidget {
   const EmployeeDashboardDesktop({super.key});
@@ -55,6 +55,13 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     _employeeBloc.add(LoadDashboard());
     _employeeBloc.add(StartTaskPolling());
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        context.read<NotificationBloc>().add(NotificationLoadRequested());
+      } catch (_) {}
+    });
+
     _fcmSubscription = FirebaseMessaging.onMessage.listen((message) {
       if (message.data['type'] == 'TASK_ASSIGNED') {
         _employeeBloc.add(LoadDashboard());
@@ -76,10 +83,9 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     _employeeBloc.add(StopTaskPolling());
 
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const WelcomePage()),
-          (_) => false,
+      (_) => false,
     );
   }
 
@@ -125,9 +131,11 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                             return RefreshIndicator(
                               onRefresh: () async {
                                 _employeeBloc.add(LoadDashboard());
-                                // Ensure DashboardBloc is available in context if using it here
                                 try {
                                   context.read<DashboardBloc>().add(DashboardRefreshRequested());
+                                } catch (_) {}
+                                try {
+                                  context.read<NotificationBloc>().add(NotificationLoadRequested());
                                 } catch (_) {}
                               },
                               child: SingleChildScrollView(

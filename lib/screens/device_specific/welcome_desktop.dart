@@ -1,8 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:my_app/services/auth_service.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
-import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
+import 'package:my_app/auth/auth_navigation.dart';
 import 'package:my_app/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -46,9 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
 
-      final role =
-          response["role"]?.toString().toLowerCase() ?? "employee";
-
       final notificationService = NotificationService();
 
       try {
@@ -77,15 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => role == "admin"
-              ? const AdminDashboardDesktop()
-              : const EmployeeDashboardDesktop(),
-        ),
-            (_) => false,
-      );
+      await AuthNavigation.navigateAfterLogin(context, response);
     } catch (e) {
       debugPrint("LOGIN ERROR: $e");
       setState(() {

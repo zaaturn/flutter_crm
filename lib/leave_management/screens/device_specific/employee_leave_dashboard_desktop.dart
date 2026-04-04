@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:my_app/leave_management/block/leave_event.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 
@@ -22,13 +22,6 @@ class _EmployeeLeaveDashboardScreenState
   static const Color _bgSlate = Color(0xFFF8FAFC);
   static const Color _borderSlate = Color(0xFFE2E8F0);
   static const Color _textMain = Color(0xFF0F172A);
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch fresh data when dashboard opens
-    context.read<LeaveBloc>().add(const LoadMyLeaves());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,12 +55,13 @@ class _EmployeeLeaveDashboardScreenState
                   const SizedBox(height: 24),
                   BlocBuilder<LeaveBloc, LeaveState>(
                     builder: (context, state) {
-                      int pendingCount = 0;
-                      if (state is MyLeavesLoaded) {
-                        pendingCount = state.leaves
-                            .where((e) => e.status == "PENDING")
-                            .length;
-                      }
+                      final bloc = context.read<LeaveBloc>();
+                      final leaves = state is MyLeavesLoaded
+                          ? state.leaves
+                          : bloc.myLeavesSnapshot;
+                      final pendingCount = leaves
+                          .where((e) => e.status.toUpperCase() == 'PENDING')
+                          .length;
 
                       return Wrap(
                         spacing: 24,
@@ -191,9 +185,8 @@ class _EmployeeLeaveDashboardScreenState
       backgroundColor: Colors.white,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: _textMain),
-        onPressed: () {
-          Navigator.of(context).pop();
-        },
+        onPressed: () =>
+            EmployeeDashboardNavigator.leaveBackToMain(context),
       ),
       title: const Text(
         "Leave Management Dashboard",

@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart'; // For the modern dialog look
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
+import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
 import 'package:my_app/screens/device_specific/welcome_mobile.dart';
 import '../utils/design_tokens.dart';
 
@@ -79,11 +81,9 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
         final employee = state.employee;
-        final String firstName = employee?.name ?? "User";
-        final String profilePic = employee?.profilePhoto ?? "";
-        final String initials = firstName.isNotEmpty
-            ? firstName[0].toUpperCase()
-            : "U";
+        final String displayName = employee?.displayName ?? 'User';
+        final String profilePic = employee?.profilePhoto ?? '';
+        final String initials = employee?.avatarInitials ?? 'U';
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
@@ -122,7 +122,7 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       ),
                       Text(
-                        firstName,
+                        displayName,
                         style: AppTextStyles.headline(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -137,12 +137,73 @@ class TopBar extends StatelessWidget implements PreferredSizeWidget {
               // --- RIGHT: ACTIONS (BELL & LOGOUT) ---
               Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.onSurfaceVariant,
-                    ),
-                    onPressed: () {},
+                  BlocBuilder<NotificationBloc, NotificationState>(
+                    builder: (context, nState) {
+                      final count = nState.unreadCount;
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationScreen(),
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 42,
+                          width: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryContainer.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.12),
+                            ),
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.notifications_outlined,
+                                color: AppColors.onSurfaceVariant,
+                                size: 22,
+                              ),
+                              if (count > 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(2),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 16,
+                                      minHeight: 16,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        count > 99 ? '99+' : '$count',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
 
                   Container(

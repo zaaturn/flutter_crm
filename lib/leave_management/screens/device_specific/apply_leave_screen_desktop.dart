@@ -7,6 +7,8 @@ import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/leave_management/models/leave_type.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/main.dart' show navigatorKey;
 
 import 'apply_leave_form.dart';
 
@@ -131,6 +133,11 @@ class _ApplyLeaveDesktopViewState extends State<_ApplyLeaveDesktopView> {
                 backgroundColor: const Color(0xFF059669),
               ),
             );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              final rootCtx = navigatorKey.currentContext ?? context;
+              EmployeeDashboardNavigator.dashboard(rootCtx);
+            });
           }
           if (state is LeaveError) {
             setState(() => _errorMessage = state.message);

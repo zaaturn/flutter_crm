@@ -15,6 +15,10 @@ class SecureStorageService {
   static const String _userKey = 'user_json';
   static const String _roleKey = 'user_role';
   static const String _companyIdKey = 'company_id';
+  static const String _isSuperuserKey = 'is_superuser';
+  static const String _adminModulesKey = 'admin_modules_json';
+  static const String _activeDashboardKey = 'active_dashboard';
+  static const String _authSessionKey = 'auth_session_json';
 
   final FlutterSecureStorage _secureStorage =
   const FlutterSecureStorage();
@@ -91,6 +95,31 @@ class SecureStorageService {
 
   Future<String?> readRole() async =>
       _read(_roleKey);
+
+  Future<void> saveIsSuperuser(bool value) async =>
+      _write(_isSuperuserKey, value ? '1' : '0');
+
+  Future<bool> readIsSuperuser() async {
+    final s = await _read(_isSuperuserKey);
+    return s == '1' || s == 'true';
+  }
+
+  Future<void> saveAdminModulesJson(String json) async =>
+      _write(_adminModulesKey, json);
+
+  Future<String?> readAdminModulesJson() async => _read(_adminModulesKey);
+
+  /// `"employee"` | `"admin"` — only used when `role == admin`.
+  Future<void> saveActiveDashboard(String value) async =>
+      _write(_activeDashboardKey, value);
+
+  Future<String?> readActiveDashboard() async => _read(_activeDashboardKey);
+
+  /// Full [AuthSession] snapshot for cold start (role, superuser, modules).
+  Future<void> saveAuthSessionJson(String json) async =>
+      _write(_authSessionKey, json);
+
+  Future<String?> readAuthSessionJson() async => _read(_authSessionKey);
 
   Future<void> saveCompanyId(String companyId) async =>
       _write(_companyIdKey, companyId);

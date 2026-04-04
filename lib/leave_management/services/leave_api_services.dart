@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
 
@@ -83,6 +84,48 @@ class LeaveApiService {
     });
   }
 
+  /// GET `/api/leaves/my-leaves/{id}/` — detail for edit form.
+  Future<LeaveRequest> getMyLeaveDetail(int id) async {
+    try {
+      final data = await _api.get('/api/leaves/my-leaves/$id/');
+      final raw = data['leave'] ?? data;
+      if (raw is! Map) {
+        throw Exception('Invalid leave detail response');
+      }
+      return LeaveRequest.fromJson(Map<String, dynamic>.from(raw));
+    } on ApiException catch (e) {
+      throw Exception(_formatLeaveApiError(e));
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
+  }
+
+  static String _formatLeaveApiError(ApiException e) {
+    if (e.code == 403) {
+      return e.data is Map && (e.data as Map)['detail'] != null
+          ? (e.data as Map)['detail'].toString()
+          : "You can't edit this leave.";
+    }
+    if (e.code == 400 && e.data is Map<String, dynamic>) {
+      return _drfFieldErrors(e.data as Map<String, dynamic>);
+    }
+    return e.message;
+  }
+
+  static String _drfFieldErrors(Map<String, dynamic> map) {
+    final lines = <String>[];
+    map.forEach((key, value) {
+      if (value is List) {
+        lines.add('$key: ${value.map((e) => e.toString()).join(', ')}');
+      } else if (value is Map) {
+        lines.add('$key: ${value.toString()}');
+      } else {
+        lines.add('$key: $value');
+      }
+    });
+    return lines.isEmpty ? 'Validation failed.' : lines.join('\n');
+  }
+
   // ===============================
   // ALL LEAVES
   // ===============================
@@ -105,14 +148,16 @@ class LeaveApiService {
     required DateTime startDate,
     required DateTime endDate,
     String? reason,
+    String duration = 'FULL',
   }) async {
     return _safeRequest(() async {
       await _api.post(
         "/api/leaves/apply/",
         body: {
           "leave_type": leaveTypeId,
-          "start_date": startDate.toIso8601String().split('T')[0],
-          "end_date": endDate.toIso8601String().split('T')[0],
+          "start_date": DateFormat('yyyy-MM-dd').format(startDate),
+          "end_date": DateFormat('yyyy-MM-dd').format(endDate),
+          "duration": duration,
           "reason": reason,
         },
       );
@@ -120,36 +165,45 @@ class LeaveApiService {
   }
 
   // ===============================
-  // UPDATE LEAVE
+  // UPDATE LEAVE (PATCH — PENDING only on server)
   // ===============================
-  Future<String> updateLeave({
+  /// Returns server [detail] message and optional parsed [leave] from `response['leave']`.
+  Future<({String detail, LeaveRequest? leave})> updateLeave({
     required int leaveId,
-    DateTime? startDate,
-    DateTime? endDate,
-    String? reason,
-    int? leaveTypeId,
+    required int leaveTypeId,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String duration,
+    required String reason,
   }) async {
-    return _safeRequest(() async {
-      final body = <String, dynamic>{};
+    try {
+      final body = <String, dynamic>{
+        'leave_type': leaveTypeId,
+        'start_date': DateFormat('yyyy-MM-dd').format(startDate),
+        'end_date': DateFormat('yyyy-MM-dd').format(endDate),
+        'duration': duration,
+        'reason': reason,
+      };
 
-      if (startDate != null) {
-        body["start_date"] =
-        startDate.toIso8601String().split('T')[0];
-      }
-      if (endDate != null) {
-        body["end_date"] =
-        endDate.toIso8601String().split('T')[0];
-      }
-      if (reason != null) body["reason"] = reason;
-      if (leaveTypeId != null) body["leave_type"] = leaveTypeId;
-
-      final res = await _api.put(
-        "/api/leaves/update/$leaveId/",
+      final res = await _api.patch(
+        '/api/leaves/update/$leaveId/',
         body: body,
       );
 
-      return res['detail'] ?? "Leave updated successfully";
-    });
+      final detail =
+          res['detail']?.toString() ?? 'Leave updated successfully';
+      LeaveRequest? leave;
+      final rawLeave = res['leave'];
+      if (rawLeave is Map) {
+        leave = LeaveRequest.fromJson(Map<String, dynamic>.from(rawLeave));
+      }
+
+      return (detail: detail, leave: leave);
+    } on ApiException catch (e) {
+      throw Exception(_formatLeaveApiError(e));
+    } catch (e) {
+      throw Exception(ErrorHandler.format(e));
+    }
   }
 
   // ===============================

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/assign_task_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/track_task_desktop.dart';
@@ -16,17 +15,15 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
+import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
 
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 import 'package:my_app/leave_management/screens/device_specific/admin_leave_approve_panel.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/assign_task_screen_desktop.dart';
-
 
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
-import 'package:my_app/leave_management/services/leave_api_services.dart';
 
 import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_desktop.dart';
 
@@ -40,6 +37,9 @@ import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
 import 'package:my_app/client tracker/features/payment/bloc/payment_bloc.dart';
 import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
 import 'package:my_app/client tracker/features/payment/repository/payment_repository.dart';
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/auth/screens/superadmin_users_screen.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 class SidebarHandler {
   static Future<void> handle(
@@ -47,11 +47,42 @@ class SidebarHandler {
       BuildContext parentContext,
       SidebarAction action,
       ) async {
-    if (!kIsWeb && MediaQuery.of(sidebarContext).size.width < 900) {
+    // Only close a drawer — never Navigator.pop on a permanent sidebar (would pop the
+    // whole route and can empty the stack → Navigator _history.isNotEmpty assertion).
+    final scaffold = Scaffold.maybeOf(sidebarContext);
+    if (scaffold != null && scaffold.isDrawerOpen) {
       Navigator.pop(sidebarContext);
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!parentContext.mounted) return;
+
+      if (action == SidebarAction.superadminUsers) {
+        final raw = await SecureStorageService().readAuthSessionJson();
+        if (!parentContext.mounted) return;
+        final session = AuthSession.fromStorageString(raw);
+        if (session?.isSuperuser != true) {
+          _showLimitedAccess(parentContext);
+          return;
+        }
+      } else {
+        final key = moduleKeyForSidebarAction(action);
+        if (key != null) {
+          final raw = await SecureStorageService().readAuthSessionJson();
+          if (!parentContext.mounted) return;
+          final session = AuthSession.fromStorageString(raw);
+          final allowed = key == 'payroll'
+              ? (session?.canAccessPayrollAdmin ?? false)
+              : (session?.moduleAllowed(key) ?? true);
+          if (!allowed) {
+            _showLimitedAccess(parentContext);
+            return;
+          }
+        }
+      }
+
+      if (!parentContext.mounted) return;
+
       switch (action) {
         case SidebarAction.dashboard:
           break;
@@ -141,6 +172,7 @@ class SidebarHandler {
           break;
 
         case SidebarAction.payroll:
+          PayrollFlowController.open(parentContext);
           break;
 
         case SidebarAction.leads:
@@ -150,11 +182,33 @@ class SidebarHandler {
           _push(parentContext, const CalendarScreenDesktop());
           break;
 
+        case SidebarAction.superadminUsers:
+          _push(parentContext, const SuperadminUsersScreen());
+          break;
+
         case SidebarAction.logout:
-          _handleLogout(parentContext);
+          await _handleLogout(parentContext);
           break;
       }
     });
+  }
+
+  static void _showLimitedAccess(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Limited access'),
+        content: const Text(
+          'Your admin account does not include this module. Contact a superadmin if you need access.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   static void _push(BuildContext context, Widget page) {

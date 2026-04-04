@@ -16,13 +16,14 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
+import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 import 'package:my_app/leave_management/screens/admin_leave_list_screen.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/track_task_desktop.dart';
-
 class SidebarHandler {
   static Future<void> handle(
       BuildContext drawerContext,
@@ -32,7 +33,19 @@ class SidebarHandler {
 
     Navigator.pop(drawerContext);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (action == SidebarAction.payroll) {
+        final raw = await SecureStorageService().readAuthSessionJson();
+        if (!parentContext.mounted) return;
+        final session = AuthSession.fromStorageString(raw);
+        if (!(session?.canAccessPayrollAdmin ?? false)) {
+          _showLimitedAccess(parentContext);
+          return;
+        }
+      }
+
+      if (!parentContext.mounted) return;
+
       switch (action) {
 
       // ================= DASHBOARD =================
@@ -98,6 +111,7 @@ class SidebarHandler {
           break;
 
         case SidebarAction.payroll:
+          PayrollFlowController.open(parentContext);
           break;
 
       // ================= OTHERS =================
@@ -113,6 +127,24 @@ class SidebarHandler {
           break;
       }
     });
+  }
+
+  static void _showLimitedAccess(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Limited access'),
+        content: const Text(
+          'Your admin account does not include this module. Contact a superadmin if you need access.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   // ================= LOGOUT HANDLER =================

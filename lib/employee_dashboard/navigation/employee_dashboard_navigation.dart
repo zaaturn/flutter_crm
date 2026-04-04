@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/main.dart' show navigatorKey;
 
 // SCREEN IMPORTS
 import '../screen/employee_dashboard_screen.dart';
@@ -33,19 +34,34 @@ class EmployeeDashboardNavigator {
   }
 
   // ================= FIXED TAB NAVIGATION HELPER =================
-  // Using pushAndRemoveUntil prevents the "history is empty" crash.
+  /// Uses [navigatorKey] so we always mutate the same [Navigator] as [MaterialApp]
+  /// (web / nested routes: `Navigator.of(context, rootNavigator: true)` can be wrong
+  /// and leave `_history` empty after `pushAndRemoveUntil`).
   static void _switchTab(BuildContext context, Widget screen) {
     _safeCloseDrawer(context);
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation1, animation2) => screen,
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-      ),
-          (route) => false, // This clears the stack completely
-    );
+    void push(NavigatorState nav) {
+      if (!nav.mounted) return;
+      nav.pushAndRemoveUntil<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (_, __, ___) => screen,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+        (route) => false,
+      );
+    }
+
+    final keyed = navigatorKey.currentState;
+    if (keyed != null && keyed.mounted) {
+      push(keyed);
+      return;
+    }
+
+    final nav = Navigator.maybeOf(context, rootNavigator: true);
+    if (nav != null && nav.mounted) {
+      push(nav);
+    }
   }
 
   // ================= MAIN DASHBOARD =================
@@ -56,6 +72,20 @@ class EmployeeDashboardNavigator {
           ? const EmployeeDashboardDesktop()
           : const EmployeeDashboardScreen(),
     );
+  }
+
+  /// Leave Management back: if this screen was [Navigator.push] on top of the main
+  /// dashboard (e.g. desktop sidebar), pop once. If it is the **only** route
+  /// (bottom nav replaced the stack with leave), [Navigator.pop] would empty
+  /// history — use [dashboard] instead.
+  static void leaveBackToMain(BuildContext context) {
+    final nav = navigatorKey.currentState;
+    if (nav != null && nav.mounted && nav.canPop()) {
+      nav.pop();
+      return;
+    }
+    final ctx = navigatorKey.currentContext ?? context;
+    dashboard(ctx);
   }
 
   // ================= TASK TRACKER =================

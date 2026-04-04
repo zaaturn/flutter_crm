@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:my_app/employee_dashboard/model/employee_model.dart';
 import 'package:my_app/services/api_services.dart';
 
 class ProfileScreenDesktop extends StatefulWidget {
@@ -25,17 +26,29 @@ class _ProfileScreenDesktopState extends State<ProfileScreenDesktop> {
   void loadProfile() async {
     try {
       final data = await profileService.getProfile();
-      setState(() => profile = data);
+      setState(() {
+        profile = EmployeeModel.normalizeProfileJson(
+          Map<String, dynamic>.from(data),
+        );
+      });
     } catch (e) {
       debugPrint("PROFILE LOAD ERROR: $e");
     }
+  }
+
+  String _bannerDisplayName() {
+    if (profile == null) return 'User';
+    return EmployeeModel.fromJson(
+      Map<String, dynamic>.from(profile!),
+    ).displayName;
   }
 
   String _getFormattedImageUrl() {
     final photo = profile?["profile_photo"];
 
     if (photo == null || photo.toString().isEmpty) {
-      return "https://ui-avatars.com/api/?name=${profile?['username'] ?? 'User'}&background=7B52EF&color=fff";
+      final q = Uri.encodeComponent(_bannerDisplayName());
+      return 'https://ui-avatars.com/api/?name=$q&background=7B52EF&color=fff';
     }
 
     // Extract root domain from API base
@@ -167,7 +180,7 @@ class _ProfileScreenDesktopState extends State<ProfileScreenDesktop> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                profile!["username"] ?? "User",
+                _bannerDisplayName(),
                 style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

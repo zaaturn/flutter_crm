@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'secure_storage_service.dart';
+import 'package:my_app/auth/profile_remote_sync.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 
 class ApiClient {
 
@@ -165,6 +167,18 @@ class ApiClient {
               _isRefreshing = false;
             }
           }
+          if (statusCode == 403) {
+            final msg = rootScaffoldMessengerKey.currentState;
+            if (msg != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                msg.showSnackBar(
+                  const SnackBar(
+                    content: Text('No access to this module'),
+                  ),
+                );
+              });
+            }
+          }
           handler.next(error);
         },
       ),
@@ -187,10 +201,12 @@ class ApiClient {
 
       final newAccess = data["access"];
       await _storage.saveToken(newAccess);
-      if (data["refresh"] != null)
+      if (data["refresh"] != null) {
         await _storage.saveRefreshToken(data["refresh"]);
+      }
 
       _isAuthenticated = true;
+      await ProfileRemoteSync.syncFromServer();
       return newAccess;
     } catch (e) {
       return null;
@@ -213,8 +229,9 @@ class ApiClient {
   }
 
   ApiException _handleError(DioException e) {
-    if (CancelToken.isCancel(e))
+    if (CancelToken.isCancel(e)) {
       return ApiException(499, "Request cancelled");
+    }
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
       return ApiException(408, "Request timeout.");

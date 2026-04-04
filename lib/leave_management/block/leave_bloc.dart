@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
@@ -10,6 +13,10 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
 
   List<LeaveRequest> _cachedLeaves = [];
 
+  /// Last successful my-leaves list (for UI when current [state] is not [MyLeavesLoaded]).
+  List<LeaveRequest> get myLeavesSnapshot =>
+      UnmodifiableListView<LeaveRequest>(_cachedLeaves);
+
 
   String? _lastStatus;
   DateTime? _lastStartDate;
@@ -18,7 +25,10 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
   LeaveBloc(this.apiService) : super(LeaveInitial()) {
     on<LoadLeaveTypes>(_onLoadLeaveTypes);
     on<LoadLeaveBalances>(_onLoadLeaveBalances);
-    on<LoadMyLeaves>(_onLoadMyLeaves);
+    on<LoadMyLeaves>(
+      _onLoadMyLeaves,
+      transformer: (events, mapper) => events.asyncExpand(mapper),
+    );
     on<LoadPendingLeaves>(_onLoadPendingLeaves);
     on<ApplyLeave>(_onApplyLeave);
     on<UpdateLeave>(_onUpdateLeave);
@@ -41,10 +51,14 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       LoadLeaveTypes event,
       Emitter<LeaveState> emit,
       ) async {
-    emit(LeaveTypesLoading());
+    // Do not emit LeaveTypesLoading — it replaced MyLeavesLoaded and made
+    // dashboards show 0 pending while types were fetching.
     try {
       final leaveTypes = await apiService.getLeaveTypes();
       emit(LeaveTypesLoaded(leaveTypes));
+      if (_cachedLeaves.isNotEmpty) {
+        emit(MyLeavesLoaded(_cachedLeaves));
+      }
     } catch (e) {
       emit(LeaveError(_extractErrorMessage(e)));
     }
@@ -129,6 +143,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         startDate: event.startDate,
         endDate: event.endDate,
         reason: event.reason,
+        duration: event.duration,
       );
 
       emit(LeaveActionSuccess('Leave applied successfully'));
@@ -153,15 +168,16 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       ) async {
     emit(LeaveSubmitting());
     try {
-      await apiService.updateLeave(
+      final result = await apiService.updateLeave(
         leaveId: event.leaveId,
         leaveTypeId: event.leaveTypeId,
         startDate: event.startDate,
         endDate: event.endDate,
         reason: event.reason,
+        duration: event.duration,
       );
 
-      emit(LeaveActionSuccess('Leave updated successfully'));
+      emit(LeaveActionSuccess(result.detail, result.leave));
 
       await Future.delayed(const Duration(milliseconds: 300));
 
