@@ -42,7 +42,6 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
   int _selected = 0;
   bool _canOpenAdminWorkspace = false;
 
-  // REPLACED EMOJIS WITH MATERIAL ICONS
   static const _nav = <({String label, IconData icon})>[
     (label: 'Dashboard', icon: Icons.grid_view_rounded),
     (label: 'My Tasks', icon: Icons.assignment_outlined),
@@ -122,7 +121,7 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               physics: const BouncingScrollPhysics(),
               children: [
-                _SectionHeader(title: 'WORKSPACE'),
+                const _SectionHeader(title: 'WORKSPACE'),
                 for (var i = 0; i < 3; i++)
                   _NavTile(
                     label: _nav[i].label,
@@ -133,7 +132,7 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
 
                 const SizedBox(height: 24),
 
-                _SectionHeader(title: 'MANAGEMENT'),
+                const _SectionHeader(title: 'MANAGEMENT'),
                 for (var i = 3; i < _nav.length; i++)
                   _NavTile(
                     label: _nav[i].label,
@@ -145,7 +144,6 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
             ),
           ),
 
-          // Admin Workspace Button (Daxarrow Style)
           if (_canOpenAdminWorkspace)
             Padding(
               padding: const EdgeInsets.all(16),
@@ -185,13 +183,15 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
               ),
             ),
 
-          // User Section
+          // User Section - UPDATED TO PASS CONTEXT
           BlocBuilder<EmployeeBloc, EmployeeState>(
             builder: (ctx, state) {
               final emp = state.employee;
               final name = emp?.displayName ?? 'User';
               final initials = emp?.avatarInitials ?? 'U';
+
               return DashboardSidebarContent.userCard(
+                context: ctx, // Added the context here
                 name: name,
                 initials: initials,
                 onLogoutTap: () => widget.onLogout?.call(),

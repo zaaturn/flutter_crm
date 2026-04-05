@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/auth/auth_navigation.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 
-// Assuming your theme file is updated to these constants
+// THEME CONSTANTS
 class WorkspaceTheme {
   static const Color primaryPurple = Color(0xFF6F34DC);
   static const Color cardSurface = Colors.white;
@@ -49,7 +49,6 @@ class DashboardSidebarContent {
               ),
             ),
             const SizedBox(width: 14),
-
             Text(
               'DAXARROW',
               style: GoogleFonts.plusJakartaSans(
@@ -132,7 +131,9 @@ class DashboardSidebarContent {
     );
   }
 
+  // MODIFIED: Added context and triggered showLogoutDialog in onPressed
   static Widget userCard({
+    required BuildContext context,
     required String name,
     required String initials,
     required VoidCallback onLogoutTap,
@@ -193,7 +194,10 @@ class DashboardSidebarContent {
             ),
           ),
           IconButton(
-            onPressed: onLogoutTap,
+            onPressed: () => showLogoutDialog(
+              context: context,
+              onConfirmLogout: onLogoutTap,
+            ),
             icon: const Icon(Icons.logout_rounded, size: 18, color: WorkspaceTheme.danger),
             visualDensity: VisualDensity.compact,
           ),
