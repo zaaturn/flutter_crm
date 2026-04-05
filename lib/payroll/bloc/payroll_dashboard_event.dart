@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../models/payroll_records_paid_filter.dart';
+
 abstract class PayrollDashboardEvent extends Equatable {
   const PayrollDashboardEvent();
 
@@ -38,6 +40,14 @@ class PayrollDashboardSearchSubmitted extends PayrollDashboardEvent {
 
   @override
   List<Object?> get props => [query];
+}
+
+class PayrollRecordsPaidFilterChanged extends PayrollDashboardEvent {
+  const PayrollRecordsPaidFilterChanged(this.filter);
+  final PayrollRecordsPaidFilter filter;
+
+  @override
+  List<Object?> get props => [filter];
 }
 
 class PayrollInlinePatchRequested extends PayrollDashboardEvent {

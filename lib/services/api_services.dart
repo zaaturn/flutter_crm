@@ -70,6 +70,7 @@ class TaskService {
   final ApiClient _api = ApiClient();
   String get _base => _api.baseEmployee;
 
+  /// Employee "my work": `GET .../tasks/` with no query params (assigned to me, unapproved).
   Future<List<dynamic>> getTasks() async {
     final response = await _api.getList("$_base/tasks/");
     return response;

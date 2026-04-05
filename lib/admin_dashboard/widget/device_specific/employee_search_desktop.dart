@@ -28,7 +28,7 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
     return RawAutocomplete<User>(
       textEditingController: widget.controller,
       focusNode: _focusNode,
-      displayStringForOption: (User u) => u.displayName,
+      displayStringForOption: (User u) => u.assignmentLabel,
       optionsBuilder: (TextEditingValue value) {
         final q = value.text.toLowerCase();
 
@@ -36,11 +36,12 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
 
         return widget.users.where((u) {
           return u.username.toLowerCase().contains(q) ||
-              u.displayName.toLowerCase().contains(q);
+              u.displayName.toLowerCase().contains(q) ||
+              u.assignmentLabel.toLowerCase().contains(q);
         }).toList();
       },
       onSelected: (User u) {
-        widget.controller.text = u.displayName;
+        widget.controller.text = u.assignmentLabel;
         widget.onSelected(u);
         _focusNode.unfocus();
       },
@@ -144,7 +145,10 @@ class _EmployeeOptionTileState extends State<_EmployeeOptionTile> {
                 radius: 16,
                 backgroundColor: const Color(0xFF0D3199).withOpacity(0.1),
                 child: Text(
-                  widget.user.displayName[0].toUpperCase(),
+                  (widget.user.displayName.isNotEmpty
+                          ? widget.user.displayName[0]
+                          : '?')
+                      .toUpperCase(),
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -159,7 +163,7 @@ class _EmployeeOptionTileState extends State<_EmployeeOptionTile> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      widget.user.displayName,
+                      widget.user.assignmentLabel,
                       style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,

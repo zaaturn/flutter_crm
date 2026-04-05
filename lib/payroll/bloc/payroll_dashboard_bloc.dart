@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/payroll_employee_option.dart';
 import '../models/payroll_merged_row.dart';
 import '../models/payroll_record_model.dart';
+import '../models/payroll_records_paid_filter.dart';
 import '../repository/payroll_repository.dart';
 import 'payroll_dashboard_event.dart';
 import 'payroll_dashboard_state.dart';
@@ -84,6 +85,7 @@ class PayrollDashboardBloc
     on<PayrollDashboardMonthChanged>(_onMonthChanged);
     on<PayrollDashboardYearChanged>(_onYearChanged);
     on<PayrollDashboardSearchSubmitted>(_onSearch);
+    on<PayrollRecordsPaidFilterChanged>(_onPaidFilterChanged);
     on<PayrollInlinePatchRequested>(_onInlinePatch);
     on<PayrollInlineCreateRequested>(_onInlineCreate);
   }
@@ -119,6 +121,19 @@ class PayrollDashboardBloc
     await _load(emit);
   }
 
+  Future<void> _onPaidFilterChanged(
+    PayrollRecordsPaidFilterChanged event,
+    Emitter<PayrollDashboardState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        recordsPaidFilter: event.filter,
+        clearError: true,
+      ),
+    );
+    await _load(emit);
+  }
+
   Future<void> _onSearch(
     PayrollDashboardSearchSubmitted event,
     Emitter<PayrollDashboardState> emit,
@@ -139,6 +154,7 @@ class PayrollDashboardBloc
   Future<List<PayrollRecordModel>> _fetchAllRecordsForPeriod(
     int year,
     int month,
+    PayrollRecordsPaidFilter paidFilter,
   ) async {
     final out = <PayrollRecordModel>[];
     var page = 1;
@@ -147,7 +163,7 @@ class PayrollDashboardBloc
       final p = await _repository.loadRecords(
         year: year,
         month: month,
-        status: null,
+        paidFilter: paidFilter,
         search: null,
         page: page,
         pageSize: pageSize,
@@ -175,7 +191,8 @@ class PayrollDashboardBloc
     try {
       final dashFuture = _repository.loadDashboard(year: year, month: month);
       final empFuture = _repository.fetchEmployeesForPicker();
-      final recFuture = _fetchAllRecordsForPeriod(year, month);
+      final recFuture =
+          _fetchAllRecordsForPeriod(year, month, state.recordsPaidFilter);
 
       final dashboard = await dashFuture;
       var employees = state.employeeOptions;
@@ -335,7 +352,11 @@ class PayrollDashboardBloc
     } on DioException catch (e) {
       if (_isUniquePayrollPeriodError(e)) {
         try {
-          final records = await _fetchAllRecordsForPeriod(year, month);
+          final records = await _fetchAllRecordsForPeriod(
+            year,
+            month,
+            PayrollRecordsPaidFilter.all,
+          );
           final existing = _findRecordForCrmUser(
             records,
             event.employeeId,
@@ -373,7 +394,11 @@ class PayrollDashboardBloc
     final year = state.year;
     try {
       final dash = await _repository.loadDashboard(year: year, month: month);
-      final records = await _fetchAllRecordsForPeriod(year, month);
+      final records = await _fetchAllRecordsForPeriod(
+        year,
+        month,
+        state.recordsPaidFilter,
+      );
       final tableRows = mergePayrollTableRows(
         employees: state.employeeOptions,
         records: records,

@@ -4,6 +4,7 @@ import '../models/payroll_dashboard_model.dart';
 import '../models/payroll_employee_option.dart';
 import '../models/payroll_merged_row.dart';
 import '../models/payroll_record_model.dart';
+import '../models/payroll_records_paid_filter.dart';
 
 enum PayrollDashboardLoadStatus { initial, loading, success, failure }
 
@@ -15,6 +16,7 @@ class PayrollDashboardState extends Equatable {
     required this.searchQuery,
     required this.monthIndex,
     required this.year,
+    this.recordsPaidFilter = PayrollRecordsPaidFilter.all,
     this.errorMessage,
     this.employeeOptions = const [],
     this.periodRecords = const [],
@@ -31,6 +33,7 @@ class PayrollDashboardState extends Equatable {
       searchQuery: '',
       monthIndex: now.month,
       year: now.year,
+      recordsPaidFilter: PayrollRecordsPaidFilter.all,
       employeeOptions: const [],
       periodRecords: const [],
       savingRecordId: null,
@@ -46,6 +49,7 @@ class PayrollDashboardState extends Equatable {
   /// 1–12 only (set from top bar).
   final int monthIndex;
   final int year;
+  final PayrollRecordsPaidFilter recordsPaidFilter;
   final String? errorMessage;
   final List<PayrollEmployeeOption> employeeOptions;
   /// Raw payroll rows for current month/year (for re-merge on search).
@@ -60,6 +64,7 @@ class PayrollDashboardState extends Equatable {
     String? searchQuery,
     int? monthIndex,
     int? year,
+    PayrollRecordsPaidFilter? recordsPaidFilter,
     String? errorMessage,
     bool clearError = false,
     List<PayrollEmployeeOption>? employeeOptions,
@@ -76,6 +81,7 @@ class PayrollDashboardState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       monthIndex: monthIndex ?? this.monthIndex,
       year: year ?? this.year,
+      recordsPaidFilter: recordsPaidFilter ?? this.recordsPaidFilter,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       employeeOptions: employeeOptions ?? this.employeeOptions,
       periodRecords: periodRecords ?? this.periodRecords,
@@ -96,6 +102,7 @@ class PayrollDashboardState extends Equatable {
         searchQuery,
         monthIndex,
         year,
+        recordsPaidFilter,
         errorMessage,
         employeeOptions,
         periodRecords,

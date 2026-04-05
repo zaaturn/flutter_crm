@@ -7,8 +7,10 @@ import '../model/events.dart';
 import '../model/task.dart';
 import '../model/user.dart';
 
+import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/notification_service.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
 
 class AdminProfile {
@@ -65,24 +67,44 @@ class AdminRepository {
     }
   }
 
+  /// Task assignee directory: admins + employees (`GET .../employeeslist/`).
   Future<List<User>> fetchEmployees() async {
     try {
-      List<User> allUsers = [];
-      String? url = "${_accountsBase}employees/";
+      final List<User> allUsers = [];
+      String? pageUrl = "${_accountsBase}employeeslist/";
 
-      while (url != null) {
-        final res = await _api.get(url);
-        final List<dynamic> results = res['results'];
-        allUsers.addAll(
-          results.map((e) => User.fromJson(Map<String, dynamic>.from(e))).toList(),
-        );
-        url = res['next'];
+      while (pageUrl != null) {
+        final res = await _api.get(pageUrl);
+        final results = res['results'];
+        if (results is List) {
+          for (final e in results) {
+            if (e is Map) {
+              allUsers.add(User.fromJson(Map<String, dynamic>.from(e)));
+            }
+          }
+        }
+        final next = res['next'];
+        pageUrl =
+            (next == null || next.toString().isEmpty) ? null : next.toString();
       }
 
-      return allUsers;
+      if (allUsers.isNotEmpty) return allUsers;
+
+      final raw = await _api.getList("${_accountsBase}employeeslist/");
+      return raw
+          .map((e) => User.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     } catch (e) {
       throw Exception(ErrorHandler.format(e));
     }
+  }
+
+  Future<bool> _isSuperuserFlag() async {
+    final storage = SecureStorageService();
+    if (await storage.readIsSuperuser()) return true;
+    final raw = await storage.readAuthSessionJson();
+    final session = AuthSession.fromStorageString(raw);
+    return session?.isSuperuser ?? false;
   }
 
   Future<List<Project>> fetchProjects() async {
@@ -143,10 +165,29 @@ class AdminRepository {
     }
   }
 
+  /// Superadmin board: `?all_pending=1`. Normal admin: `?outgoing=1`.
+  /// On 403 for global queue, falls back to outgoing list.
   Future<List<Task>> fetchTasks() async {
+    final isSuper = await _isSuperuserFlag();
+    final primary = isSuper
+        ? <String, dynamic>{'all_pending': 1}
+        : <String, dynamic>{'outgoing': 1};
+
     try {
-      final raw = await _api.getList("${_crmBase}tasks/");
+      final raw = await _api.getList(
+        "${_crmBase}tasks/",
+        queryParameters: primary,
+      );
       return raw.map((e) => Task.fromJson(Map<String, dynamic>.from(e))).toList();
+    } on ApiException catch (e) {
+      if (e.code == 403 && isSuper) {
+        final raw = await _api.getList(
+          "${_crmBase}tasks/",
+          queryParameters: const {'outgoing': 1},
+        );
+        return raw.map((t) => Task.fromJson(Map<String, dynamic>.from(t))).toList();
+      }
+      throw Exception(ErrorHandler.format(e));
     } catch (e) {
       throw Exception(ErrorHandler.format(e));
     }

@@ -16,15 +16,18 @@ class AuthSession {
   bool get isEmployee => role == 'employee';
   bool get isClient => role == 'client';
 
-  /// Payroll admin UI: superuser or any admin (salary rows for staff/admins included).
-  bool get canAccessPayrollAdmin => isSuperuser || isAdmin;
+  /// Payroll admin UI: superuser, or admin with `admin_modules['payroll'] == true`.
+  bool get canAccessPayrollAdmin =>
+      isSuperuser || (isAdmin && adminModules['payroll'] == true);
 
   /// `null` or missing key → allowed (backward compatible).
   /// Superusers may access every module regardless of [adminModules].
   bool moduleAllowed(String? moduleKey) {
     if (isSuperuser) return true;
     if (moduleKey == null || moduleKey.isEmpty) return true;
-    if (moduleKey == 'payroll') return isAdmin;
+    if (moduleKey == 'payroll') {
+      return isSuperuser || (isAdmin && adminModules['payroll'] == true);
+    }
     return adminModules[moduleKey] ?? true;
   }
 

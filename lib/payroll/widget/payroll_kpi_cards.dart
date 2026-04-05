@@ -28,11 +28,11 @@ class PayrollKpiCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // LOGIC FIX: If totalEmployees is 0, we derive it from the API's record counts
-    // This ensures your "0" problem is solved at the widget level.
-    final int displayHeadcount = (dashboard.totalEmployees == 0)
+    final int eligible =
+        dashboard.totalEligibleUsers ?? dashboard.totalEmployees;
+    final int displayHeadcount = (eligible == 0)
         ? (dashboard.paidRecordsCount + dashboard.totalPending)
-        : dashboard.totalEmployees;
+        : eligible;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -66,9 +66,11 @@ class PayrollKpiCards extends StatelessWidget {
             ),
           ),
           _WorkspaceKpiCard(
-            title: 'TOTAL PENDING',
-            count: dashboard.totalPending,
-            metaText: 'Awaiting processing',
+            title: 'UNSET / PENDING',
+            count: dashboard.unsetCount ?? dashboard.totalPending,
+            metaText: dashboard.unsetCount != null
+                ? 'Paid status not set (unset)'
+                : 'Awaiting processing',
             icon: Icons.hourglass_top_rounded,
             footerWidget: _StatusBadge(
               label: 'PENDING',

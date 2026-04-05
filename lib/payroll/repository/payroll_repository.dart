@@ -1,6 +1,7 @@
 import '../models/payroll_dashboard_model.dart';
 import '../models/payroll_employee_option.dart';
 import '../models/payroll_records_page.dart';
+import '../models/payroll_records_paid_filter.dart';
 import '../services/payroll_api_service.dart';
 
 class PayrollRepository {
@@ -17,7 +18,7 @@ class PayrollRepository {
   Future<PayrollRecordsPage> loadRecords({
     int? year,
     int? month,
-    String? status,
+    PayrollRecordsPaidFilter paidFilter = PayrollRecordsPaidFilter.all,
     String? search,
     int page = 1,
     int? pageSize,
@@ -25,7 +26,7 @@ class PayrollRepository {
       _api.fetchRecords(
         year: year,
         month: month,
-        status: status,
+        paidFilter: paidFilter,
         search: search,
         page: page,
         pageSize: pageSize,

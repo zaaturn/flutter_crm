@@ -76,7 +76,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     if (_isSuperuser) return true;
     if (moduleKey == null || moduleKey.isEmpty) return true;
     if (moduleKey == 'payroll') {
-      return _isSuperuser || _roleIsAdmin;
+      return _isSuperuser ||
+          (_roleIsAdmin && _adminModules['payroll'] == true);
     }
     return _adminModules[moduleKey] ?? true;
   }

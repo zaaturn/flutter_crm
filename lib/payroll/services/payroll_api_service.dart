@@ -5,6 +5,7 @@ import 'package:my_app/services/api_client.dart';
 import '../models/payroll_dashboard_model.dart';
 import '../models/payroll_employee_option.dart';
 import '../models/payroll_records_page.dart';
+import '../models/payroll_records_paid_filter.dart';
 
 class PayrollApiException implements Exception {
   PayrollApiException(this.message);
@@ -19,16 +20,10 @@ class PayrollApiService {
 
   final Dio _dio;
 
-  /// Same default as event module: `…/api/accounts/crm/users/all/`.
-  static const String _usersAllPath = String.fromEnvironment(
-    'USERS_ALL_PATH',
-    defaultValue: '/api/accounts/crm/users/all/',
-  );
-
-  /// When true, ask CRM to include staff/superusers in the directory (ignored if unsupported).
-  static const bool _usersAllIncludeStaff = bool.fromEnvironment(
-    'PAYROLL_USERS_ALL_INCLUDE_STAFF',
-    defaultValue: true,
+  /// Task / payroll assignee directory (admins + employees).
+  static const String _employeesListPath = String.fromEnvironment(
+    'EMPLOYEES_LIST_PATH',
+    defaultValue: '/api/accounts/crm/employeeslist/',
   );
 
   Map<String, dynamic> _asMap(dynamic data) {
@@ -62,7 +57,7 @@ class PayrollApiService {
   Future<PayrollRecordsPage> fetchRecords({
     int? year,
     int? month,
-    String? status,
+    PayrollRecordsPaidFilter paidFilter = PayrollRecordsPaidFilter.all,
     String? search,
     int page = 1,
     int? pageSize,
@@ -70,9 +65,22 @@ class PayrollApiService {
     final q = <String, dynamic>{'page': page};
     if (year != null) q['year'] = year;
     if (month != null) q['month'] = month;
-    if (status != null && status.isNotEmpty) q['status'] = status;
     if (search != null && search.isNotEmpty) q['search'] = search;
     if (pageSize != null) q['page_size'] = pageSize;
+
+    switch (paidFilter) {
+      case PayrollRecordsPaidFilter.all:
+        break;
+      case PayrollRecordsPaidFilter.paid:
+        q['paid'] = true;
+        break;
+      case PayrollRecordsPaidFilter.unpaid:
+        q['paid'] = false;
+        break;
+      case PayrollRecordsPaidFilter.unset:
+        q['paid'] = 'unset';
+        break;
+    }
 
     final res = await _dio.get<dynamic>(
       '/api/payroll/records/',
@@ -82,30 +90,28 @@ class PayrollApiService {
     return PayrollRecordsPage.fromJson(res.data);
   }
 
-  /// All CRM users for one row per person (paginated `users/all/`).
+  /// Admins + employees from CRM `employeeslist/` (paginated when supported).
   Future<List<PayrollEmployeeOption>> fetchEmployeesForPicker({
     String? search,
   }) async {
-    return _fetchCrmUsersAll(search: search);
+    return _fetchEmployeesListDirectory(search: search);
   }
 
-  Future<List<PayrollEmployeeOption>> _fetchCrmUsersAll({
+  Future<List<PayrollEmployeeOption>> _fetchEmployeesListDirectory({
     String? search,
   }) async {
-    var page = 1;
     final out = <PayrollEmployeeOption>[];
+    String? nextUrl = _employeesListPath;
 
-    while (true) {
+    while (nextUrl != null) {
       final res = await _dio.get<dynamic>(
-        _usersAllPath,
-        queryParameters: <String, dynamic>{
-          'page': page,
-          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
-          if (_usersAllIncludeStaff) ...<String, dynamic>{
-            'include_staff': true,
-            'include_superusers': true,
-          },
-        },
+        nextUrl,
+        queryParameters: nextUrl == _employeesListPath
+            ? <String, dynamic>{
+                if (search != null && search.trim().isNotEmpty)
+                  'search': search.trim(),
+              }
+            : null,
       );
 
       final data = res.data;
@@ -128,9 +134,10 @@ class PayrollApiService {
       }
 
       final next = map['next'];
-      if (next == null || next.toString().isEmpty) break;
-      page++;
-      if (page > 200) break;
+      nextUrl = (next == null || next.toString().isEmpty)
+          ? null
+          : next.toString();
+      if (out.length > 50000) break;
     }
 
     return out;
@@ -146,6 +153,17 @@ class PayrollApiService {
     if (label.isEmpty) {
       label = (m['username'] ?? m['name'] ?? m['email'] ?? 'User #$id')
           .toString();
+    }
+    final role = m['role']?.toString().trim();
+    final isSu = m['is_superuser'] == true ||
+        m['is_superuser'] == 1 ||
+        m['is_superuser']?.toString() == 'true';
+    if (isSu) {
+      label = '$label · Superuser';
+    } else if (role != null &&
+        role.isNotEmpty &&
+        role.toLowerCase() != 'employee') {
+      label = '$label · $role';
     }
     return PayrollEmployeeOption(
       id: id,

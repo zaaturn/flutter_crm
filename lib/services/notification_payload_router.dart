@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/auth/auth_session.dart';
 
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
@@ -20,6 +21,7 @@ import 'package:my_app/leave_management/screens/employee_leave_status_screen.dar
 import 'package:my_app/admin_dashboard/screen/device_specific/track_task_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/track_task_screen_mobile.dart';
 import 'package:my_app/leave_management/screens/device_specific/admin_leave_approve_panel.dart';
+import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
 
 /// Normalizes FCM / local notification payload and navigates (task, event, leave).
 abstract final class NotificationPayloadRouter {
@@ -60,6 +62,11 @@ abstract final class NotificationPayloadRouter {
     return type == 'task_assigned' ||
         type == 'task_completed' ||
         type == 'task_approved';
+  }
+
+  static bool _isPayrollPaidType(String? type) {
+    if (type == null) return false;
+    return type == 'payroll_paid';
   }
 
   static bool _isEventType(String? type) {
@@ -114,6 +121,16 @@ abstract final class NotificationPayloadRouter {
         _openLeaveAdmin(context, focusLeaveId: leaveId);
       } else {
         _openLeaveEmployee(context, leaveId);
+      }
+      return;
+    }
+
+    if (_isPayrollPaidType(type)) {
+      final rawSession = await SecureStorageService().readAuthSessionJson();
+      if (!context.mounted) return;
+      final session = AuthSession.fromStorageString(rawSession);
+      if (session?.canAccessPayrollAdmin ?? false) {
+        await PayrollFlowController.open(context);
       }
       return;
     }

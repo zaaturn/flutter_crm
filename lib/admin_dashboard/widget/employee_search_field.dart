@@ -31,18 +31,19 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
     return RawAutocomplete<User>(
       textEditingController: widget.controller,
       focusNode: _focusNode,
-      displayStringForOption: (u) => u.displayName,
+      displayStringForOption: (u) => u.assignmentLabel,
       optionsBuilder: (value) {
         final q = value.text.toLowerCase();
         if (q.isEmpty) return widget.users;
         return widget.users.where(
               (u) =>
           u.username.toLowerCase().contains(q) ||
-              u.displayName.toLowerCase().contains(q),
+              u.displayName.toLowerCase().contains(q) ||
+              u.assignmentLabel.toLowerCase().contains(q),
         );
       },
       onSelected: (u) {
-        widget.controller.text = u.displayName;
+        widget.controller.text = u.assignmentLabel;
         widget.onSelected(u);
         _focusNode.unfocus();
       },
@@ -69,7 +70,7 @@ class _EmployeeSearchFieldState extends State<EmployeeSearchField> {
             children: options
                 .map(
                   (u) => ListTile(
-                title: Text(u.displayName),
+                title: Text(u.assignmentLabel),
                 subtitle: Text(u.username),
                 onTap: () => onSelected(u),
               ),

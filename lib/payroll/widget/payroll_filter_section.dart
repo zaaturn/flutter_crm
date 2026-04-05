@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../bloc/payroll_dashboard_bloc.dart';
 import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
+import '../models/payroll_records_paid_filter.dart';
 
 
 class WorkspaceTheme {
@@ -71,7 +72,28 @@ class _PayrollFilterSectionState extends State<PayrollFilterSection> {
                 runSpacing: 12,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-
+                  _StyledDropdown<PayrollRecordsPaidFilter>(
+                    value: state.recordsPaidFilter,
+                    items: PayrollRecordsPaidFilter.values,
+                    labelBuilder: (f) {
+                      switch (f) {
+                        case PayrollRecordsPaidFilter.all:
+                          return 'Paid: All';
+                        case PayrollRecordsPaidFilter.paid:
+                          return 'Paid: Yes';
+                        case PayrollRecordsPaidFilter.unpaid:
+                          return 'Paid: No';
+                        case PayrollRecordsPaidFilter.unset:
+                          return 'Paid: Unset';
+                      }
+                    },
+                    onChanged: (f) {
+                      if (f == null) return;
+                      context.read<PayrollDashboardBloc>().add(
+                            PayrollRecordsPaidFilterChanged(f),
+                          );
+                    },
+                  ),
                   _StyledDropdown<int>(
                     value: state.monthIndex.clamp(1, 12),
                     items: List.generate(12, (i) => i + 1),

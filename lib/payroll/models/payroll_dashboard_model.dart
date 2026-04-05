@@ -12,6 +12,8 @@ class PayrollDashboardModel {
     required this.amountPaidYtd,
     required this.ytdSubtitle,
     required this.paidRecordsCount,
+    this.totalEligibleUsers,
+    this.unsetCount,
   });
 
   final int totalEmployees;
@@ -27,6 +29,12 @@ class PayrollDashboardModel {
   /// Count of `paid` records in scope (subtitle under Total Paid when non-zero).
   final int paidRecordsCount;
 
+  /// From `total_eligible_users` when present (preferred headcount KPI).
+  final int? totalEligibleUsers;
+
+  /// From `unset_count` — rows with paid not set (preferred “pending / unset” KPI).
+  final int? unsetCount;
+
   static PayrollDashboardModel empty(int year) => PayrollDashboardModel(
         totalEmployees: 0,
         newHiresThisWeek: 0,
@@ -37,6 +45,8 @@ class PayrollDashboardModel {
         amountPaidYtd: r'$0',
         ytdSubtitle: 'Fiscal year $year',
         paidRecordsCount: 0,
+        totalEligibleUsers: null,
+        unsetCount: null,
       );
 
   factory PayrollDashboardModel.fromJson(Map<String, dynamic> json) {
@@ -78,6 +88,11 @@ class PayrollDashboardModel {
         ? parseInt(json['year'] ?? json['fiscal_year'])
         : DateTime.now().year;
 
+    int? optInt(String key) {
+      if (!json.containsKey(key)) return null;
+      return parseInt(json[key]);
+    }
+
     return PayrollDashboardModel(
       totalEmployees: parseInt(json['total_employees'] ?? json['totalEmployees']),
       newHiresThisWeek:
@@ -109,6 +124,8 @@ class PayrollDashboardModel {
       paidRecordsCount: parseInt(
         json['paid_records_count'] ?? json['paid_count'] ?? json['total_paid_count'],
       ),
+      totalEligibleUsers: optInt('total_eligible_users'),
+      unsetCount: optInt('unset_count'),
     );
   }
 

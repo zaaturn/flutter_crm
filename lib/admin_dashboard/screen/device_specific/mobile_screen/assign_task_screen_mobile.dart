@@ -175,7 +175,7 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
               : Text(selectedUser!.displayName[0].toUpperCase(), style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
         ),
         title: Text(
-            selectedUser?.displayName ?? "Assignee",
+            selectedUser?.assignmentLabel ?? "Assignee",
             style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: selectedUser == null ? textSecondary : textPrimary)
         ),
         subtitle: Text(
@@ -445,7 +445,8 @@ class _EmployeeSearchSheetState extends State<EmployeeSearchSheet> {
     setState(() {
       filteredUsers = widget.users.where((user) {
         return user.displayName.toLowerCase().contains(lowerCaseQuery) ||
-            user.username.toLowerCase().contains(lowerCaseQuery);
+            user.username.toLowerCase().contains(lowerCaseQuery) ||
+            user.assignmentLabel.toLowerCase().contains(lowerCaseQuery);
       }).toList();
     });
   }
@@ -490,7 +491,7 @@ class _EmployeeSearchSheetState extends State<EmployeeSearchSheet> {
                     backgroundColor: const Color(0xFFF1F5F9),
                     child: Text(user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?', style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
                   ),
-                  title: Text(user.displayName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                  title: Text(user.assignmentLabel, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                   subtitle: Text("@${user.username}", style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
                   onTap: () => widget.onSelect(user),
                 );
