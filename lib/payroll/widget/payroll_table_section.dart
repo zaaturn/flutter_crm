@@ -197,9 +197,13 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
         children: [
           SizedBox(
             width: 40,
-            child: widget.rowSaving
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: WorkspaceTheme.primaryPurple))
-                : Text('${widget.index.toString().padLeft(2, '0')}', style: GoogleFonts.jetBrainsMono(fontSize: 12, color: WorkspaceTheme.textMuted)),
+            child: Text(
+              widget.index.toString().padLeft(2, '0'),
+              style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  color: WorkspaceTheme.textMuted
+              ),
+            ),
           ),
           Expanded(
             flex: 4,
