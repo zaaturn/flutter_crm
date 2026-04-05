@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/event_management/core/entities/user.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
@@ -80,6 +81,7 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
       listenWhen: (_, s) =>
           s is EventCreated || s is EventError || s is EventConflictDetected,
       listener: (ctx, state) {
+        if (!ctx.mounted) return;
         if (state is EventCreated) {
           setState(() => _isSaving = false);
           try {
@@ -97,7 +99,7 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
           EventCreateDialogs.showConflict(ctx, state);
         } else if (state is EventError) {
           setState(() => _isSaving = false);
-          ScaffoldMessenger.of(ctx).showSnackBar(
+          rootScaffoldMessengerKey.currentState?.showSnackBar(
             SnackBar(
               content: Text(state.message),
               backgroundColor: Colors.red.shade700,

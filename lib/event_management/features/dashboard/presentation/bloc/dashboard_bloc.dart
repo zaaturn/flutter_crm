@@ -73,25 +73,33 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       ) async {
     emit(state.copyWith(isLoading: true, error: null));
 
-    final results = await Future.wait([
-      fetchDashboard.getToday(),
-      fetchDashboard.getUpcoming(),
-      fetchDashboard.getMissed(),
-    ]);
+    try {
+      final results = await Future.wait([
+        fetchDashboard.getToday(),
+        fetchDashboard.getUpcoming(),
+        fetchDashboard.getMissed(),
+      ]);
 
-    final today    = results[0];
-    final upcoming = results[1];
-    final missed   = results[2];
+      final today = results[0];
+      final upcoming = results[1];
+      final missed = results[2];
 
-    final todayResult    = today.fold((f) => <Event>[], (v) => v);
-    final upcomingResult = upcoming.fold((f) => <Event>[], (v) => v);
-    final missedResult   = missed.fold((f) => <Event>[], (v) => v);
+      final todayResult = today.fold((f) => <Event>[], (v) => v);
+      final upcomingResult = upcoming.fold((f) => <Event>[], (v) => v);
+      final missedResult = missed.fold((f) => <Event>[], (v) => v);
 
-    emit(state.copyWith(
-      todayEvents: todayResult,
-      upcomingEvents: upcomingResult,
-      missedEvents: missedResult,
-      isLoading: false,
-    ));
+      emit(state.copyWith(
+        todayEvents: todayResult,
+        upcomingEvents: upcomingResult,
+        missedEvents: missedResult,
+        isLoading: false,
+        error: null,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      ));
+    }
   }
 }

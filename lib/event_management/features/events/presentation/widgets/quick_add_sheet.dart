@@ -10,6 +10,7 @@ import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
 import '../bloc/event_bloc.dart';
 import '../utils/event_snackbar.dart';
+import 'event_create/event_create_dialogs.dart';
 
 class QuickAddSheet extends StatefulWidget {
   final DateTime selectedDate;
@@ -94,8 +95,12 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
     final isDesktop = MediaQuery.of(context).size.width > 768;
 
     return BlocListener<EventBloc, EventState>(
-      listenWhen: (_, s) => s is EventCreated || s is EventError,
+      listenWhen: (_, s) =>
+          s is EventCreated ||
+          s is EventError ||
+          s is EventConflictDetected,
       listener: (ctx, state) {
+        if (!ctx.mounted) return;
         if (state is EventCreated) {
           setState(() => _isSaving = false);
           final createdId = state.event.id;
@@ -120,6 +125,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               action: SnackBarAction(
                 label: 'View',
                 onPressed: () {
+                  if (!nav.mounted) return;
                   nav.push<void>(
                     MaterialPageRoute<void>(
                       builder: (_) => EventDetailScreen(eventId: createdId),
@@ -130,6 +136,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               duration: const Duration(seconds: 3),
             ),
           );
+        } else if (state is EventConflictDetected) {
+          setState(() => _isSaving = false);
+          EventCreateDialogs.showConflict(ctx, state);
         } else if (state is EventError) {
           setState(() {
             _isSaving = false;

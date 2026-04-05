@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -87,6 +88,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
     return BlocListener<EventBloc, EventState>(
       listenWhen: (_, s) => s is EventUpdated || s is EventError,
       listener: (ctx, state) {
+        if (!ctx.mounted) return;
         if (state is EventUpdated) {
           setState(() => _isSaving = false);
           try {
@@ -103,7 +105,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
           );
         } else if (state is EventError) {
           setState(() => _isSaving = false);
-          ScaffoldMessenger.of(ctx).showSnackBar(
+          rootScaffoldMessengerKey.currentState?.showSnackBar(
             SnackBar(
               content: Text(state.message),
               backgroundColor: Colors.red.shade700,
