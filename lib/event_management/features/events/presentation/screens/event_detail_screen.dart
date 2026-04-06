@@ -4,7 +4,6 @@ import 'package:my_app/event_management/features/calendar/presentation/bloc/cale
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/services/secure_storage_service.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
 
 import '../../domain/entities/event.dart';
 import '../bloc/event_bloc.dart';
@@ -176,14 +175,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               Navigator.pop(dialogCtx);
+              try {
+                context.read<DashboardBloc>().add(
+                      DashboardRemoveEventById(event.id),
+                    );
+              } catch (_) {}
               context.read<EventBloc>().add(
                     DeleteEventRequested(eventId: event.id),
                   );
               try {
                 context.read<CalendarBloc>().add(CalendarRefreshRequested());
-              } catch (_) {}
-              try {
-                context.read<DashboardBloc>().add(DashboardRefreshRequested());
               } catch (_) {}
               Navigator.of(context).pop();
             },

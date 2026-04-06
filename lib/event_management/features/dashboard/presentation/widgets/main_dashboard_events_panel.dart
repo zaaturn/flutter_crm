@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/dashboard_today_grid.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/dashboard_upcoming_section.dart';
+import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
 
 /// Today + upcoming lists using [DashboardBloc] — same data as Event Management dashboard.
 class MainDashboardEventsPanel extends StatefulWidget {
@@ -32,39 +33,47 @@ class _MainDashboardEventsPanelState extends State<MainDashboardEventsPanel> {
     final todayPad = EdgeInsets.fromLTRB(h, 18, h, 0);
     final upcomingPad = EdgeInsets.fromLTRB(h, 22, h, 0);
 
-    return BlocBuilder<DashboardBloc, DashboardState>(
-      builder: (context, state) {
-        final showLoader = state.isLoading &&
-            state.todayEvents.isEmpty &&
-            state.upcomingEvents.isEmpty;
-
-        if (showLoader) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: SizedBox(
-                width: 28,
-                height: 28,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DashboardTodayGrid(
-              events: state.todayEvents,
-              sectionPadding: todayPad,
-            ),
-            DashboardUpcomingSection(
-              upcoming: state.upcomingEvents,
-              sectionPadding: upcomingPad,
-            ),
-          ],
-        );
+    return BlocListener<EventBloc, EventState>(
+      listenWhen: (_, s) => s is EventDeleted,
+      listener: (ctx, _) {
+        try {
+          ctx.read<DashboardBloc>().add(DashboardRefreshRequested());
+        } catch (_) {}
       },
+      child: BlocBuilder<DashboardBloc, DashboardState>(
+        builder: (context, state) {
+          final showLoader = state.isLoading &&
+              state.todayEvents.isEmpty &&
+              state.upcomingEvents.isEmpty;
+
+          if (showLoader) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DashboardTodayGrid(
+                events: state.todayEvents,
+                sectionPadding: todayPad,
+              ),
+              DashboardUpcomingSection(
+                upcoming: state.upcomingEvents,
+                sectionPadding: upcomingPad,
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

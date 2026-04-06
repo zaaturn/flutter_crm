@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:my_app/event_management/features/calendar/presentation/screen/calender_screen.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_create_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/events_list_screen.dart';
 import 'package:my_app/event_management/shared/themes/app_theme.dart';
@@ -43,13 +46,21 @@ class _EventManagementShellState extends State<EventManagementShell> {
   @override
   Widget build(BuildContext context) {
     final wide = _isWide(context);
-    final content = IndexedStack(
-      index: _sectionIndex,
-      children: const [
-        DashboardScreen(),
-        CalendarScreen(),
-        EventsListScreen(),
-      ],
+    final content = BlocListener<EventBloc, EventState>(
+      listenWhen: (_, s) => s is EventDeleted,
+      listener: (ctx, _) {
+        try {
+          ctx.read<DashboardBloc>().add(DashboardRefreshRequested());
+        } catch (_) {}
+      },
+      child: IndexedStack(
+        index: _sectionIndex,
+        children: const [
+          DashboardScreen(),
+          CalendarScreen(),
+          EventsListScreen(),
+        ],
+      ),
     );
 
     if (wide) {

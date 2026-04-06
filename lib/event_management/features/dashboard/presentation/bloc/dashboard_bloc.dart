@@ -16,7 +16,16 @@ abstract class DashboardEvent extends Equatable {
 }
 
 class DashboardLoadRequested extends DashboardEvent {}
+
 class DashboardRefreshRequested extends DashboardEvent {}
+
+/// Remove one event from cached dashboard lists (instant UI; use after delete tap).
+class DashboardRemoveEventById extends DashboardEvent {
+  final String eventId;
+  const DashboardRemoveEventById(this.eventId);
+  @override
+  List<Object?> get props => [eventId];
+}
 
 // State
 class DashboardState extends Equatable {
@@ -65,13 +74,30 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       : super(DashboardState.initial()) {
     on<DashboardLoadRequested>(_onLoad);
     on<DashboardRefreshRequested>(_onLoad);
+    on<DashboardRemoveEventById>(_onRemoveEventById);
+  }
+
+  void _onRemoveEventById(
+    DashboardRemoveEventById event,
+    Emitter<DashboardState> emit,
+  ) {
+    bool keep(Event e) => e.id != event.eventId;
+    emit(state.copyWith(
+      todayEvents: state.todayEvents.where(keep).toList(),
+      upcomingEvents: state.upcomingEvents.where(keep).toList(),
+      missedEvents: state.missedEvents.where(keep).toList(),
+    ));
   }
 
   Future<void> _onLoad(
       DashboardEvent event,
       Emitter<DashboardState> emit,
       ) async {
-    emit(state.copyWith(isLoading: true, error: null));
+    if (event is DashboardLoadRequested) {
+      emit(state.copyWith(isLoading: true, error: null));
+    } else {
+      emit(state.copyWith(error: null));
+    }
 
     try {
       final results = await Future.wait([

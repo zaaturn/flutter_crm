@@ -42,12 +42,12 @@ class EventCard extends StatelessWidget {
       ),
     );
     if (ok != true || !context.mounted) return;
+    try {
+      context.read<DashboardBloc>().add(DashboardRemoveEventById(event.id));
+    } catch (_) {}
     context.read<EventBloc>().add(DeleteEventRequested(eventId: event.id));
     try {
       context.read<CalendarBloc>().add(CalendarRefreshRequested());
-    } catch (_) {}
-    try {
-      context.read<DashboardBloc>().add(DashboardRefreshRequested());
     } catch (_) {}
     ScaffoldMessenger.of(
       context,
