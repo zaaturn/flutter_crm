@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/app_theme.dart';
 
 class EmployeeFilterSheet extends StatefulWidget {
   final List<String> designations;
@@ -13,12 +14,10 @@ class EmployeeFilterSheet extends StatefulWidget {
   });
 
   @override
-  State<EmployeeFilterSheet> createState() =>
-      _EmployeeFilterSheetState();
+  State<EmployeeFilterSheet> createState() => _EmployeeFilterSheetState();
 }
 
-class _EmployeeFilterSheetState
-    extends State<EmployeeFilterSheet> {
+class _EmployeeFilterSheetState extends State<EmployeeFilterSheet> {
   String? _picked;
 
   @override
@@ -30,33 +29,112 @@ class _EmployeeFilterSheetState
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32), // Extra bottom padding for safe area
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius:
-        BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final d in widget.designations)
-            ListTile(
-              title: Text(d),
-              trailing: _picked == d
-                  ? const Icon(Icons.check)
-                  : null,
-              onTap: () {
-                setState(() {
-                  _picked = _picked == d ? null : d;
-                });
-              },
+          // ── Handle Bar ──────────────────────────
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-          ElevatedButton(
-            onPressed: () {
-              widget.onSelected(_picked);
-              Navigator.pop(context);
-            },
-            child: const Text("Apply"),
+          ),
+
+          // ── Header ──────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Filter by Designation',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textHeading,
+                ),
+              ),
+              if (_picked != null)
+                TextButton(
+                  onPressed: () => setState(() => _picked = null),
+                  child: const Text(
+                    'Reset',
+                    style: TextStyle(color: AppColors.offline, fontWeight: FontWeight.w600),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // ── Designation Grid/Wrap ────────────────
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: widget.designations.map((designation) {
+              final isSelected = _picked == designation;
+              return InkWell(
+                onTap: () {
+                  setState(() {
+                    _picked = isSelected ? null : designation;
+                  });
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.primary : Colors.white,
+                    border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.border,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    designation,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? Colors.white : AppColors.textBody,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 32),
+
+          // ── Apply Button ────────────────────────
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () {
+                widget.onSelected(_picked);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                "Apply Filters",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
           )
         ],
       ),

@@ -1,7 +1,7 @@
-// lib/admin_dashboard/widgets/employee_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
-import 'package:my_app/admin_dashboard/utils/app_theme.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/app_theme.dart';
 
 class EmployeeCard extends StatelessWidget {
   final Employee employee;
@@ -17,66 +17,58 @@ class EmployeeCard extends StatelessWidget {
     this.onEmail,
   });
 
-  // Consistent avatar color per employee
+  // Consistant avatar color per employee
   Color get _avatarColor {
     const colors = [
-      Color(0xFF6366F1), Color(0xFF0EA5E9), Color(0xFF10B981),
-      Color(0xFFF59E0B), Color(0xFF8B5CF6), Color(0xFFEF4444),
+      AppColors.primary,
+      Color(0xFF0EA5E9), // Cyan
+      AppColors.active, // Green
+      Color(0xFFF59E0B), // Amber
+      Color(0xFF8B5CF6), // Violet
+      AppColors.offline, // Red
     ];
-    return colors[employee.fullName.length % colors.length];
+    // Return a color based on the hash of the employee ID for consistency
+    return colors[(employee.employeeId?.hashCode ?? 0) % colors.length];
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(14),
+      // ── Updated Card Styling ──────────────────
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(12),
+        // subtle shadow for definition
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── #EMP ID  (top-right) ──────────────────
+          // ── #EMP ID (top-right) ───────────────────
           Align(
             alignment: Alignment.topRight,
             child: Text(
               '#${employee.employeeId ?? ""}',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF94A3B8),
-              ),
+              style: AppTextStyles.small, // Inherited theme style
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
 
           // ── Avatar + status dot ───────────────────
-          Stack(
-            children: [
-              _buildAvatar(),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: employee.statusColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+          _buildAvatarStack(),
+          const SizedBox(height: 10),
 
           // ── Name ─────────────────────────────────
           Text(
             employee.fullName,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E293B),
-            ),
+            style: AppTextStyles.title, // Inherited theme style
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -85,43 +77,15 @@ class EmployeeCard extends StatelessWidget {
           // ── Designation ───────────────────────────
           Text(
             employee.designation ?? '—',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            style: AppTextStyles.subtitle, // Inherited theme style
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 10),
 
           // ── Status badge ──────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: (isOnline ? Colors.green : Colors.red).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: employee.statusColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isOnline ? "Active" : "Logged Out",
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: isOnline ? Colors.green : Colors.red,
-                  ),
-                )
-              ],
-            ),
-          ),
-          const SizedBox(height: 9),
+          _buildStatusBadge(),
+          const SizedBox(height: 10),
 
           // ── Location + Department tags ─────────────
           Wrap(
@@ -130,28 +94,28 @@ class EmployeeCard extends StatelessWidget {
             children: [
               if (employee.workLocation?.isNotEmpty == true)
                 _Tag(
-                  icon: Icons.location_on,
+                  icon: Icons.location_on_outlined,
                   label: employee.workLocation!,
-                  color: AppColors.primary,
-                  bg: const Color(0xFFEFF6FF),
+                  color: AppColors.textBody,
+                  bg: const Color(0xFFF3F4F6),
                 ),
               if (employee.department?.isNotEmpty == true)
                 _Tag(
-                  icon: Icons.work_outline,
+                  icon: Icons.corporate_fare,
                   label: employee.department!,
-                  color: const Color(0xFF64748B),
-                  bg: const Color(0xFFF1F5F9),
+                  color: AppColors.primary,
+                  bg: AppColors.primaryLight,
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          // ── View Profile + Mail ───────────────────
+          // ── Action Buttons ────────────────────────
           Row(
             children: [
               Expanded(
                 child: SizedBox(
-                  height: 34,
+                  height: 38,
                   child: ElevatedButton(
                     onPressed: onViewProfile,
                     style: ElevatedButton.styleFrom(
@@ -160,9 +124,8 @@ class EmployeeCard extends StatelessWidget {
                       elevation: 0,
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6)),
-                      textStyle: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w600),
+                          borderRadius: BorderRadius.circular(8)),
+                      textStyle: AppTextStyles.button,
                     ),
                     child: const Text('View Profile'),
                   ),
@@ -170,20 +133,21 @@ class EmployeeCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                height: 34,
-                width: 34,
+                height: 38,
+                width: 38,
                 child: OutlinedButton(
                   onPressed: onEmail,
                   style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.zero,
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6)),
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Icon(
                     Icons.mail_outline,
-                    size: 16,
-                    color: Color(0xFF94A3B8),
+                    size: 18,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
@@ -194,25 +158,80 @@ class EmployeeCard extends StatelessWidget {
     );
   }
 
+  Widget _buildAvatarStack() {
+    return Stack(
+      children: [
+        _buildAvatar(),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              // The dot color should match the badge below
+              color: isOnline ? AppColors.active : AppColors.offline,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.cardBg, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildAvatar() {
     if (employee.profilePhoto?.isNotEmpty == true) {
       return CircleAvatar(
-        radius: 24,
+        radius: 28,
         backgroundImage: NetworkImage(employee.profilePhoto!),
         onBackgroundImageError: (_, __) {},
-        backgroundColor: _avatarColor.withOpacity(0.15),
+        backgroundColor: _avatarColor.withOpacity(0.12),
       );
     }
     return CircleAvatar(
-      radius: 24,
-      backgroundColor: _avatarColor.withOpacity(0.15),
+      radius: 28,
+      backgroundColor: _avatarColor.withOpacity(0.12),
       child: Text(
         employee.initials,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: FontWeight.w700,
           color: _avatarColor,
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    final Color badgeColor = isOnline ? AppColors.active : AppColors.offline;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: badgeColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: badgeColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            isOnline ? "Active" : "Logged Out",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: badgeColor,
+            ),
+          )
+        ],
       ),
     );
   }
@@ -234,7 +253,7 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(6),
@@ -242,12 +261,12 @@ class _Tag extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 10, color: color),
-          const SizedBox(width: 3),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: color,
             ),
