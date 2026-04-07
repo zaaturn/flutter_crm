@@ -110,16 +110,17 @@
 <script>
     // Foreground FCM: prefer the Notification API (works even if the wrong SW is active).
     // Foreground FCM while the tab is active (Flutter [onMessage] calls this).
+    // Same icon/tag policy as firebase-messaging-sw.js — one visual identity, tag dedupes updates.
     window.showWebNotification = function (title, body, imageUrl, tag) {
       var t = title || 'Notification';
       var b = body || '';
       var tg = tag || 'fcm-foreground';
       var opts = {
         body: b,
-        icon: '/icons/Icon-192.png',
-        badge: '/icons/Icon-192.png',
+        icon: '/icons/logo_dax.png',
+        badge: '/icons/logo_dax.png',
         tag: tg,
-        renotify: true,
+        renotify: false,
       };
       if (imageUrl) {
         try {
@@ -146,12 +147,12 @@
         .then(function (registration) {
           return registration.showNotification(t, {
             body: b,
-            icon: '/icons/Icon-192.png',
-            badge: '/icons/Icon-192.png',
+            icon: '/icons/logo_dax.png',
+            badge: '/icons/logo_dax.png',
             image: imageUrl || undefined,
             vibrate: [200, 100, 200],
             tag: tg,
-            renotify: true,
+            renotify: false,
           });
         })
         .catch(function (err) {

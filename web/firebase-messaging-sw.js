@@ -33,23 +33,54 @@ function notificationTitleBody(payload) {
   return { title: String(title), body: String(body) };
 }
 
+/**
+ * Production: avoid duplicate toasts on Chrome Android — FCM can invoke this handler
+ * while a tab is still "foreground" and Flutter's onMessage also runs showWebNotification.
+ * If any same-origin window is visible, let the page handle the notification only.
+ */
+function hasVisibleSameOriginClient() {
+  return clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then(function (clientList) {
+      const origin = self.location.origin;
+      for (let i = 0; i < clientList.length; i++) {
+        const c = clientList[i];
+        if (!c.url) continue;
+        try {
+          if (new URL(c.url).origin !== origin) continue;
+        } catch (e) {
+          continue;
+        }
+        if (c.visibilityState === 'visible') {
+          return true;
+        }
+      }
+      return false;
+    });
+}
+
 messaging.onBackgroundMessage(function (payload) {
-  const { title, body } = notificationTitleBody(payload);
-  const n = payload.notification || {};
-  const image = n.image || (payload.data && payload.data.image) || undefined;
-  const tag =
-    (payload.data && (payload.data.message_id || payload.data.fcm_message_id)) ||
-    payload.messageId ||
-    'fcm-bg';
-  return self.registration.showNotification(title, {
-    body: body,
-    icon: '/icons/logo_dax.png',
-    badge: '/icons/logo_dax.png',
-    image: image,
-    data: Object.assign({ click_action: '/' }, payload.data || {}),
-    tag: String(tag),
-    renotify: true,
-    requireInteraction: false,
+  return hasVisibleSameOriginClient().then(function (visible) {
+    if (visible) {
+      return Promise.resolve();
+    }
+    const { title, body } = notificationTitleBody(payload);
+    const n = payload.notification || {};
+    const image = n.image || (payload.data && payload.data.image) || undefined;
+    const tag =
+      (payload.data && (payload.data.message_id || payload.data.fcm_message_id)) ||
+      payload.messageId ||
+      'fcm-bg';
+    return self.registration.showNotification(title, {
+      body: body,
+      icon: '/icons/logo_dax.png',
+      badge: '/icons/logo_dax.png',
+      image: image,
+      data: Object.assign({ click_action: '/' }, payload.data || {}),
+      tag: String(tag),
+      renotify: false,
+      requireInteraction: false,
+    });
   });
 });
 
