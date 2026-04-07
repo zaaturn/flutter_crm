@@ -108,39 +108,19 @@
   </picture>
 
 <script>
-    // Foreground FCM: prefer the Notification API (works even if the wrong SW is active).
-    // Foreground FCM while the tab is active (Flutter [onMessage] calls this).
-    // Same icon/tag policy as firebase-messaging-sw.js — one visual identity, tag dedupes updates.
+    // Foreground FCM (Flutter onMessage). Always use the service worker's showNotification —
+    // never new Notification(): on Chrome Android that shows a second, generic Chrome icon while
+    // firebase-messaging-sw.js shows the branded icon (two toasts for one push).
     window.showWebNotification = function (title, body, imageUrl, tag) {
       var t = title || 'Notification';
       var b = body || '';
       var tg = tag || 'fcm-foreground';
-      var opts = {
-        body: b,
-        icon: '/icons/logo_dax.png',
-        badge: '/icons/logo_dax.png',
-        tag: tg,
-        renotify: false,
-      };
-      if (imageUrl) {
-        try {
-          opts.image = imageUrl;
-        } catch (e) {}
-      }
-      if ('Notification' in window && Notification.permission === 'granted') {
-        try {
-          var n = new Notification(t, opts);
-          n.onclick = function () {
-            window.focus();
-            n.close();
-          };
-          return;
-        } catch (e) {
-          console.warn('[FCM] Notification() failed, falling back to SW:', e);
-        }
-      }
       if (!('serviceWorker' in navigator)) {
-        console.warn('[FCM] No Notification permission and no service workers.');
+        console.warn('[FCM] No service workers; cannot show notification.');
+        return;
+      }
+      if (!('Notification' in window) || Notification.permission !== 'granted') {
+        console.warn('[FCM] Notification permission not granted.');
         return;
       }
       navigator.serviceWorker.ready
@@ -153,6 +133,7 @@
             vibrate: [200, 100, 200],
             tag: tg,
             renotify: false,
+            data: { click_action: '/' },
           });
         })
         .catch(function (err) {

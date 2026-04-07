@@ -36,9 +36,10 @@ function notificationTitleBody(payload) {
 /**
  * Production: avoid duplicate toasts on Chrome Android — FCM can invoke this handler
  * while a tab is still "foreground" and Flutter's onMessage also runs showWebNotification.
- * If any same-origin window is visible, let the page handle the notification only.
+ * If any same-origin window is focused or visible, let the page handle the notification only
+ * (Flutter onMessage → showWebNotification uses the same SW + icon — avoids double toast).
  */
-function hasVisibleSameOriginClient() {
+function hasForegroundSameOriginClient() {
   return clients
     .matchAll({ type: 'window', includeUncontrolled: true })
     .then(function (clientList) {
@@ -51,7 +52,7 @@ function hasVisibleSameOriginClient() {
         } catch (e) {
           continue;
         }
-        if (c.visibilityState === 'visible') {
+        if (c.visibilityState === 'visible' || c.focused === true) {
           return true;
         }
       }
@@ -60,8 +61,8 @@ function hasVisibleSameOriginClient() {
 }
 
 messaging.onBackgroundMessage(function (payload) {
-  return hasVisibleSameOriginClient().then(function (visible) {
-    if (visible) {
+  return hasForegroundSameOriginClient().then(function (foreground) {
+    if (foreground) {
       return Promise.resolve();
     }
     const { title, body } = notificationTitleBody(payload);
@@ -70,6 +71,7 @@ messaging.onBackgroundMessage(function (payload) {
     const tag =
       (payload.data && (payload.data.message_id || payload.data.fcm_message_id)) ||
       payload.messageId ||
+      payload.fcmMessageId ||
       'fcm-bg';
     return self.registration.showNotification(title, {
       body: body,

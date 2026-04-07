@@ -133,6 +133,7 @@ class NotificationService {
     if (mid != null && mid.toString().isNotEmpty) {
       return 'fcm-${mid.toString()}';
     }
+    // Unique fallback so unrelated alerts do not replace each other (SW uses same priority list).
     return 'fcm-${DateTime.now().millisecondsSinceEpoch}';
   }
 
