@@ -171,20 +171,49 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
   late TextEditingController _amountCtrl;
   final _amountFocus = FocusNode();
 
+  /// Write-only API field; only used when `paid == true`. Default: send notification.
+  bool _notifySalaryCredited = true;
+
   @override
   void initState() {
     super.initState();
     _amountCtrl = TextEditingController(text: widget.row.amountRaw);
-    _amountFocus.addListener(() { if (!_amountFocus.hasFocus) _push(); });
+    _amountFocus.addListener(() {
+      if (!_amountFocus.hasFocus) _push();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _PayrollInlineRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.row.amountRaw != widget.row.amountRaw &&
+        widget.row.amountRaw != _amountCtrl.text) {
+      _amountCtrl.text = widget.row.amountRaw;
+    }
+    if (oldWidget.row.employeeId != widget.row.employeeId ||
+        oldWidget.row.recordId != widget.row.recordId) {
+      _notifySalaryCredited = true;
+    }
   }
 
   void _push() {
     final rid = widget.row.recordId;
     final bloc = context.read<PayrollDashboardBloc>();
     if (rid != null) {
-      bloc.add(PayrollInlinePatchRequested(recordId: rid, paid: widget.row.paid, amountRaw: _amountCtrl.text));
+      bloc.add(PayrollInlinePatchRequested(
+        recordId: rid,
+        paid: widget.row.paid,
+        amountRaw: _amountCtrl.text,
+        notifySalaryCredited: null,
+      ));
     } else {
-      bloc.add(PayrollInlineCreateRequested(employeeId: widget.row.employeeId, paid: widget.row.paid, amountRaw: _amountCtrl.text));
+      bloc.add(PayrollInlineCreateRequested(
+        employeeId: widget.row.employeeId,
+        paid: widget.row.paid,
+        amountRaw: _amountCtrl.text,
+        notifySalaryCredited:
+            widget.row.paid == true ? _notifySalaryCredited : null,
+      ));
     }
   }
 
@@ -230,15 +259,78 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
           ),
           Expanded(
             flex: 2,
-            child: _StatusDropdown(
-              value: r.paid,
-              onChanged: (v) {
-                context.read<PayrollDashboardBloc>().add(
-                    r.recordId != null
-                        ? PayrollInlinePatchRequested(recordId: r.recordId!, paid: v, amountRaw: _amountCtrl.text)
-                        : PayrollInlineCreateRequested(employeeId: r.employeeId, paid: v, amountRaw: _amountCtrl.text)
-                );
-              },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _StatusDropdown(
+                  value: r.paid,
+                  onChanged: (v) {
+                    final notify = v == true ? _notifySalaryCredited : null;
+                    context.read<PayrollDashboardBloc>().add(
+                          r.recordId != null
+                              ? PayrollInlinePatchRequested(
+                                  recordId: r.recordId!,
+                                  paid: v,
+                                  amountRaw: _amountCtrl.text,
+                                  notifySalaryCredited: notify,
+                                )
+                              : PayrollInlineCreateRequested(
+                                  employeeId: r.employeeId,
+                                  paid: v,
+                                  amountRaw: _amountCtrl.text,
+                                  notifySalaryCredited: notify,
+                                ),
+                        );
+                  },
+                ),
+                if (r.paid == true) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: Checkbox(
+                          value: _notifySalaryCredited,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                          onChanged: (nv) {
+                            if (nv == null) return;
+                            setState(() => _notifySalaryCredited = nv);
+                            if (r.recordId != null) {
+                              context.read<PayrollDashboardBloc>().add(
+                                    PayrollInlinePatchRequested(
+                                      recordId: r.recordId!,
+                                      paid: true,
+                                      amountRaw: _amountCtrl.text,
+                                      notifySalaryCredited: nv,
+                                    ),
+                                  );
+                            }
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 2, top: 2),
+                          child: Text(
+                            'Send salary notification',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: WorkspaceTheme.textMuted,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
           Expanded(

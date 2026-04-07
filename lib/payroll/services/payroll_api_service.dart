@@ -179,7 +179,9 @@ class PayrollApiService {
     return int.tryParse(v.toString());
   }
 
-  /// [paid]: `null` = omit field; `false` pending; `true` paid.
+  /// [paid]: JSON `true` / `false` / `null` (unset).
+  /// [notifySalaryCredited]: write-only; when [paid] is `true`, include `true`/`false`.
+  /// Omit the key when `null` (e.g. optional notify on create).
   Future<void> createPayrollRecord({
     required int employeeId,
     required int year,
@@ -187,35 +189,42 @@ class PayrollApiService {
     bool? paid,
     String? amount,
     String? note,
+    bool? notifySalaryCredited,
   }) async {
     final body = <String, dynamic>{
       'employee': employeeId,
       'year': year,
       'month': month,
+      'paid': paid,
     };
-    if (paid != null) {
-      body['paid'] = paid;
-    }
     if (amount != null && amount.trim().isNotEmpty) {
       body['amount'] = amount.trim();
     }
     if (note != null && note.trim().isNotEmpty) {
       body['note'] = note.trim();
     }
+    if (paid == true && notifySalaryCredited != null) {
+      body['notify_salary_credited'] = notifySalaryCredited;
+    }
 
     await _dio.post<dynamic>('/api/payroll/records/', data: body);
   }
 
-  /// Sends [paid] and [amount] (null amount clears). Use `paid: null` to unset paid.
+  /// [notifySalaryCredited]: `null` = omit key (e.g. amount-only PATCH).
+  /// Include `true`/`false` only when [paid] is `true`.
   Future<void> patchPayrollRecord(
     int id, {
     required bool? paid,
     required String amountRaw,
+    bool? notifySalaryCredited,
   }) async {
     final body = <String, dynamic>{
       'paid': paid,
       'amount': amountRaw.trim().isEmpty ? null : amountRaw.trim(),
     };
+    if (paid == true && notifySalaryCredited != null) {
+      body['notify_salary_credited'] = notifySalaryCredited;
+    }
     await _dio.patch<dynamic>('/api/payroll/records/$id/', data: body);
   }
 }

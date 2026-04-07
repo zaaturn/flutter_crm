@@ -55,14 +55,19 @@ class PayrollInlinePatchRequested extends PayrollDashboardEvent {
     required this.recordId,
     required this.paid,
     required this.amountRaw,
+    this.notifySalaryCredited,
   });
 
   final int recordId;
   final bool? paid;
   final String amountRaw;
 
+  /// `null` = omit `notify_salary_credited` from JSON (e.g. amount-only PATCH).
+  /// `true` / `false` = include when [paid] is `true`.
+  final bool? notifySalaryCredited;
+
   @override
-  List<Object?> get props => [recordId, paid, amountRaw];
+  List<Object?> get props => [recordId, paid, amountRaw, notifySalaryCredited];
 }
 
 class PayrollInlineCreateRequested extends PayrollDashboardEvent {
@@ -70,12 +75,16 @@ class PayrollInlineCreateRequested extends PayrollDashboardEvent {
     required this.employeeId,
     required this.paid,
     required this.amountRaw,
+    this.notifySalaryCredited,
   });
 
   final int employeeId;
   final bool? paid;
   final String amountRaw;
 
+  /// When [paid] is `true`, send `true`/`false`; omit key when `null` (optional).
+  final bool? notifySalaryCredited;
+
   @override
-  List<Object?> get props => [employeeId, paid, amountRaw];
+  List<Object?> get props => [employeeId, paid, amountRaw, notifySalaryCredited];
 }

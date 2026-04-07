@@ -44,6 +44,7 @@ class PayrollRepository {
     bool? paid,
     String? amount,
     String? note,
+    bool? notifySalaryCredited,
   }) =>
       _api.createPayrollRecord(
         employeeId: employeeId,
@@ -52,12 +53,19 @@ class PayrollRepository {
         paid: paid,
         amount: amount,
         note: note,
+        notifySalaryCredited: notifySalaryCredited,
       );
 
   Future<void> patchPayrollRecord(
     int id, {
     required bool? paid,
     required String amountRaw,
+    bool? notifySalaryCredited,
   }) =>
-      _api.patchPayrollRecord(id, paid: paid, amountRaw: amountRaw);
+      _api.patchPayrollRecord(
+        id,
+        paid: paid,
+        amountRaw: amountRaw,
+        notifySalaryCredited: notifySalaryCredited,
+      );
 }

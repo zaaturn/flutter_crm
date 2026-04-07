@@ -308,6 +308,7 @@ class PayrollDashboardBloc
         event.recordId,
         paid: event.paid,
         amountRaw: event.amountRaw,
+        notifySalaryCredited: event.notifySalaryCredited,
       );
       await _silentReload(emit);
     } on DioException catch (e) {
@@ -347,6 +348,8 @@ class PayrollDashboardBloc
         paid: event.paid,
         amount: event.amountRaw.trim().isEmpty ? null : event.amountRaw.trim(),
         note: null,
+        notifySalaryCredited:
+            event.paid == true ? event.notifySalaryCredited : null,
       );
       await _silentReload(emit);
     } on DioException catch (e) {
@@ -367,6 +370,9 @@ class PayrollDashboardBloc
               existing.id,
               paid: event.paid,
               amountRaw: event.amountRaw,
+              notifySalaryCredited: event.paid == true
+                  ? event.notifySalaryCredited
+                  : null,
             );
             await _silentReload(emit);
             return;
