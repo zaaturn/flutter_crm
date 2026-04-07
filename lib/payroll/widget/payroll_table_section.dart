@@ -171,8 +171,8 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
   late TextEditingController _amountCtrl;
   final _amountFocus = FocusNode();
 
-  /// Write-only API field; only used when `paid == true`. Default: send notification.
-  bool _notifySalaryCredited = true;
+  /// Write-only API field; only used when `paid == true`. Default: do not notify.
+  bool _notifySalaryCredited = false;
 
   @override
   void initState() {
@@ -192,7 +192,7 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
     }
     if (oldWidget.row.employeeId != widget.row.employeeId ||
         oldWidget.row.recordId != widget.row.recordId) {
-      _notifySalaryCredited = true;
+      _notifySalaryCredited = false;
     }
   }
 
