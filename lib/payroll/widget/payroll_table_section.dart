@@ -200,11 +200,15 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
     final rid = widget.row.recordId;
     final bloc = context.read<PayrollDashboardBloc>();
     if (rid != null) {
+      // When paid is true, always send explicit notify flag (even on amount blur).
+      // Omitting the key after a status→Paid change (focus moves from amount→dropdown)
+      // can trigger a second PATCH with null; backends often treat that as "notify: true".
       bloc.add(PayrollInlinePatchRequested(
         recordId: rid,
         paid: widget.row.paid,
         amountRaw: _amountCtrl.text,
-        notifySalaryCredited: null,
+        notifySalaryCredited:
+            widget.row.paid == true ? _notifySalaryCredited : null,
       ));
     } else {
       bloc.add(PayrollInlineCreateRequested(
