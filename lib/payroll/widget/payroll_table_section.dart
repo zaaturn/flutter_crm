@@ -174,6 +174,13 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
   /// Write-only API field; only used when `paid == true`. Default: do not notify.
   bool _notifySalaryCredited = false;
 
+  /// Last dropdown choice until [widget.row.paid] matches (avoids stale [widget.row.paid] on amount blur).
+  bool _paidSelectionPending = false;
+  bool? _pendingPaid;
+
+  bool? _effectivePaid() =>
+      _paidSelectionPending ? _pendingPaid : widget.row.paid;
+
   @override
   void initState() {
     super.initState();
@@ -193,30 +200,37 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
     if (oldWidget.row.employeeId != widget.row.employeeId ||
         oldWidget.row.recordId != widget.row.recordId) {
       _notifySalaryCredited = false;
+      _paidSelectionPending = false;
+      _pendingPaid = null;
+    }
+    if (_paidSelectionPending && widget.row.paid == _pendingPaid) {
+      _paidSelectionPending = false;
+      _pendingPaid = null;
     }
   }
 
   void _push() {
     final rid = widget.row.recordId;
     final bloc = context.read<PayrollDashboardBloc>();
+    final paid = _effectivePaid();
     if (rid != null) {
       // When paid is true, always send explicit notify flag (even on amount blur).
       // Omitting the key after a status→Paid change (focus moves from amount→dropdown)
       // can trigger a second PATCH with null; backends often treat that as "notify: true".
       bloc.add(PayrollInlinePatchRequested(
         recordId: rid,
-        paid: widget.row.paid,
+        paid: paid,
         amountRaw: _amountCtrl.text,
         notifySalaryCredited:
-            widget.row.paid == true ? _notifySalaryCredited : null,
+            paid == true ? _notifySalaryCredited : null,
       ));
     } else {
       bloc.add(PayrollInlineCreateRequested(
         employeeId: widget.row.employeeId,
-        paid: widget.row.paid,
+        paid: paid,
         amountRaw: _amountCtrl.text,
         notifySalaryCredited:
-            widget.row.paid == true ? _notifySalaryCredited : null,
+            paid == true ? _notifySalaryCredited : null,
       ));
     }
   }
@@ -270,6 +284,13 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
                 _StatusDropdown(
                   value: r.paid,
                   onChanged: (v) {
+                    // Each time user picks PAID, require a fresh opt-in on the checkbox.
+                    if (v == true) {
+                      _notifySalaryCredited = false;
+                    }
+                    _paidSelectionPending = true;
+                    _pendingPaid = v;
+                    setState(() {});
                     final notify = v == true ? _notifySalaryCredited : null;
                     context.read<PayrollDashboardBloc>().add(
                           r.recordId != null
