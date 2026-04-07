@@ -34,10 +34,9 @@ function notificationTitleBody(payload) {
 }
 
 /**
- * Production: avoid duplicate toasts on Chrome Android — FCM can invoke this handler
- * while a tab is still "foreground" and Flutter's onMessage also runs showWebNotification.
- * If any same-origin window is focused or visible, let the page handle the notification only
- * (Flutter onMessage → showWebNotification uses the same SW + icon — avoids double toast).
+ * Sole path for web system notifications. Flutter foreground onMessage only refreshes the in-app list
+ * (no showNotification there) to avoid duplicate tray entries. Skip SW display when a same-origin
+ * tab is focused or visible so a brief background/foreground race does not add an extra toast.
  */
 function hasForegroundSameOriginClient() {
   return clients

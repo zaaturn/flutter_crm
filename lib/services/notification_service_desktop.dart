@@ -10,8 +10,10 @@ import 'package:my_app/event_management/features/notification/presentation/bloc/
 import 'api_client.dart';
 import 'notification_payload_router.dart';
 
-/// Web (Chrome / Edge / Firefox): background delivery via [web/firebase-messaging-sw.js];
-/// foreground via [FirebaseMessaging.onMessage] and `showWebNotification` in [web/index.html].
+/// Web (Chrome / Edge / Firefox): system tray notifications only from
+/// [web/firebase-messaging-sw.js] (`onBackgroundMessage`). Foreground [FirebaseMessaging.onMessage]
+/// only refreshes the in-app list — avoids duplicate tray toasts (SW + page both calling
+/// `showNotification`). When the tab is truly focused, you may see no OS banner; the bell/list still updates.
 class NotificationService {
   final ApiClient _api = ApiClient();
 
@@ -83,58 +85,9 @@ class NotificationService {
 
   void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      final parts = _webNotificationContent(message);
-      if (parts.$1.isEmpty && parts.$2.isEmpty) return;
-
-      try {
-        js.context.callMethod('showWebNotification', [
-          parts.$1,
-          parts.$2,
-          parts.$3,
-          parts.$4,
-        ]);
-      } catch (_) {}
-
+    FirebaseMessaging.onMessage.listen((_) {
       _refreshNotificationList(navigatorKey);
     });
-  }
-
-  /// (title, body, imageUrl or null, tag)
-  (String, String, String?, String) _webNotificationContent(RemoteMessage message) {
-    final n = message.notification;
-    final d = message.data;
-    var title = n?.title ?? _dataStr(d, 'title') ?? _dataStr(d, 'headline') ?? '';
-    var body = n?.body ??
-        _dataStr(d, 'body') ??
-        _dataStr(d, 'message') ??
-        _dataStr(d, 'content') ??
-        '';
-    if (title.isEmpty && body.isEmpty) {
-      return ('Notification', 'You have a new message', null, _tagFor(message));
-    }
-    if (title.isEmpty) title = 'Notification';
-
-    final image = _dataStr(d, 'image') ?? _dataStr(d, 'image_url');
-    return (title, body, image, _tagFor(message));
-  }
-
-  String? _dataStr(Map<String, dynamic> d, String key) {
-    final v = d[key];
-    if (v == null) return null;
-    final s = v.toString().trim();
-    return s.isEmpty ? null : s;
-  }
-
-  String _tagFor(RemoteMessage message) {
-    final id = (message.messageId ?? '').trim();
-    if (id.isNotEmpty) return 'fcm-$id';
-    final mid = message.data['message_id'] ?? message.data['fcm_message_id'];
-    if (mid != null && mid.toString().isNotEmpty) {
-      return 'fcm-${mid.toString()}';
-    }
-    // Unique fallback so unrelated alerts do not replace each other (SW uses same priority list).
-    return 'fcm-${DateTime.now().millisecondsSinceEpoch}';
   }
 
   void _refreshNotificationList(GlobalKey<NavigatorState> navigatorKey) {

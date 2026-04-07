@@ -108,9 +108,8 @@
   </picture>
 
 <script>
-    // Foreground FCM (Flutter onMessage). Always use the service worker's showNotification —
-    // never new Notification(): on Chrome Android that shows a second, generic Chrome icon while
-    // firebase-messaging-sw.js shows the branded icon (two toasts for one push).
+    // Optional escape hatch (not used by Flutter): tray on web comes only from firebase-messaging-sw.js
+    // so foreground onMessage does not double-call showNotification.
     window.showWebNotification = function (title, body, imageUrl, tag) {
       var t = title || 'Notification';
       var b = body || '';

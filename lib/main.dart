@@ -200,7 +200,7 @@ Future<void> main() async {
 Future<void> _initPushNotificationsAfterFirstFrame() async {
   try {
     if (kIsWeb) {
-      // Web: background = firebase-messaging-sw.js; foreground = onMessage + showWebNotification.
+      // Web: tray = firebase-messaging-sw.js only; foreground onMessage refreshes in-app notifications.
       final notificationService = NotificationService();
       await notificationService.init(navigatorKey);
       notificationService.listenForegroundMessages(navigatorKey);
