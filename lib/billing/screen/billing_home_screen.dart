@@ -65,14 +65,6 @@ class BillingHomeScreen extends StatelessWidget {
                       onTap: () => BillingFlowController.startTrack(context),
                     ),
                     const SizedBox(height: 28),
-                    Text(
-                      'Tip: issued invoices lock edits; use Track for reconciliation.',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: BillingTheme.textMuted,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
                   ],
                 ),
               ),
