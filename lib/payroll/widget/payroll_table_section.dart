@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../../services/secure_storage_service.dart';
 import '../bloc/payroll_dashboard_bloc.dart';
 import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
@@ -181,6 +182,64 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
   bool? _effectivePaid() =>
       _paidSelectionPending ? _pendingPaid : widget.row.paid;
 
+  String? _notifyKey;
+  int? _lastYear;
+  int? _lastMonth;
+
+  String _buildNotifyKey({
+    required String userId,
+    required int year,
+    required int month,
+    required int employeeId,
+  }) {
+    return 'payroll_notify_salary_credited:$userId:$year-${month.toString().padLeft(2, '0')}:$employeeId';
+  }
+
+  Future<void> _loadPersistedNotifyPref() async {
+    final storage = SecureStorageService();
+    final uid = await storage.readUserId();
+    if (!mounted) return;
+    if (uid == null || uid.trim().isEmpty) return;
+
+    final st = context.read<PayrollDashboardBloc>().state;
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    _lastMonth = month;
+    _lastYear = year;
+
+    final key = _buildNotifyKey(
+      userId: uid,
+      year: year,
+      month: month,
+      employeeId: widget.row.employeeId,
+    );
+    _notifyKey = key;
+
+    final v = await storage.readBool(key);
+    if (!mounted) return;
+    if (v == null) return;
+    setState(() => _notifySalaryCredited = v);
+  }
+
+  Future<void> _persistNotifyPref(bool v) async {
+    final storage = SecureStorageService();
+    final uid = await storage.readUserId();
+    if (uid == null || uid.trim().isEmpty) return;
+
+    final st = context.read<PayrollDashboardBloc>().state;
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    final key = _notifyKey ??
+        _buildNotifyKey(
+          userId: uid,
+          year: year,
+          month: month,
+          employeeId: widget.row.employeeId,
+        );
+    _notifyKey = key;
+    await storage.writeBool(key, v);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -188,6 +247,7 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
     _amountFocus.addListener(() {
       if (!_amountFocus.hasFocus) _push();
     });
+    _loadPersistedNotifyPref();
   }
 
   @override
@@ -199,9 +259,19 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
     }
     if (oldWidget.row.employeeId != widget.row.employeeId ||
         oldWidget.row.recordId != widget.row.recordId) {
-      _notifySalaryCredited = false;
+      _notifyKey = null;
       _paidSelectionPending = false;
       _pendingPaid = null;
+      _loadPersistedNotifyPref();
+    }
+    final st = context.read<PayrollDashboardBloc>().state;
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    if (_lastMonth != null &&
+        _lastYear != null &&
+        (month != _lastMonth || year != _lastYear)) {
+      _notifyKey = null;
+      _loadPersistedNotifyPref();
     }
     if (_paidSelectionPending && widget.row.paid == _pendingPaid) {
       _paidSelectionPending = false;
@@ -284,10 +354,6 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
                 _StatusDropdown(
                   value: r.paid,
                   onChanged: (v) {
-                    // Each time user picks PAID, require a fresh opt-in on the checkbox.
-                    if (v == true) {
-                      _notifySalaryCredited = false;
-                    }
                     _paidSelectionPending = true;
                     _pendingPaid = v;
                     setState(() {});
@@ -325,6 +391,7 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
                           onChanged: (nv) {
                             if (nv == null) return;
                             setState(() => _notifySalaryCredited = nv);
+                            _persistNotifyPref(nv);
                             if (r.recordId != null) {
                               context.read<PayrollDashboardBloc>().add(
                                     PayrollInlinePatchRequested(

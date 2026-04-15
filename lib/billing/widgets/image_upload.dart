@@ -1,9 +1,9 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImageUpload extends StatefulWidget {
-  final Function(String url) onUploaded;
+  final ValueChanged<XFile> onUploaded;
   final void Function(VoidCallback openPicker)? onReady;
 
   const ImageUpload({
@@ -17,7 +17,7 @@ class ImageUpload extends StatefulWidget {
 }
 
 class _ImageUploadState extends State<ImageUpload> {
-  File? _image;
+  Uint8List? _bytes;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage() async {
@@ -27,10 +27,10 @@ class _ImageUploadState extends State<ImageUpload> {
     );
     if (picked == null) return;
 
-    setState(() => _image = File(picked.path));
-
-    // TEMP: local path (later replace with backend upload URL)
-    widget.onUploaded(picked.path);
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    setState(() => _bytes = bytes);
+    widget.onUploaded(picked);
   }
 
   @override
@@ -44,8 +44,8 @@ class _ImageUploadState extends State<ImageUpload> {
     return GestureDetector(
       onTap: _pickImage,
       child: SizedBox.expand(
-        child: _image != null
-            ? Image.file(_image!, fit: BoxFit.cover)
+        child: _bytes != null
+            ? Image.memory(_bytes!, fit: BoxFit.cover)
             : const Center(
           child: Icon(Icons.camera_alt, size: 28, color: Colors.grey),
         ),

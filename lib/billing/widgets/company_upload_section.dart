@@ -1,3 +1,4 @@
+import 'package:cross_file/cross_file.dart';
 import 'package:flutter/material.dart';
 import 'section_header.dart';
 import 'media_picker_card.dart';
@@ -5,8 +6,8 @@ import 'media_picker_card.dart';
 class CompanyUploadsSection extends StatelessWidget {
   final String? logoUrl;
   final String? signatureUrl;
-  final ValueChanged<String> onLogoChanged;
-  final ValueChanged<String> onSignatureChanged;
+  final ValueChanged<XFile> onLogoChanged;
+  final ValueChanged<XFile> onSignatureChanged;
 
   const CompanyUploadsSection({
     super.key,
@@ -22,8 +23,8 @@ class CompanyUploadsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(
-          title: "Uploads",
-          subtitle: "Manage your company logo and digital signature",
+          title: "Brand Assets",
+          subtitle: "Company logo and digital signature for invoices.",
         ),
         const SizedBox(height: 16),
         Row(
@@ -32,6 +33,7 @@ class CompanyUploadsSection extends StatelessWidget {
               child: MediaPickerCard(
                 title: "Company Logo",
                 url: logoUrl,
+                helperText: "PNG, JPG up to 5MB",
                 onUploaded: onLogoChanged,
               ),
             ),
@@ -40,6 +42,7 @@ class CompanyUploadsSection extends StatelessWidget {
               child: MediaPickerCard(
                 title: "Digital Signature",
                 url: signatureUrl,
+                helperText: "Transparent signature file",
                 onUploaded: onSignatureChanged,
               ),
             ),

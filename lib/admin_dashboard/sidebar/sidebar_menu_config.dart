@@ -97,13 +97,7 @@ const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Billing & Invoices",
     icon: Icons.receipt_long_outlined,
-    children: [
-      SidebarMenuItem(
-        title: "Generate Invoice",
-        icon: Icons.add_circle_outline,
-        action: SidebarAction.billingGenerate,
-      ),
-    ],
+    action: SidebarAction.billingGenerate,
   ),
 
   SidebarMenuItem(

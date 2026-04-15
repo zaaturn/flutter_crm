@@ -41,10 +41,11 @@ class InvoiceItemModel {
 
   factory InvoiceItemModel.fromJson(Map<String, dynamic> json) {
     return InvoiceItemModel(
-      name: json["name"]?.toString() ?? "",
+      // Backend commonly uses `description` on invoice line items.
+      name: (json["description"] ?? json["name"])?.toString() ?? "",
       hsnSacCode: json["hsn_sac_code"]?.toString() ?? "",
       quantity: _toDouble(json["quantity"]),
-      unitPrice: _toDouble(json["unit_price"]),
+      unitPrice: _toDouble(json["unit_price"] ?? json["price"]),
       taxRate: _toDouble(json["tax_rate"]),
       currency: json["currency"]?.toString() ?? "₹",
     );
@@ -52,15 +53,17 @@ class InvoiceItemModel {
 
   Map<String, dynamic> toJson() {
     return {
+      // Send both variants; backend may accept one.
       "name": name,
+      "description": name,
 
 
       "hsn_sac_code": hsnSacCode.isEmpty ? null : hsnSacCode,
 
       "quantity": quantity,
       "unit_price": unitPrice,
+      "price": unitPrice,
       "tax_rate": taxRate,
-      "currency": currency,
       "line_total": total,
     };
   }

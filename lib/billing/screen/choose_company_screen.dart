@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/billing/services/billing_api.dart';
 import 'package:my_app/billing/models/company_model.dart';
 
 import '../navigation/billing_flow_controller.dart';
+import '../theme/billing_theme.dart';
+import '../widgets/billing_app_bar.dart';
+import '../widgets/billing_saas_hero_card.dart';
 import 'company_profile_screen.dart';
 
 class ChooseCompanyScreen extends StatelessWidget {
@@ -13,176 +17,196 @@ class ChooseCompanyScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final storage = SecureStorageService();
-    const Color primaryIndigo = Color(0xFF4F46E5);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text(
-          "Select Company",
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            color: Color(0xFF1E293B),
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
-        ),
+      backgroundColor: BillingTheme.scaffoldBg,
+      appBar: billingAppBar(
+        title: 'Company',
+        onBack: () => Navigator.of(context).maybePop(),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            _optionCard(
-              icon: Icons.business_center_rounded,
-              title: "Use Saved Company",
-              subtitle: "Continue with your existing business profile",
-              accentColor: primaryIndigo,
-              onTap: () async {
-                final token = await storage.readToken();
-                if (token == null) {
-                  _showSnack(context, "Authentication required");
-                  return;
-                }
-
-                // 🔑 ALWAYS fetch from backend
-                final companies = await BillingApi.getCompanies(token);
-
-                if (companies.isEmpty) {
-                  _showSnack(context, "No saved company found");
-                  return;
-                }
-
-                if (!context.mounted) return;
-
-                // ✅ Auto-select if only one company
-                if (companies.length == 1) {
-                  final company = companies.first;
-
-                  if (company.id == null) {
-                    _showSnack(context, "Invalid company or session");
-                    return;
-                  }
-
-                  await storage.saveCompanyId(company.id!);
-
-                  await BillingFlowController.goToCreateInvoice(
-                    context,
-                    companyId: company.id!,
-                    authToken: token,
-                  );
-                  return;
-                }
-
-                // ✅ Multiple companies → let user pick
-                _showCompanyPicker(
-                  context,
-                  companies,
-                  onSelect: (company) async {
-                    if (company.id == null) {
-                      _showSnack(context, "Invalid company data");
-                      return;
-                    }
-
-                    await storage.saveCompanyId(company.id!);
-
-                    if (!context.mounted) return;
-                    await BillingFlowController.goToCreateInvoice(
-                      context,
-                      companyId: company.id!,
-                      authToken: token,
-                    );
-                  },
-                );
-              },
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 840;
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: wide ? 48 : 20,
+              vertical: wide ? 40 : 24,
             ),
-            const SizedBox(height: 16),
-            _optionCard(
-              icon: Icons.add_business_rounded,
-              title: "Add New Company",
-              subtitle: "Create a fresh company profile to start billing",
-              accentColor: const Color(0xFF0F172A),
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const CompanyProfileScreen(),
-                  ),
-                );
-              },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1000),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Billing setup', style: BillingTheme.overline()),
+                    const SizedBox(height: 8),
+                    Text('Choose company', style: BillingTheme.titleLarge()),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Continue with a saved business profile or create a new one.',
+                      style: BillingTheme.body(),
+                    ),
+                    const SizedBox(height: 28),
+                    if (wide)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: BillingSaasHeroCard(
+                              icon: Icons.business_center_rounded,
+                              title: 'Use saved company',
+                              subtitle: 'Pick from your registered entities.',
+                              onTap: () => _onSavedCompany(context, storage),
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: BillingSaasHeroCard(
+                              icon: Icons.add_business_rounded,
+                              title: 'Add new company',
+                              subtitle: 'Company profile, bank, and branding.',
+                              accent: BillingTheme.purpleDark,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CompanyProfileScreen(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    else ...[
+                      BillingSaasHeroCard(
+                        icon: Icons.business_center_rounded,
+                        title: 'Use saved company',
+                        subtitle: 'Pick from your registered entities.',
+                        onTap: () => _onSavedCompany(context, storage),
+                      ),
+                      const SizedBox(height: 16),
+                      BillingSaasHeroCard(
+                        icon: Icons.add_business_rounded,
+                        title: 'Add new company',
+                        subtitle: 'Company profile, bank, and branding.',
+                        accent: BillingTheme.purpleDark,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CompanyProfileScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  /* ================= UI HELPERS ================= */
+  Future<void> _onSavedCompany(BuildContext context, SecureStorageService storage) async {
+    final token = await storage.readToken();
+    if (token == null) {
+      _showSnack(context, 'Authentication required');
+      return;
+    }
+    final companies = await BillingApi.getCompanies(token);
+    if (companies.isEmpty) {
+      _showSnack(context, 'No saved company found');
+      return;
+    }
+    if (!context.mounted) return;
+
+    if (companies.length == 1) {
+      final company = companies.first;
+      if (company.id == null) {
+        _showSnack(context, 'Invalid company or session');
+        return;
+      }
+      await storage.saveCompanyId(company.id!);
+      if (!context.mounted) return;
+      await BillingFlowController.goToCreateInvoice(
+        context,
+        companyId: company.id!,
+        authToken: token,
+      );
+      return;
+    }
+
+    _showCompanyPicker(
+      context,
+      companies,
+      onSelect: (company) async {
+        if (company.id == null) return;
+        await storage.saveCompanyId(company.id!);
+        if (!context.mounted) return;
+        await BillingFlowController.goToCreateInvoice(
+          context,
+          companyId: company.id!,
+          authToken: token,
+        );
+      },
+    );
+  }
 
   void _showSnack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: BillingTheme.purpleDark,
       ),
     );
   }
 
   void _showCompanyPicker(
-      BuildContext context,
-      List<CompanyModel> companies, {
-        required Function(CompanyModel) onSelect,
-      }) {
-    showModalBottomSheet(
+    BuildContext context,
+    List<CompanyModel> companies, {
+    required void Function(CompanyModel) onSelect,
+  }) {
+    showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: BillingTheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Your Companies",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 16),
-              Flexible(
+              Text('Your companies', style: BillingTheme.cardTitle()),
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 420),
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: companies.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (_, i) {
                     final c = companies[i];
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0xFFF1F5F9)),
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(color: BillingTheme.border),
                       ),
-                      tileColor: const Color(0xFFF8FAFC),
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xFFE0E7FF),
-                        child: Icon(Icons.business_rounded, color: Color(0xFF4F46E5), size: 20),
-                      ),
+                      tileColor: BillingTheme.scaffoldBg,
+                      leading: Icon(Icons.business_rounded, color: BillingTheme.purple),
                       title: Text(
                         c.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: BillingTheme.textPrimary,
+                        ),
                       ),
-                      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                      trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.pop(ctx);
                         onSelect(c);
                       },
                     );
@@ -193,77 +217,6 @@ class ChooseCompanyScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _optionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color accentColor,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(icon, size: 28, color: accentColor),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF64748B),
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFFCBD5E1)),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

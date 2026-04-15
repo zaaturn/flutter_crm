@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 
 class InvoiceActionButtons extends StatelessWidget {
+  final bool isDraft;
   final VoidCallback onShare;
   final VoidCallback onDownload;
+  final VoidCallback onIssue;
   final bool isLoading;
 
   const InvoiceActionButtons({
     super.key,
+    required this.isDraft,
     required this.onShare,
     required this.onDownload,
+    required this.onIssue,
     this.isLoading = false,
   });
 
@@ -20,7 +24,7 @@ class InvoiceActionButtons extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E1B4B).withOpacity(0.08),
+            color: const Color(0xFF1E1B4B).withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, -10),
           ),
@@ -30,30 +34,52 @@ class InvoiceActionButtons extends StatelessWidget {
       child: SafeArea(
         child: Row(
           children: [
-            // SaaS Secondary Button (Share)
-            Expanded(
-              flex: 1,
-              child: _ModernButton(
-                onPressed: isLoading ? null : onShare,
-                icon: Icons.share_rounded,
-                label: "Share",
-                isOutlined: true,
-                isLoading: isLoading,
+            if (isDraft) ...[
+              Expanded(
+                flex: 1,
+                child: _ModernButton(
+                  onPressed: isLoading ? null : onIssue,
+                  icon: Icons.check_circle_outline,
+                  label: "Issue",
+                  isOutlined: true,
+                  isLoading: isLoading,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-
-            // SaaS Primary Button (Download)
-            Expanded(
-              flex: 2,
-              child: _ModernButton(
-                onPressed: isLoading ? null : onDownload,
-                icon: Icons.file_download_outlined,
-                label: "Download PDF",
-                isOutlined: false,
-                isLoading: isLoading,
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: _ModernButton(
+                  onPressed: isLoading ? null : onDownload,
+                  icon: Icons.file_download_outlined,
+                  label: "Download PDF",
+                  isOutlined: false,
+                  isLoading: isLoading,
+                ),
               ),
-            ),
+            ] else ...[
+              // Share + Download (issued)
+              Expanded(
+                flex: 1,
+                child: _ModernButton(
+                  onPressed: isLoading ? null : onShare,
+                  icon: Icons.share_rounded,
+                  label: "Share",
+                  isOutlined: true,
+                  isLoading: isLoading,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: _ModernButton(
+                  onPressed: isLoading ? null : onDownload,
+                  icon: Icons.file_download_outlined,
+                  label: "Download PDF",
+                  isOutlined: false,
+                  isLoading: isLoading,
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -139,7 +165,7 @@ class _ModernButton extends StatelessWidget {
             ? null
             : [
           BoxShadow(
-            color: primaryColor.withOpacity(0.35),
+            color: primaryColor.withValues(alpha: 0.35),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),

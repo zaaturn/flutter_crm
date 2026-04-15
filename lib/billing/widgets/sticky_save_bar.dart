@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 class StickySaveBar extends StatelessWidget {
   final bool loading;
   final VoidCallback onSave;
+  final String label;
+  final Color color;
 
   const StickySaveBar({
     super.key,
     required this.loading,
     required this.onSave,
+    this.label = 'Save Settings',
+    this.color = const Color(0xFF0061FF),
   });
 
   @override
@@ -34,7 +38,7 @@ class StickySaveBar extends StatelessWidget {
           child: ElevatedButton(
             onPressed: loading ? null : onSave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0061FF),
+              backgroundColor: color,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -50,9 +54,9 @@ class StickySaveBar extends StatelessWidget {
                 color: Colors.white,
               ),
             )
-                : const Text(
-              "Save Settings",
-              style: TextStyle(
+                : Text(
+              label,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),

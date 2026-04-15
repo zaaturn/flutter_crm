@@ -2,7 +2,9 @@ class InvoiceReviewModel {
   final String id;
   final String invoiceNumber;
   final String status;
+  final String? pdfDesign;
   final DateTime invoiceDate;
+  final DateTime? dueDate;
   final BillingFrom billingFrom;
   final BillingTo billingTo;
   final List<InvoiceItem> items;
@@ -14,7 +16,9 @@ class InvoiceReviewModel {
     required this.id,
     required this.invoiceNumber,
     required this.status,
+    this.pdfDesign,
     required this.invoiceDate,
+    required this.dueDate,
     required this.billingFrom,
     required this.billingTo,
     required this.items,
@@ -28,7 +32,9 @@ class InvoiceReviewModel {
       id: json['id'].toString(),
       invoiceNumber: json['invoice_number'].toString(),
       status: json['status'],
+      pdfDesign: json.containsKey('pdf_design') ? json['pdf_design']?.toString() : null,
       invoiceDate: DateTime.parse(json['invoice_date']),
+      dueDate: json['due_date'] == null ? null : DateTime.tryParse(json['due_date'].toString()),
       billingFrom: BillingFrom.fromJson(
         json['billing_from'] as Map<String, dynamic>,
       ),

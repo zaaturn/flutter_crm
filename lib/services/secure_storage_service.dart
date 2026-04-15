@@ -128,6 +128,34 @@ class SecureStorageService {
       _read(_companyIdKey);
 
   // =========================================================
+  // GENERIC KEY/VALUE (app prefs)
+  // =========================================================
+  Future<void> writeString(String key, String value) async => _write(key, value);
+
+  Future<String?> readString(String key) async => _read(key);
+
+  Future<void> writeBool(String key, bool value) async =>
+      _write(key, value ? '1' : '0');
+
+  Future<bool?> readBool(String key) async {
+    final s = await _read(key);
+    if (s == null) return null;
+    final v = s.trim().toLowerCase();
+    if (v == '1' || v == 'true') return true;
+    if (v == '0' || v == 'false') return false;
+    return null;
+  }
+
+  Future<void> removeKey(String key) async {
+    if (kIsWeb) {
+      final prefs = await _getPrefs();
+      await prefs.remove(key);
+    } else {
+      await _secureStorage.delete(key: key);
+    }
+  }
+
+  // =========================================================
   // CLEAR
   // =========================================================
   Future<void> clearTokens() async {
