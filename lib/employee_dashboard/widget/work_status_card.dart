@@ -20,10 +20,21 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   Timer? _ticker;
   Duration _liveNetWork = Duration.zero;
   Duration _liveBreak = Duration.zero;
+  DateTime? _lastCheckInTime;
+  bool _lastIsCheckedIn = false;
+
+  Duration _maxDur(Duration a, Duration b) => a >= b ? a : b;
 
   @override
   void initState() {
     super.initState();
+    final a = context.read<EmployeeBloc>().state.attendance;
+    if (a != null && a.isCheckedIn) {
+      _liveNetWork = a.netWork;
+      _liveBreak = a.totalBreak;
+      _lastIsCheckedIn = true;
+      _lastCheckInTime = a.checkInTime;
+    }
     _startTicker();
   }
 
@@ -67,13 +78,23 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
         final a = state.attendance;
         if (a != null && a.isCheckedIn) {
           setState(() {
-            _liveNetWork = a.netWork;
-            _liveBreak = a.totalBreak;
+            final isNewSession =
+                !_lastIsCheckedIn || _lastCheckInTime != a.checkInTime;
+
+            _liveNetWork =
+                isNewSession ? a.netWork : _maxDur(_liveNetWork, a.netWork);
+            _liveBreak =
+                isNewSession ? a.totalBreak : _maxDur(_liveBreak, a.totalBreak);
+
+            _lastIsCheckedIn = true;
+            _lastCheckInTime = a.checkInTime;
           });
         } else {
           setState(() {
             _liveNetWork = Duration.zero;
             _liveBreak = Duration.zero;
+            _lastIsCheckedIn = false;
+            _lastCheckInTime = null;
           });
         }
       },
