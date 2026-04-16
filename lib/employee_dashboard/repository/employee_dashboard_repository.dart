@@ -46,12 +46,19 @@ class EmployeeRepository {
   Future<AttendanceModel> toggleCheckIn() async {
     try {
       final today = await _attendanceService.getTodayStatus();
-      final bool isCheckedIn = today['is_checked_in'] ?? false;
+      final a = AttendanceModel.fromMap(Map<String, dynamic>.from(today));
+      final bool isCheckedIn = a.isCheckedIn;
 
       if (!isCheckedIn) {
-        await _attendanceService.checkIn();
+        final data = await _attendanceService.checkIn();
+        if (data.isNotEmpty) {
+          return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+        }
       } else {
-        await _attendanceService.checkOut();
+        final data = await _attendanceService.checkOut();
+        if (data.isNotEmpty) {
+          return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+        }
       }
 
       final updated = await _attendanceService.getTodayStatus();
@@ -65,12 +72,19 @@ class EmployeeRepository {
 
   Future<AttendanceModel> toggleBreak() async {
     final today = await _attendanceService.getTodayStatus();
-    final bool onBreak = today['on_break'] ?? false;
+    final a = AttendanceModel.fromMap(Map<String, dynamic>.from(today));
+    final bool onBreak = a.onBreak;
 
     if (!onBreak) {
-      await _attendanceService.startBreak();
+      final data = await _attendanceService.startBreak();
+      if (data.isNotEmpty) {
+        return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+      }
     } else {
-      await _attendanceService.endBreak();
+      final data = await _attendanceService.endBreak();
+      if (data.isNotEmpty) {
+        return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+      }
     }
 
     final updated = await _attendanceService.getTodayStatus();

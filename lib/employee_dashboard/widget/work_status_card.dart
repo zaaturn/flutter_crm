@@ -18,7 +18,8 @@ class SessionOverviewSection extends StatefulWidget {
 
 class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   Timer? _ticker;
-  Duration _liveElapsed = Duration.zero;
+  Duration _liveNetWork = Duration.zero;
+  Duration _liveBreak = Duration.zero;
 
   @override
   void initState() {
@@ -30,8 +31,12 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final state = context.read<EmployeeBloc>().state;
       final attendance = state.attendance;
-      if (attendance != null && attendance.isCheckedIn && !attendance.onBreak) {
-        setState(() => _liveElapsed = _calcElapsed(attendance));
+      if (attendance == null || !attendance.isCheckedIn) return;
+
+      if (attendance.onBreak) {
+        setState(() => _liveBreak += const Duration(seconds: 1));
+      } else {
+        setState(() => _liveNetWork += const Duration(seconds: 1));
       }
     });
   }
@@ -40,11 +45,6 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   void dispose() {
     _ticker?.cancel();
     super.dispose();
-  }
-
-  Duration _calcElapsed(AttendanceModel a) {
-    if (a.checkInTime == null) return Duration.zero;
-    return DateTime.now().difference(a.checkInTime!);
   }
 
   String _fmtTimer(Duration d) {
@@ -56,8 +56,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
       ? '--:--'
       : '${(dt.hour % 12 == 0 ? 12 : dt.hour % 12).toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.hour >= 12 ? 'PM' : 'AM'}';
 
-  String _fmtDur(Duration? d) {
-    if (d == null) return '0h 0m';
+  String _fmtDur(Duration d) {
     return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
   }
 
@@ -65,10 +64,17 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   Widget build(BuildContext context) {
     return BlocConsumer<EmployeeBloc, EmployeeState>(
       listener: (context, state) {
-        if (state.attendance != null && state.attendance!.isCheckedIn) {
-          setState(() => _liveElapsed = _calcElapsed(state.attendance!));
+        final a = state.attendance;
+        if (a != null && a.isCheckedIn) {
+          setState(() {
+            _liveNetWork = a.netWork;
+            _liveBreak = a.totalBreak;
+          });
         } else {
-          setState(() => _liveElapsed = Duration.zero);
+          setState(() {
+            _liveNetWork = Duration.zero;
+            _liveBreak = Duration.zero;
+          });
         }
       },
       builder: (context, state) {
@@ -121,7 +127,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
                   Text('Current Session', style: AppTextStyles.label(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Text(
-                    isCheckedIn ? _fmtTimer(_liveElapsed) : '00:00:00',
+                    isCheckedIn ? _fmtTimer(_liveNetWork) : '00:00:00',
                     style: AppTextStyles.headline(
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
@@ -162,7 +168,14 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildStat("Total Worked Today", _fmtDur(a?.totalHours)),
+          _buildStat("Working (Net) Today", _fmtDur(a?.netWork ?? Duration.zero)),
+          const SizedBox(height: 12),
+          _buildStat("Break Today", _fmtDur(a?.totalBreak ?? Duration.zero)),
+          const SizedBox(height: 8),
+          Text(
+            'Breaks taken: ${a?.breakCount ?? 0}',
+            style: AppTextStyles.label(color: AppColors.onSurfaceVariant),
+          ),
           const SizedBox(height: 24),
           Row(
             children: [
@@ -273,7 +286,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
               _vDivider(),
               _buildLogDetail("Out", _fmtTime(a?.checkOutTime)),
               _vDivider(),
-              _buildLogDetail("Worked", _fmtDur(a?.totalHours)),
+              _buildLogDetail("Worked", _fmtDur(a?.netWork ?? Duration.zero)),
               _vDivider(),
               Column(
                 children: [

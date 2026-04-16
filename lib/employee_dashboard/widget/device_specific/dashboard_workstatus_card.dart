@@ -26,22 +26,27 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   static const _border = Color(0xFFE2E8F0);
 
   Timer? _ticker;
-  Duration _liveElapsed = Duration.zero;
+  Duration _liveNetWork = Duration.zero;
+  Duration _liveBreak = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     final attendance = context.read<EmployeeBloc>().state.attendance;
     if (attendance != null && attendance.isCheckedIn) {
-      _liveElapsed = _calcElapsed(attendance);
+      _liveNetWork = attendance.netWork;
+      _liveBreak = attendance.totalBreak;
     }
 
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final attendance = context.read<EmployeeBloc>().state.attendance;
-      if (attendance != null &&
-          attendance.isCheckedIn &&
-          !attendance.onBreak) {
-        setState(() => _liveElapsed = _calcElapsed(attendance));
+      if (attendance == null || !attendance.isCheckedIn) return;
+
+      // Live ticking UI: increment only the active bucket.
+      if (attendance.onBreak) {
+        setState(() => _liveBreak += const Duration(seconds: 1));
+      } else {
+        setState(() => _liveNetWork += const Duration(seconds: 1));
       }
     });
   }
@@ -50,11 +55,6 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   void dispose() {
     _ticker?.cancel();
     super.dispose();
-  }
-
-  Duration _calcElapsed(AttendanceModel a) {
-    if (a.checkInTime == null) return Duration.zero;
-    return DateTime.now().difference(a.checkInTime!);
   }
 
   String _fmtTimer(Duration d) {
@@ -66,8 +66,7 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
       ? '--:--'
       : '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
-  String _fmtDur(Duration? d) {
-    if (d == null) return '0h 0m';
+  String _fmtDur(Duration d) {
     return '${d.inHours}h ${d.inMinutes.remainder(60)}m';
   }
 
@@ -77,12 +76,21 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
       listenWhen: (prev, curr) =>
       prev.attendance?.isCheckedIn != curr.attendance?.isCheckedIn ||
           prev.attendance?.onBreak != curr.attendance?.onBreak ||
-          prev.attendance?.checkInTime != curr.attendance?.checkInTime,
+          prev.attendance?.checkInTime != curr.attendance?.checkInTime ||
+          prev.attendance?.netWork != curr.attendance?.netWork ||
+          prev.attendance?.totalBreak != curr.attendance?.totalBreak,
       listener: (context, state) {
-        if (state.attendance != null && state.attendance!.isCheckedIn) {
-          setState(() => _liveElapsed = _calcElapsed(state.attendance!));
+        final a = state.attendance;
+        if (a != null && a.isCheckedIn) {
+          setState(() {
+            _liveNetWork = a.netWork;
+            _liveBreak = a.totalBreak;
+          });
         } else {
-          setState(() => _liveElapsed = Duration.zero);
+          setState(() {
+            _liveNetWork = Duration.zero;
+            _liveBreak = Duration.zero;
+          });
         }
       },
       builder: (context, state) {
@@ -169,14 +177,14 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   }
 
   Widget _timerBlock(bool isCheckedIn, bool isOnBreak) {
-    final display = isCheckedIn ? _fmtTimer(_liveElapsed) : '00:00:00';
+    final display = isCheckedIn ? _fmtTimer(_liveNetWork) : '00:00:00';
     final parts = display.split(':');
     final activeColor = isOnBreak ? _amber : _blue;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('CURRENT SESSION'),
+        _label('WORKING TIME (NET)'),
         const SizedBox(height: 4),
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -196,14 +204,23 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   Widget _totalWorked(AttendanceModel? a) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      _label('TOTAL WORKED'),
+      _label('BREAK'),
       const SizedBox(height: 4),
       Text(
-        '${_fmtDur(a?.totalHours)} / 8h',
+        _fmtDur(a?.totalBreak ?? Duration.zero),
         style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: _textMain),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'Breaks: ${a?.breakCount ?? 0}',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: _textMuted,
+        ),
       ),
     ],
   );
@@ -331,7 +348,9 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
             _logDivider(),
             _logCell('Check Out', _fmtTime(a.checkOutTime), _red),
             _logDivider(),
-            _logCell('Total Worked', _fmtDur(a.totalHours), _blue),
+            _logCell('Working (Net)', _fmtDur(a.netWork), _blue),
+            _logDivider(),
+            _logCell('Break', _fmtDur(a.totalBreak), _amber),
             _logDivider(),
             _logCell(
               'Status',

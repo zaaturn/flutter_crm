@@ -21,41 +21,41 @@ class AttendanceService {
     return await _api.get("$_base/attendance/today/");
   }
 
-  Future<void> checkIn() async {
+  Future<Map<String, dynamic>> checkIn() async {
     final userId = await _storage.readUserId();
-    if (userId == null) return;
+    if (userId == null) return await getTodayStatus();
 
-    await _api.post(
+    return await _api.post(
       "$_base/attendance/check-in/",
       body: {"user_id": userId},
     );
   }
 
-  Future<void> checkOut() async {
+  Future<Map<String, dynamic>> checkOut() async {
     final userId = await _storage.readUserId();
-    if (userId == null) return;
+    if (userId == null) return await getTodayStatus();
 
-    await _api.post(
+    return await _api.post(
       "$_base/attendance/check-out/",
       body: {"user_id": userId},
     );
   }
 
-  Future<void> startBreak() async {
+  Future<Map<String, dynamic>> startBreak() async {
     final userId = await _storage.readUserId();
-    if (userId == null) return;
+    if (userId == null) return await getTodayStatus();
 
-    await _api.post(
+    return await _api.post(
       "$_base/attendance/break/start/",
       body: {"user_id": userId},
     );
   }
 
-  Future<void> endBreak() async {
+  Future<Map<String, dynamic>> endBreak() async {
     final userId = await _storage.readUserId();
-    if (userId == null) return;
+    if (userId == null) return await getTodayStatus();
 
-    await _api.post(
+    return await _api.post(
       "$_base/attendance/break/end/",
       body: {"user_id": userId},
     );

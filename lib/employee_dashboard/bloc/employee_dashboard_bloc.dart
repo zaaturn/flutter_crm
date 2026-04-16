@@ -13,6 +13,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repo;
 
   Timer? _pollingTimer;
+  Timer? _attendancePollingTimer;
   final SecureStorageService _storage = SecureStorageService();
 
   EmployeeBloc({required this.repo})
@@ -61,12 +62,38 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         events: events,
         error: null,
       ));
+
+      _startAttendancePolling(emit);
     } catch (err) {
       emit(state.copyWith(
         loading: false,
         error: ErrorHandler.format(err),
       ));
     }
+  }
+
+  void _startAttendancePolling(Emitter<EmployeeState> emit) {
+    _attendancePollingTimer?.cancel();
+    _attendancePollingTimer = Timer.periodic(
+      const Duration(seconds: 45),
+          (_) async {
+        final token = await _storage.readToken();
+        if (token == null || token.isEmpty) {
+          _attendancePollingTimer?.cancel();
+          _attendancePollingTimer = null;
+          return;
+        }
+
+        try {
+          final attendance = await repo.fetchAttendance();
+          emit(state.copyWith(attendance: attendance));
+        } catch (err) {
+          if (kDebugMode) {
+            debugPrint("Attendance refresh error: ${ErrorHandler.format(err)}");
+          }
+        }
+      },
+    );
   }
 
   // =========================================================
@@ -85,8 +112,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
-      await repo.toggleCheckIn();
-      final attendance = await repo.fetchAttendance();
+      final attendance = await repo.toggleCheckIn();
 
       emit(state.copyWith(
         loading: false,
@@ -117,20 +143,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
-
-      final currentAttendance = state.attendance;
-
-      if (currentAttendance != null) {
-        emit(state.copyWith(
-          attendance: currentAttendance.copyWith(
-            onBreak: !currentAttendance.onBreak,
-          ),
-        ));
-      }
-
-      await repo.toggleBreak();
-
-      final attendance = await repo.fetchAttendance();
+      final attendance = await repo.toggleBreak();
 
       emit(state.copyWith(
         loading: false,
@@ -268,6 +281,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
     _pollingTimer?.cancel();
     _pollingTimer = null;
+    _attendancePollingTimer?.cancel();
+    _attendancePollingTimer = null;
 
     await repo.logout();
 
@@ -277,6 +292,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   @override
   Future<void> close() {
     _pollingTimer?.cancel();
+    _attendancePollingTimer?.cancel();
     return super.close();
   }
 }
