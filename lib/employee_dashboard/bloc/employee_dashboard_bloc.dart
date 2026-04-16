@@ -14,6 +14,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
   Timer? _pollingTimer;
   Timer? _attendancePollingTimer;
+  Timer? _liveTicker;
   final SecureStorageService _storage = SecureStorageService();
 
   EmployeeBloc({required this.repo})
@@ -64,12 +65,29 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ));
 
       _startAttendancePolling(emit);
+      _startLiveTicker(emit);
     } catch (err) {
       emit(state.copyWith(
         loading: false,
         error: ErrorHandler.format(err),
       ));
     }
+  }
+
+  void _startLiveTicker(Emitter<EmployeeState> emit) {
+    _liveTicker?.cancel();
+    _liveTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isClosed) return;
+
+      final a = state.attendance;
+      if (a == null || !a.isCheckedIn) return;
+
+      final updated = a.onBreak
+          ? a.copyWith(totalBreak: a.totalBreak + const Duration(seconds: 1))
+          : a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
+
+      emit(state.copyWith(attendance: updated));
+    });
   }
 
   void _startAttendancePolling(Emitter<EmployeeState> emit) {
@@ -87,6 +105,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         try {
           final attendance = await repo.fetchAttendance();
           emit(state.copyWith(attendance: attendance));
+          // Ensure live ticker is running after a fresh server sync.
+          _startLiveTicker(emit);
         } catch (err) {
           if (kDebugMode) {
             debugPrint("Attendance refresh error: ${ErrorHandler.format(err)}");
@@ -119,6 +139,13 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         attendance: attendance,
         error: null,
       ));
+
+      if (attendance.isCheckedIn) {
+        _startLiveTicker(emit);
+      } else {
+        _liveTicker?.cancel();
+        _liveTicker = null;
+      }
     } catch (err) {
       emit(state.copyWith(
         loading: false,
@@ -150,6 +177,11 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         attendance: attendance,
         error: null,
       ));
+
+      // Keep live ticking based on latest state.
+      if (attendance.isCheckedIn) {
+        _startLiveTicker(emit);
+      }
 
     } catch (err) {
 
@@ -283,6 +315,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     _pollingTimer = null;
     _attendancePollingTimer?.cancel();
     _attendancePollingTimer = null;
+    _liveTicker?.cancel();
+    _liveTicker = null;
 
     await repo.logout();
 
@@ -293,6 +327,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   Future<void> close() {
     _pollingTimer?.cancel();
     _attendancePollingTimer?.cancel();
+    _liveTicker?.cancel();
     return super.close();
   }
 }

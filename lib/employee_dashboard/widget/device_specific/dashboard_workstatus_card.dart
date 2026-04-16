@@ -25,41 +25,13 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   static const _surface = Color(0xFFF1F5F9);
   static const _border = Color(0xFFE2E8F0);
 
-  Timer? _ticker;
-  Duration _liveNetWork = Duration.zero;
-  Duration _liveBreak = Duration.zero;
-  DateTime? _lastCheckInTime;
-  bool _lastIsCheckedIn = false;
-
-  Duration _maxDur(Duration a, Duration b) => a >= b ? a : b;
-
   @override
   void initState() {
     super.initState();
-    final attendance = context.read<EmployeeBloc>().state.attendance;
-    if (attendance != null && attendance.isCheckedIn) {
-      _liveNetWork = attendance.netWork;
-      _liveBreak = attendance.totalBreak;
-      _lastCheckInTime = attendance.checkInTime;
-      _lastIsCheckedIn = true;
-    }
-
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      final attendance = context.read<EmployeeBloc>().state.attendance;
-      if (attendance == null || !attendance.isCheckedIn) return;
-
-      // Live ticking UI: increment only the active bucket.
-      if (attendance.onBreak) {
-        setState(() => _liveBreak += const Duration(seconds: 1));
-      } else {
-        setState(() => _liveNetWork += const Duration(seconds: 1));
-      }
-    });
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
     super.dispose();
   }
 
@@ -85,30 +57,6 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
           prev.attendance?.checkInTime != curr.attendance?.checkInTime ||
           prev.attendance?.netWork != curr.attendance?.netWork ||
           prev.attendance?.totalBreak != curr.attendance?.totalBreak,
-      listener: (context, state) {
-        final a = state.attendance;
-        if (a != null && a.isCheckedIn) {
-          setState(() {
-            final isNewSession = !_lastIsCheckedIn ||
-                _lastCheckInTime != a.checkInTime;
-
-            _liveNetWork =
-                isNewSession ? a.netWork : _maxDur(_liveNetWork, a.netWork);
-            _liveBreak =
-                isNewSession ? a.totalBreak : _maxDur(_liveBreak, a.totalBreak);
-
-            _lastIsCheckedIn = true;
-            _lastCheckInTime = a.checkInTime;
-          });
-        } else {
-          setState(() {
-            _liveNetWork = Duration.zero;
-            _liveBreak = Duration.zero;
-            _lastIsCheckedIn = false;
-            _lastCheckInTime = null;
-          });
-        }
-      },
       builder: (context, state) {
         final a = state.attendance;
         final isCheckedIn = a?.isCheckedIn ?? false;
@@ -193,7 +141,8 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
   }
 
   Widget _timerBlock(bool isCheckedIn, bool isOnBreak) {
-    final display = isCheckedIn ? _fmtTimer(_liveNetWork) : '00:00:00';
+    final a = context.read<EmployeeBloc>().state.attendance;
+    final display = isCheckedIn ? _fmtTimer(a?.netWork ?? Duration.zero) : '00:00:00';
     final parts = display.split(':');
     final activeColor = isOnBreak ? _amber : _blue;
 

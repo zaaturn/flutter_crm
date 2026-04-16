@@ -17,44 +17,13 @@ class SessionOverviewSection extends StatefulWidget {
 }
 
 class _SessionOverviewSectionState extends State<SessionOverviewSection> {
-  Timer? _ticker;
-  Duration _liveNetWork = Duration.zero;
-  Duration _liveBreak = Duration.zero;
-  DateTime? _lastCheckInTime;
-  bool _lastIsCheckedIn = false;
-
-  Duration _maxDur(Duration a, Duration b) => a >= b ? a : b;
-
   @override
   void initState() {
     super.initState();
-    final a = context.read<EmployeeBloc>().state.attendance;
-    if (a != null && a.isCheckedIn) {
-      _liveNetWork = a.netWork;
-      _liveBreak = a.totalBreak;
-      _lastIsCheckedIn = true;
-      _lastCheckInTime = a.checkInTime;
-    }
-    _startTicker();
-  }
-
-  void _startTicker() {
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      final state = context.read<EmployeeBloc>().state;
-      final attendance = state.attendance;
-      if (attendance == null || !attendance.isCheckedIn) return;
-
-      if (attendance.onBreak) {
-        setState(() => _liveBreak += const Duration(seconds: 1));
-      } else {
-        setState(() => _liveNetWork += const Duration(seconds: 1));
-      }
-    });
   }
 
   @override
   void dispose() {
-    _ticker?.cancel();
     super.dispose();
   }
 
@@ -74,30 +43,6 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<EmployeeBloc, EmployeeState>(
-      listener: (context, state) {
-        final a = state.attendance;
-        if (a != null && a.isCheckedIn) {
-          setState(() {
-            final isNewSession =
-                !_lastIsCheckedIn || _lastCheckInTime != a.checkInTime;
-
-            _liveNetWork =
-                isNewSession ? a.netWork : _maxDur(_liveNetWork, a.netWork);
-            _liveBreak =
-                isNewSession ? a.totalBreak : _maxDur(_liveBreak, a.totalBreak);
-
-            _lastIsCheckedIn = true;
-            _lastCheckInTime = a.checkInTime;
-          });
-        } else {
-          setState(() {
-            _liveNetWork = Duration.zero;
-            _liveBreak = Duration.zero;
-            _lastIsCheckedIn = false;
-            _lastCheckInTime = null;
-          });
-        }
-      },
       builder: (context, state) {
         final a = state.attendance;
         final isCheckedIn = a?.isCheckedIn ?? false;
@@ -148,7 +93,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
                   Text('Current Session', style: AppTextStyles.label(color: AppColors.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Text(
-                    isCheckedIn ? _fmtTimer(_liveNetWork) : '00:00:00',
+                    isCheckedIn ? _fmtTimer(a?.netWork ?? Duration.zero) : '00:00:00',
                     style: AppTextStyles.headline(
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
