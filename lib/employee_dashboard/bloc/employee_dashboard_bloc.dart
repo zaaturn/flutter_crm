@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'employee_dashboard_event.dart';
 import 'employee_dashboard_state.dart';
+import '../model/attendance_model.dart';
 import '../repository/employee_dashboard_repository.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
