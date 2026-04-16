@@ -199,6 +199,15 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       return;
     }
 
+    // Optimistic update: stop/start the correct live timer immediately.
+    // This avoids "net work jumps" caused by API latency.
+    final current = state.attendance;
+    if (current != null && current.isCheckedIn) {
+      emit(state.copyWith(
+        attendance: current.copyWith(onBreak: !current.onBreak),
+      ));
+    }
+
     emit(state.copyWith(loading: true, error: null));
 
     try {
