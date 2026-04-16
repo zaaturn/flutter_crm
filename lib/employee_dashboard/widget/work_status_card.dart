@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../utils/design_tokens.dart';
@@ -43,6 +42,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<EmployeeBloc, EmployeeState>(
+      listener: (context, state) {},
       builder: (context, state) {
         final a = state.attendance;
         final isCheckedIn = a?.isCheckedIn ?? false;

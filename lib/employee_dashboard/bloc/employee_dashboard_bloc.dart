@@ -49,10 +49,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
     try {
       final employee = await repo.fetchEmployeeProfile();
-      final attendance = await repo.fetchAttendance();
+      final serverAttendance = await repo.fetchAttendance();
       final tasks = await repo.fetchTasks();
       final sharedItems = await repo.fetchSharedItems();
       final events = await repo.fetchEvents();
+
+      final attendance = _mergeAttendance(state.attendance, serverAttendance);
 
       emit(state.copyWith(
         loading: false,
@@ -90,6 +92,33 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     });
   }
 
+  AttendanceModel _mergeAttendance(
+    AttendanceModel? current,
+    AttendanceModel incoming,
+  ) {
+    // First load / not checked in previously.
+    if (current == null) return incoming;
+
+    // New day/session: check-in timestamp changed, or we were previously logged out.
+    final isNewSession = !current.isCheckedIn ||
+        current.checkInTime != incoming.checkInTime;
+    if (isNewSession) return incoming;
+
+    // While checked in: keep times monotonic and prevent net work from increasing on break.
+    final mergedNetWork = incoming.onBreak
+        ? current.netWork
+        : (incoming.netWork >= current.netWork ? incoming.netWork : current.netWork);
+
+    final mergedBreak = incoming.totalBreak >= current.totalBreak
+        ? incoming.totalBreak
+        : current.totalBreak;
+
+    return incoming.copyWith(
+      netWork: mergedNetWork,
+      totalBreak: mergedBreak,
+    );
+  }
+
   void _startAttendancePolling(Emitter<EmployeeState> emit) {
     _attendancePollingTimer?.cancel();
     _attendancePollingTimer = Timer.periodic(
@@ -103,7 +132,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         }
 
         try {
-          final attendance = await repo.fetchAttendance();
+          final serverAttendance = await repo.fetchAttendance();
+          final attendance = _mergeAttendance(state.attendance, serverAttendance);
           emit(state.copyWith(attendance: attendance));
           // Ensure live ticker is running after a fresh server sync.
           _startLiveTicker(emit);
@@ -132,7 +162,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
-      final attendance = await repo.toggleCheckIn();
+      final serverAttendance = await repo.toggleCheckIn();
+      final attendance = _mergeAttendance(state.attendance, serverAttendance);
 
       emit(state.copyWith(
         loading: false,
@@ -170,7 +201,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(loading: true, error: null));
 
     try {
-      final attendance = await repo.toggleBreak();
+      final serverAttendance = await repo.toggleBreak();
+      final attendance = _mergeAttendance(state.attendance, serverAttendance);
 
       emit(state.copyWith(
         loading: false,

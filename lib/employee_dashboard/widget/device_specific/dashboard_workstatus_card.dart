@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -57,6 +56,7 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
           prev.attendance?.checkInTime != curr.attendance?.checkInTime ||
           prev.attendance?.netWork != curr.attendance?.netWork ||
           prev.attendance?.totalBreak != curr.attendance?.totalBreak,
+      listener: (context, state) {},
       builder: (context, state) {
         final a = state.attendance;
         final isCheckedIn = a?.isCheckedIn ?? false;
