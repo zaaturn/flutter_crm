@@ -52,12 +52,27 @@ class EmployeeRepository {
       if (!isCheckedIn) {
         final data = await _attendanceService.checkIn();
         if (data.isNotEmpty) {
-          return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+          final m = Map<String, dynamic>.from(data);
+          // If payload is partial, re-sync from server truth.
+          final hasNet =
+              m.containsKey('net_work_seconds') || m.containsKey('net_work_minutes');
+          final hasBreak = m.containsKey('total_break_seconds') ||
+              m.containsKey('total_break_minutes');
+          if (hasNet || hasBreak || m.containsKey('is_checked_in')) {
+            return AttendanceModel.fromMap(m);
+          }
         }
       } else {
         final data = await _attendanceService.checkOut();
         if (data.isNotEmpty) {
-          return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+          final m = Map<String, dynamic>.from(data);
+          final hasNet =
+              m.containsKey('net_work_seconds') || m.containsKey('net_work_minutes');
+          final hasBreak = m.containsKey('total_break_seconds') ||
+              m.containsKey('total_break_minutes');
+          if (hasNet || hasBreak || m.containsKey('is_checked_in')) {
+            return AttendanceModel.fromMap(m);
+          }
         }
       }
 
@@ -78,12 +93,30 @@ class EmployeeRepository {
     if (!onBreak) {
       final data = await _attendanceService.startBreak();
       if (data.isNotEmpty) {
-        return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+        final m = Map<String, dynamic>.from(data);
+        final hasNet =
+            m.containsKey('net_work_seconds') || m.containsKey('net_work_minutes');
+        final hasBreak = m.containsKey('total_break_seconds') ||
+            m.containsKey('total_break_minutes');
+        final hasState = m.containsKey('on_break') || m.containsKey('is_checked_in');
+        // If the break endpoint doesn't return full attendance payload,
+        // do not let the UI regress to zeros—re-sync from today/ instead.
+        if (hasNet && hasBreak && hasState) {
+          return AttendanceModel.fromMap(m);
+        }
       }
     } else {
       final data = await _attendanceService.endBreak();
       if (data.isNotEmpty) {
-        return AttendanceModel.fromMap(Map<String, dynamic>.from(data));
+        final m = Map<String, dynamic>.from(data);
+        final hasNet =
+            m.containsKey('net_work_seconds') || m.containsKey('net_work_minutes');
+        final hasBreak = m.containsKey('total_break_seconds') ||
+            m.containsKey('total_break_minutes');
+        final hasState = m.containsKey('on_break') || m.containsKey('is_checked_in');
+        if (hasNet && hasBreak && hasState) {
+          return AttendanceModel.fromMap(m);
+        }
       }
     }
 
