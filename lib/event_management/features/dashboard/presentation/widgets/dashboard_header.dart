@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
-import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 import 'package:my_app/event_management/shared/themes/event_adaptive_theme.dart';
 
 import '../bloc/dashboard_bloc.dart';
@@ -92,7 +92,7 @@ class DashboardHeader extends StatelessWidget {
         MaterialPageRoute<void>(
           builder: (_) => BlocProvider.value(
             value: bloc,
-            child: const NotificationScreen(),
+            child: const NotificationScreenDesktop(),
           ),
         ),
       );

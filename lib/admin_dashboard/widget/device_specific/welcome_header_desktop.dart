@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart'; // Required for BlocBuilder
-import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 class ModernDashboardHeader extends StatelessWidget {
@@ -69,7 +69,7 @@ class ModernDashboardHeader extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const NotificationScreen(),
+                      builder: (context) => const NotificationScreenDesktop(),
                     ),
                   );
                 },

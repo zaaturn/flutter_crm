@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
-import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
 class DashboardTopBar extends StatelessWidget {
@@ -88,7 +88,7 @@ class DashboardTopBar extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const NotificationScreen(),
+                          builder: (context) => const NotificationScreenDesktop(),
                         ),
                       );
                     },

@@ -12,7 +12,7 @@ import 'package:my_app/event_management/features/events/presentation/bloc/event_
 import 'package:my_app/event_management/features/events/presentation/screens/event_create_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/widgets/quick_add_sheet.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
-import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 import 'package:my_app/event_management/shared/themes/event_adaptive_theme.dart';
 import 'package:my_app/core/ui/adaptive_layout.dart';
 import 'package:my_app/services/api_client.dart' as app_api;
@@ -87,7 +87,7 @@ class _CalendarScreenState extends State<CalendarScreen>
         MaterialPageRoute<void>(
           builder: (_) => BlocProvider.value(
             value: bloc,
-            child: const NotificationScreen(),
+            child: const NotificationScreenDesktop(),
           ),
         ),
       );
