@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
 
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/auth/auth_session.dart';
@@ -10,7 +11,9 @@ import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 import 'package:my_app/employee_dashboard/widget/employee_task_tracker_screen_mobile.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
+import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
@@ -168,17 +171,22 @@ abstract final class NotificationPayloadRouter {
   }
 
   static void _openPost(BuildContext context, int postId) {
+    final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => PostDetailScreen(postId: postId),
+        builder: (_) =>
+            wide ? PostDetailScreen(postId: postId) : PostDetailScreenMobile(postId: postId),
       ),
     );
   }
 
   static void _openEvent(BuildContext context, String eventId) {
+    final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => EventDetailScreen(eventId: eventId),
+        builder: (_) => wide
+            ? EventDetailScreen(eventId: eventId)
+            : EventDetailMobileScreen(eventId: eventId),
       ),
     );
   }
@@ -190,7 +198,7 @@ abstract final class NotificationPayloadRouter {
       return;
     }
 
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
@@ -204,7 +212,7 @@ abstract final class NotificationPayloadRouter {
   }
 
   static void _openTasksAdmin(BuildContext context) {
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => wide

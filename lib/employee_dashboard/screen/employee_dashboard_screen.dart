@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
-
 import '../bloc/employee_dashboard_bloc.dart';
 import '../bloc/employee_dashboard_event.dart';
 import '../bloc/employee_dashboard_state.dart';
-
 import '../widget/top_bar.dart';
-import '../widget/work_status_card.dart'; // Renamed to SessionOverviewSection inside
+import '../widget/work_status_card.dart';
 import '../widget/assigned_tasks_section.dart';
 import '../widget/bottom_nav.dart';
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
-
+import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_greeting.dart';
 
 class EmployeeDashboardScreen extends StatefulWidget {
   const EmployeeDashboardScreen({super.key});
@@ -24,9 +21,7 @@ class EmployeeDashboardScreen extends StatefulWidget {
       _EmployeeDashboardScreenState();
 }
 
-class _EmployeeDashboardScreenState
-    extends State<EmployeeDashboardScreen> {
-
+class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   @override
   void initState() {
     super.initState();
@@ -60,10 +55,20 @@ class EmployeeDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // --- CHANGED TO PURE WHITE HERE ---
-      backgroundColor: Colors.white,
-      appBar: TopBar(scaffoldContext: context),
-      body: const _DashboardBody(),
+      backgroundColor: const Color(0xFFFAF3E0),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: TopBar(scaffoldContext: context),
+            ),
+            const Expanded(
+              child: _DashboardBody(),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: const BottomNav(),
     );
   }
@@ -94,6 +99,8 @@ class _DashboardBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 16),
+                const DashboardGreeting(),
                 const SizedBox(height: 16),
                 const SessionOverviewSection(),
                 const SizedBox(height: 32),

@@ -15,70 +15,77 @@ class StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Material(
       color: Colors.transparent,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            _buildSaaSCard("Working", working, const Color(0xFF10B981)),
-            const SizedBox(width: 12),
-            _buildSaaSCard("Break", onBreak, const Color(0xFFF59E0B)),
-            const SizedBox(width: 12),
-            _buildSaaSCard("Absent", absent, const Color(0xFFEF4444)),
+            _buildColorCard(
+              title: "Working",
+              value: working,
+              bgColor: const Color(0xFF1D5603), // Lincoln Green Bg
+              textColor: const Color(0xFFC3F380), // Lincoln Green Text
+            ),
+            const SizedBox(width: 10),
+            _buildColorCard(
+              title: "Break",
+              value: onBreak,
+              bgColor: const Color(0xFFC3F380), // Light Lime Bg
+              textColor: const Color(0xFF7523B4), // Light Lime Text
+            ),
+            const SizedBox(width: 10),
+            _buildColorCard(
+              title: "Log Out",
+              value: absent,
+              bgColor: const Color(0xFFD13F13), // Brilliant Rose Bg
+              textColor: const Color(0xFFFCC5C6), // Brilliant Rose Text
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSaaSCard(String title, int value, Color accentColor) {
+  Widget _buildColorCard({
+    required String title,
+    required int value,
+    required Color bgColor,
+    required Color textColor,
+  }) {
+    const borderColor = Color(0xFF0F172A);
+
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: const Color(0xFFE2E8F0),
-            width: 1.5,
+            color: borderColor,
+            width: 1.75,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0F172A).withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF64748B),
-                letterSpacing: 0.2,
+              title.toUpperCase(),
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: textColor,
+                letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: accentColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                value.toString(),
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: accentColor,
-                  letterSpacing: -1,
-                ),
+            const SizedBox(height: 10),
+            Text(
+              value.toString(),
+              style: GoogleFonts.manrope(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: textColor,
+                letterSpacing: -1,
               ),
             ),
           ],

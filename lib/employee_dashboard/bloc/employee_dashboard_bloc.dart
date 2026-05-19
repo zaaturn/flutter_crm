@@ -26,6 +26,9 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<ToggleBreakEvent>(_onToggleBreak);
     on<StartTaskPolling>(_onStartPolling);
     on<StopTaskPolling>(_onStopPolling);
+    on<AttendanceTicked>(_onAttendanceTicked);
+    on<PollTasksRequested>(_onPollTasksRequested);
+    on<PollAttendanceRequested>(_onPollAttendanceRequested);
     on<UpdateTaskStatus>(_onUpdateTaskStatus);
     on<RegisterNotificationDevice>(_onRegisterNotificationDevice);
     on<LogoutEvent>(_onLogout);
@@ -67,8 +70,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         error: null,
       ));
 
-      _startAttendancePolling(emit);
-      _startLiveTicker(emit);
+      _startAttendancePolling();
+      _startLiveTicker();
     } catch (err) {
       emit(state.copyWith(
         loading: false,
@@ -77,20 +80,26 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     }
   }
 
-  void _startLiveTicker(Emitter<EmployeeState> emit) {
+  void _startLiveTicker() {
     _liveTicker?.cancel();
     _liveTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (isClosed) return;
-
-      final a = state.attendance;
-      if (a == null || !a.isCheckedIn) return;
-
-      final updated = a.onBreak
-          ? a.copyWith(totalBreak: a.totalBreak + const Duration(seconds: 1))
-          : a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
-
-      emit(state.copyWith(attendance: updated));
+      add(AttendanceTicked());
     });
+  }
+
+  Future<void> _onAttendanceTicked(
+    AttendanceTicked event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final a = state.attendance;
+    if (a == null || !a.isCheckedIn) return;
+
+    final updated = a.onBreak
+        ? a.copyWith(totalBreak: a.totalBreak + const Duration(seconds: 1))
+        : a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
+
+    emit(state.copyWith(attendance: updated));
   }
 
   AttendanceModel _mergeAttendance(
@@ -120,31 +129,33 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     );
   }
 
-  void _startAttendancePolling(Emitter<EmployeeState> emit) {
+  void _startAttendancePolling() {
     _attendancePollingTimer?.cancel();
     _attendancePollingTimer = Timer.periodic(
       const Duration(seconds: 45),
           (_) async {
-        final token = await _storage.readToken();
-        if (token == null || token.isEmpty) {
-          _attendancePollingTimer?.cancel();
-          _attendancePollingTimer = null;
-          return;
-        }
-
-        try {
-          final serverAttendance = await repo.fetchAttendance();
-          final attendance = _mergeAttendance(state.attendance, serverAttendance);
-          emit(state.copyWith(attendance: attendance));
-          // Ensure live ticker is running after a fresh server sync.
-          _startLiveTicker(emit);
-        } catch (err) {
-          if (kDebugMode) {
-            debugPrint("Attendance refresh error: ${ErrorHandler.format(err)}");
-          }
-        }
+        if (isClosed) return;
+        add(PollAttendanceRequested());
       },
     );
+  }
+
+  Future<void> _onPollAttendanceRequested(
+    PollAttendanceRequested event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) return;
+    try {
+      final serverAttendance = await repo.fetchAttendance();
+      final attendance = _mergeAttendance(state.attendance, serverAttendance);
+      emit(state.copyWith(attendance: attendance));
+      _startLiveTicker();
+    } catch (err) {
+      if (kDebugMode) {
+        debugPrint("Attendance refresh error: ${ErrorHandler.format(err)}");
+      }
+    }
   }
 
   // =========================================================
@@ -173,7 +184,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ));
 
       if (attendance.isCheckedIn) {
-        _startLiveTicker(emit);
+        _startLiveTicker();
       } else {
         _liveTicker?.cancel();
         _liveTicker = null;
@@ -222,7 +233,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
       // Keep live ticking based on latest state.
       if (attendance.isCheckedIn) {
-        _startLiveTicker(emit);
+        _startLiveTicker();
       }
 
     } catch (err) {
@@ -249,24 +260,27 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     _pollingTimer = Timer.periodic(
       const Duration(seconds: 12),
           (_) async {
-        final token = await _storage.readToken();
-        if (token == null || token.isEmpty) {
-          _pollingTimer?.cancel();
-          _pollingTimer = null;
-          return;
-        }
-
-        try {
-          final tasks = await repo.fetchTasks();
-
-          emit(state.copyWith(tasks: tasks));
-        } catch (err) {
-          if (kDebugMode) {
-            debugPrint("Polling error: ${ErrorHandler.format(err)}");
-          }
-        }
+        if (isClosed) return;
+        add(PollTasksRequested());
       },
     );
+  }
+
+  Future<void> _onPollTasksRequested(
+    PollTasksRequested event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) return;
+
+    try {
+      final tasks = await repo.fetchTasks();
+      emit(state.copyWith(tasks: tasks));
+    } catch (err) {
+      if (kDebugMode) {
+        debugPrint("Polling error: ${ErrorHandler.format(err)}");
+      }
+    }
   }
 
   // =========================================================

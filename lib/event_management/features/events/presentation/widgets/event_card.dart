@@ -49,9 +49,6 @@ class EventCard extends StatelessWidget {
     try {
       context.read<CalendarBloc>().add(CalendarRefreshRequested());
     } catch (_) {}
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Event deleted')));
   }
 
   @override

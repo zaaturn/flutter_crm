@@ -32,6 +32,8 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     required this.acceptEventInvite,
     required this.declineEventInvite,
   }) : super(EventInitial()) {
+    on<ExternalEventUpserted>(_onExternalUpsert);
+    on<ExternalEventDeleted>(_onExternalDelete);
     on<FetchEventsRequested>(_onFetch);
     on<LoadEventByIdRequested>(_onLoadById);
     on<CreateEventRequested>(_onCreate);
@@ -42,6 +44,36 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     on<SearchRequested>(_onSearch);
     on<AcceptEventInviteRequested>(_onAcceptInvite);
     on<DeclineEventInviteRequested>(_onDeclineInvite);
+  }
+
+  void _onExternalUpsert(
+    ExternalEventUpserted event,
+    Emitter<EventState> emit,
+  ) {
+    final e = event.event;
+    final idx = _cachedEvents.indexWhere((x) => x.id == e.id);
+    if (idx >= 0) {
+      _cachedEvents = [
+        ..._cachedEvents.sublist(0, idx),
+        e,
+        ..._cachedEvents.sublist(idx + 1),
+      ];
+    } else {
+      _cachedEvents = [..._cachedEvents, e];
+    }
+    emit(EventsLoaded(List<Event>.from(_cachedEvents)));
+  }
+
+  void _onExternalDelete(
+    ExternalEventDeleted event,
+    Emitter<EventState> emit,
+  ) {
+    final before = _cachedEvents.length;
+    _cachedEvents = _cachedEvents.where((e) => e.id != event.eventId).toList();
+    if (_cachedEvents.length != before) {
+      emit(EventDeleted(event.eventId));
+      emit(EventsLoaded(List<Event>.from(_cachedEvents)));
+    }
   }
 
   Future<void> _onFetch(

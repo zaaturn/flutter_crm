@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
+import 'package:my_app/event_management/features/calendar/presentation/screen/calender_screen.dart';
 
 /// Full EventFlow area: sidebar + Dashboard / Calendar / Notifications.
 class CalendarScreenDesktop extends StatelessWidget {
@@ -7,6 +7,6 @@ class CalendarScreenDesktop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const EventManagementShell();
+    return const CalendarScreen();
   }
 }

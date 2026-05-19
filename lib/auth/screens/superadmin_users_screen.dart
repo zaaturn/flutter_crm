@@ -25,14 +25,17 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
   Map<String, dynamic>? _selectedUser;
   Map<String, dynamic>? _accessPayload;
 
-  // --- DAXARROW Premium Palette ---
-  static const _purple      = Color(0xFF7C3AED);
-  static const _purpleLight = Color(0xFFF5F3FF);
-  static const _purpleDark  = Color(0xFF4C1D95);
-  static const _textPrimary = Color(0xFF0F172A);
-  static const _textMuted   = Color(0xFF334155);
-  static const _border      = Color(0xFFEDE9FE);
-  static const _bg          = Colors.white;
+  // Theme: Desktop keeps purple, Mobile uses terracotta.
+  bool get _wide => MediaQuery.sizeOf(context).width >= 900;
+
+  Color get _primary => _wide ? const Color(0xFF7C3AED) : const Color(0xFFC05E41);
+  Color get _primaryLight => _wide ? const Color(0xFFF5F3FF) : const Color(0xFFEADBC8);
+  Color get _primaryDark => _wide ? const Color(0xFF4C1D95) : const Color(0xFF3E2723);
+  Color get _textPrimary => _wide ? const Color(0xFF0F172A) : const Color(0xFF3E2723);
+  Color get _textMuted => _wide ? const Color(0xFF334155) : const Color(0xFF8D6E63);
+  Color get _border =>
+      _wide ? const Color(0xFFEDE9FE) : const Color(0xFFC05E41).withValues(alpha: 0.14);
+  Color get _bg => _wide ? Colors.white : const Color(0xFFFAF3E0);
 
   @override
   void initState() {
@@ -125,10 +128,13 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
       appBar: AppBar(
         backgroundColor: _bg,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         centerTitle: false,
         leading: _step == _ManageStep.editAccess
             ? IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: _textPrimary, size: 20),
           onPressed: _goBackToList,
         )
             : null,
@@ -164,9 +170,9 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
             decoration: InputDecoration(
               hintText: 'Search by name, email, username...',
               hintStyle: GoogleFonts.plusJakartaSans(color: _textMuted, fontWeight: FontWeight.w500),
-              prefixIcon: const Icon(Icons.search_rounded, color: _purple),
+              prefixIcon: Icon(Icons.search_rounded, color: _primary),
               filled: true,
-              fillColor: _purpleLight.withOpacity(0.5),
+              fillColor: _primaryLight.withValues(alpha: _wide ? 0.5 : 0.55),
               contentPadding: const EdgeInsets.symmetric(vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -174,12 +180,12 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: _border, width: 1.5),
+                borderSide: BorderSide(color: _border, width: 1.5),
               ),
             ),
           ),
         ),
-        if (_loadingList) const LinearProgressIndicator(backgroundColor: _purpleLight, color: _purple),
+        if (_loadingList) LinearProgressIndicator(backgroundColor: _primaryLight, color: _primary),
         if (_listError != null)
           Padding(
             padding: const EdgeInsets.all(16),
@@ -205,10 +211,10 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
                   child: Row(
                     children: [
                       CircleAvatar(
-                        backgroundColor: _purpleLight,
+                        backgroundColor: _primaryLight,
                         child: Text(
                           _userLabel(u)[0].toUpperCase(),
-                          style: const TextStyle(color: _purple, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: _primary, fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -227,7 +233,7 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _textMuted),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: _textMuted),
                     ],
                   ),
                 ),
@@ -242,7 +248,9 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
   Widget _buildAccessBody() {
     final user = _selectedUser;
     final access = _accessPayload;
-    if (user == null || access == null) return const Center(child: CircularProgressIndicator(color: _purple));
+    if (user == null || access == null) {
+      return Center(child: CircularProgressIndicator(color: _primary));
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -253,16 +261,16 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _purpleLight,
+              color: _primaryLight,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: _border, width: 1.5),
             ),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 24,
-                  backgroundColor: _purple,
-                  child: Icon(Icons.shield_rounded, color: Colors.white),
+                  backgroundColor: _primary,
+                  child: const Icon(Icons.shield_rounded, color: Colors.white),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -271,11 +279,19 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
                     children: [
                       Text(
                         _userLabel(user),
-                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900, fontSize: 18, color: _purpleDark),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                          color: _primaryDark,
+                        ),
                       ),
                       Text(
                         'Role Management',
-                        style: GoogleFonts.plusJakartaSans(fontSize: 13, color: _purple, fontWeight: FontWeight.w700),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          color: _primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -292,7 +308,7 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   behavior: SnackBarBehavior.floating,
-                  backgroundColor: _purpleDark,
+                  backgroundColor: _primaryDark,
                   content: Text('Access updated successfully', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
                 ),
               );
@@ -330,8 +346,13 @@ class _UserAccessFormState extends State<_UserAccessForm> {
   List<String> _moduleKeys = [];
   bool _saving = false;
 
-  static const _purple = Color(0xFF7C3AED);
-  static const _textPrimary = Color(0xFF0F172A);
+  bool get _wide => MediaQuery.sizeOf(context).width >= 900;
+  Color get _primary => _wide ? const Color(0xFF7C3AED) : const Color(0xFFC05E41);
+  Color get _textPrimary => _wide ? const Color(0xFF0F172A) : const Color(0xFF3E2723);
+  Color get _border =>
+      _wide ? const Color(0xFFEDE9FE) : const Color(0xFFC05E41).withValues(alpha: 0.14);
+  Color get _fill =>
+      _wide ? Colors.white : Colors.white.withValues(alpha: 0.65);
 
   @override
   void initState() {
@@ -379,7 +400,12 @@ class _UserAccessFormState extends State<_UserAccessForm> {
       children: [
         Text(
           'SELECT ACCOUNT ROLE',
-          style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w900, color: _purple, letterSpacing: 1.2),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+            color: _primary,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
@@ -387,9 +413,15 @@ class _UserAccessFormState extends State<_UserAccessForm> {
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: _textPrimary),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEDE9FE))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFEDE9FE))),
+            fillColor: _fill,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _border),
+            ),
           ),
           items: const [
             DropdownMenuItem(value: 'admin', child: Text('Admin')),
@@ -401,13 +433,18 @@ class _UserAccessFormState extends State<_UserAccessForm> {
           const SizedBox(height: 32),
           Text(
             'MODULE PERMISSIONS',
-            style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w900, color: _purple, letterSpacing: 1.2),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: _primary,
+              letterSpacing: 1.2,
+            ),
           ),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFEDE9FE)),
+              border: Border.all(color: _border),
             ),
             child: Column(
               children: _moduleKeys.map((key) {
@@ -416,7 +453,7 @@ class _UserAccessFormState extends State<_UserAccessForm> {
                     key.toUpperCase(),
                     style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, color: _textPrimary),
                   ),
-                  activeColor: _purple,
+                  activeColor: _primary,
                   value: _modules[key] ?? true,
                   onChanged: (b) => setState(() => _modules[key] = b ?? false),
                 );
@@ -430,7 +467,7 @@ class _UserAccessFormState extends State<_UserAccessForm> {
           child: ElevatedButton(
             onPressed: _saving ? null : _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _purple,
+              backgroundColor: _primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,

@@ -270,6 +270,17 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
             );
 
           } else {
+            final a = context.read<EmployeeBloc>().state.attendance;
+            if (a != null && a.checkOutTime != null) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Attendance is already complete for today.'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              return;
+            }
             context.read<EmployeeBloc>().add(ToggleCheckInEvent());
           }
         },

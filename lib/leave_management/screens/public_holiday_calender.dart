@@ -67,15 +67,16 @@ class _PublicHolidayCalendarScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Pure white for a high-end feel
+      backgroundColor: const Color(0xFFFAF3E0),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFAF3E0),
         surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         title: const Text(
           "Calendar",
           style: TextStyle(
-            color: Color(0xFF1E293B),
+            color: Color(0xFF3E2723),
             fontWeight: FontWeight.w800,
             fontSize: 24,
             letterSpacing: -1,
@@ -87,7 +88,12 @@ class _PublicHolidayCalendarScreenState
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
+          ? const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFC05E41),
+              ),
+            )
           : _error != null
           ? _buildErrorState()
           : FadeTransition(
@@ -101,15 +107,15 @@ class _PublicHolidayCalendarScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: const Color(0xFFEADBC8),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: const Color(0x33C05E41)),
       ),
       child: Center(
         child: Text(
           label,
           style: const TextStyle(
-            color: Color(0xFF475569),
+            color: Color(0xFF8D6E63),
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),

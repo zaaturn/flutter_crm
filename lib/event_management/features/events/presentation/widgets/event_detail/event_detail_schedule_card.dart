@@ -17,6 +17,16 @@ class EventDetailScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final startLocal = event.startTime.toLocal();
     final endLocal = event.endTime.toLocal();
+    final uniqueReminders = () {
+      final seen = <int>{};
+      final out = <EventReminder>[];
+      for (final r in event.reminders) {
+        if (seen.add(r.minutesBefore)) {
+          out.add(r);
+        }
+      }
+      return out;
+    }();
 
     return EventDetailSurfaceCard(
       child: Column(
@@ -43,22 +53,31 @@ class EventDetailScheduleCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 22),
+
           LayoutBuilder(
             builder: (context, c) {
               final stack = c.maxWidth < 420;
+
               final startCol = _timeColumn(
                 context,
                 'STARTS',
                 DateFormat('MMMM d, yyyy').format(startLocal),
-                event.isAllDay ? 'All day' : DateFormat.jm().format(startLocal),
+                event.isAllDay
+                    ? 'All day'
+                    : DateFormat.jm().format(startLocal),
               );
+
               final endCol = _timeColumn(
                 context,
                 'ENDS',
                 DateFormat('MMMM d, yyyy').format(endLocal),
-                event.isAllDay ? 'All day' : DateFormat.jm().format(endLocal),
+                event.isAllDay
+                    ? 'All day'
+                    : DateFormat.jm().format(endLocal),
               );
+
               if (stack) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -69,6 +88,7 @@ class EventDetailScheduleCard extends StatelessWidget {
                   ],
                 );
               }
+
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -79,7 +99,9 @@ class EventDetailScheduleCard extends StatelessWidget {
               );
             },
           ),
+
           const SizedBox(height: 16),
+
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
@@ -102,6 +124,7 @@ class EventDetailScheduleCard extends StatelessWidget {
               ),
             ),
           ),
+
           if (event.recurrence != RecurrenceRule.none) ...[
             const SizedBox(height: 8),
             Row(
@@ -119,6 +142,7 @@ class EventDetailScheduleCard extends StatelessWidget {
               ],
             ),
           ],
+
           if (event.reminders.isNotEmpty) ...[
             const SizedBox(height: 14),
             Text(
@@ -131,18 +155,19 @@ class EventDetailScheduleCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: event.reminders
+              children: uniqueReminders
                   .map(
                     (r) => Chip(
-                      label: Text(r.label),
-                      avatar: const Icon(Icons.alarm, size: 16),
-                      visualDensity: VisualDensity.compact,
-                      side: BorderSide(color: AppTheme.borderLight),
-                    ),
-                  )
+                  label: Text(r.label),
+                  avatar: const Icon(Icons.alarm, size: 16),
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(color: AppTheme.borderLight),
+                ),
+              )
                   .toList(),
             ),
           ],

@@ -326,6 +326,17 @@ class _EventEditScreenState extends State<EventEditScreen> {
 
     setState(() => _isSaving = true);
 
+    final originalReminders = widget.event!.reminders;
+    final reminders = _reminderMinutes.map((m) {
+      try {
+        final existing =
+            originalReminders.firstWhere((r) => r.minutesBefore == m);
+        return EventReminder(id: existing.id, minutesBefore: m);
+      } catch (_) {
+        return EventReminder(id: 0, minutesBefore: m);
+      }
+    }).toList();
+
     final updated = widget.event!.copyWith(
       title: _titleCtrl.text.trim(),
       description: _descCtrl.text.trim(),
@@ -342,9 +353,7 @@ class _EventEditScreenState extends State<EventEditScreen> {
           : null,
       recurrence: _recurrence,
       participants: _participants,
-      reminders: _reminderMinutes
-          .map((m) => EventReminder(id: 0, minutesBefore: m))
-          .toList(),
+      reminders: reminders,
       updatedAt: DateTime.now(),
     );
 

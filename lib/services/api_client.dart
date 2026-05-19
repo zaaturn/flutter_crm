@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -11,6 +12,7 @@ class ApiClient {
   ApiClient._internal() {
     _init();
     _checkInitialAuth();
+    _startAutoRefresh();
   }
   static final ApiClient _instance = ApiClient._internal();
   factory ApiClient() => _instance;
@@ -28,6 +30,8 @@ class ApiClient {
   late final Dio _dio;
   CancelToken _masterCancelToken = CancelToken();
   bool _isRefreshing = false;
+  Future<String?>? _refreshingFuture;
+  Timer? _autoRefreshTimer;
 
   // --- GLOBAL LOADER ---
   static final ValueNotifier<bool> loader = ValueNotifier<bool>(false);
@@ -50,6 +54,21 @@ class ApiClient {
   Future<void> _checkInitialAuth() async {
     final token = await _storage.readToken();
     _isAuthenticated = token != null && token.isNotEmpty;
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    // Refresh in the background so users don't randomly hit an expired access token.
+    // The 401-interceptor remains as a safety net.
+    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 8), (_) async {
+      try {
+        final refresh = await _storage.readRefreshToken();
+        if (refresh == null || refresh.isEmpty) return;
+        await refreshSession();
+      } catch (_) {
+        // Ignore: background refresh should never crash the app.
+      }
+    });
   }
 
   // --- Endpoints ---
@@ -122,25 +141,27 @@ class ApiClient {
               error.requestOptions.path.contains('refresh');
 
           if (statusCode == 401 && !isAuthFree) {
-            if (_isRefreshing) {
-              await Future.delayed(const Duration(milliseconds: 500));
-              final token = await _storage.readToken();
-              if (token != null) {
+            // If a refresh is already running, await it and retry once.
+            if (_refreshingFuture != null) {
+              final token = await _refreshingFuture!;
+              if (token != null && token.isNotEmpty) {
                 final opts = error.requestOptions;
                 opts.headers["Authorization"] = "Bearer $token";
                 try {
                   final response = await _dio.fetch(opts);
                   return handler.resolve(response);
-                } catch (e) {
+                } catch (_) {
                   return handler.reject(error);
                 }
               }
+              // If refresh failed, fall through to session-expired handling below.
             }
 
             _isRefreshing = true;
             ApiClient.showLoader();
             try {
-              final newToken = await _performTokenRefresh();
+              _refreshingFuture = _performTokenRefresh();
+              final newToken = await _refreshingFuture!;
 
               if (newToken != null) {
                 _isAuthenticated = true;
@@ -165,6 +186,7 @@ class ApiClient {
             } finally {
               ApiClient.hideLoader();
               _isRefreshing = false;
+              _refreshingFuture = null;
             }
           }
           if (statusCode == 403) {
@@ -213,10 +235,25 @@ class ApiClient {
     }
   }
 
+  /// Explicitly refreshes the access token using the stored refresh token.
+  /// Returns true if refresh succeeded (and access token updated).
+  Future<bool> refreshSession() async {
+    if (_isRefreshing) return false;
+    _isRefreshing = true;
+    try {
+      final newToken = await _performTokenRefresh();
+      return newToken != null && newToken.isNotEmpty;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
   // --- Public Methods ---
   Future<void> logout() async {
     _masterCancelToken.cancel("User logged out");
     _masterCancelToken = CancelToken();
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
     await _storage.clearTokens();
     _isAuthenticated = false;
   }

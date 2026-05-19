@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Ensure this path matches your project structure
 import '../../admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
+import '../../admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 
 class WorkspaceTheme {
   static const Color primaryPurple = Color(0xFF6F34DC);
@@ -34,9 +34,16 @@ class PayrollHeader extends StatelessWidget {
           _HeaderActionIcon(
             icon: Icons.arrow_back_ios_new_rounded,
             onTap: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+                return;
+              }
+              final narrow = MediaQuery.sizeOf(context).width < 900;
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (context) => const AdminDashboardDesktop(),
+                MaterialPageRoute<void>(
+                  builder: (_) => narrow
+                      ? const AdminDashboardMobile()
+                      : const AdminDashboardDesktop(),
                 ),
               );
             },

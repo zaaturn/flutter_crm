@@ -1,20 +1,24 @@
+import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/billing/services/billing_api.dart';
 import 'package:my_app/billing/models/CompanyBankDetailsModel.dart';
 import 'package:my_app/billing/widgets/currency_dropdown.dart';
 import 'package:my_app/billing/widgets/company_upload_section.dart';
 import 'package:my_app/billing/theme/billing_theme.dart';
+import 'package:my_app/billing/theme/billing_adaptive_theme.dart';
 import 'package:my_app/billing/widgets/billing_app_bar.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
   final bool redirectAfterSave;
   final bool fresh;
 
-  /// `fresh=true` opens an empty form (no previous data).
-  /// Set `fresh=false` to load existing company profile for edit.
   const CompanyProfileScreen({
     super.key,
     this.redirectAfterSave = false,
@@ -26,6 +30,12 @@ class CompanyProfileScreen extends StatefulWidget {
 }
 
 class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
+  static const Color _bgScreen = Color(0xFFFEF7F1);
+  static const Color _cardPaper = Color(0xFFFFFDFB);
+  static const Color _clayFill = Color(0xFFF5E6DA);
+  static const Color _accentOrange = Color(0xFFB14D1E);
+  static const Color _inkText = Color(0xFF1A1C1E);
+
   final _formKey = GlobalKey<FormState>();
   final _storage = SecureStorageService();
 
@@ -53,7 +63,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _resetForm();
     if (!widget.fresh) {
       _loadCompany();
     } else {
@@ -110,20 +119,16 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     addressCtrl.clear();
     stateCtrl.clear();
     countryCtrl.text = "India";
-
     accountHolderCtrl.clear();
     bankNameCtrl.clear();
     accountNumberCtrl.clear();
     ifscCtrl.clear();
     upiCtrl.clear();
-
     _currency = "INR";
     _accountEditable = true;
-
     _logoFile = null;
     _signatureFile = null;
-    _logoUrl = null;
-    _signatureUrl = null;
+    setState(() {});
   }
 
   Future<void> _saveCompany() async {
@@ -158,7 +163,6 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       }
       await _storage.saveCompanyId(company.id!);
       if (!mounted) return;
-      _showSnack("Company profile saved successfully", isError: false);
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) _showSnack('Failed to save: ${e.toString()}', isError: true);
@@ -172,8 +176,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       SnackBar(
         content: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? const Color(0xFFDC2626) : BillingTheme.purple,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF0C56D0),
       ),
     );
   }
@@ -188,195 +191,152 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
+
     return Scaffold(
-      backgroundColor: BillingTheme.scaffoldBg,
+      backgroundColor: BillingAdaptiveTheme.bg(context),
       appBar: billingAppBar(
-        title: 'Add new company',
+        title: 'Company Profile',
         onBack: () => Navigator.of(context).maybePop(),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: BillingTheme.purple))
-          : Stack(
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 980),
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF0C56D0)))
+          : Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(wide ? 48 : 20, 24, wide ? 48 : 20, 32),
+              children: [
+                Text(
+                  'Business Identity',
+                  textAlign: wide ? TextAlign.start : TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontSize: wide ? 32 : 28,
+                    fontWeight: FontWeight.w900,
+                    color: _inkText,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Configure your legal and financial details for invoice generation.',
+                  textAlign: wide ? TextAlign.start : TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF74777F),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                _sectionCard(
+                  wide,
+                  child: CompanyUploadsSection(
+                    logoUrl: _logoFile?.path ?? _logoUrl,
+                    signatureUrl: _signatureFile?.path ?? _signatureUrl,
+                    onLogoChanged: (file) => setState(() => _logoFile = file),
+                    onSignatureChanged: (file) => setState(() => _signatureFile = file),
+                  ),
+                ),
+                _sectionHeader("Legal Identity"),
+                _sectionCard(
+                  wide,
+                  child: Column(
+                    children: [
+                      _input(wide, nameCtrl, "Company Name", required: true),
+                      _input(wide, gstCtrl, "GST / Tax Number"),
+                    ],
+                  ),
+                ),
+                _sectionHeader("Location"),
+                _sectionCard(
+                  wide,
+                  child: Column(
+                    children: [
+                      _input(wide, addressCtrl, "Full Address", maxLines: 2),
+                      _buildGrid(wide, [
+                        _input(wide, stateCtrl, "State"),
+                        _input(wide, countryCtrl, "Country"),
+                      ]),
+                    ],
+                  ),
+                ),
+                _sectionHeader("Bank Details"),
+                _sectionCard(
+                  wide,
+                  child: Column(
+                    children: [
+                      _buildGrid(wide, [
+                        _input(wide, accountHolderCtrl, "Account Holder"),
+                        _input(wide, bankNameCtrl, "Bank Name", required: true),
+                      ]),
+                      _buildGrid(wide, [
+                        _input(wide, accountNumberCtrl, "Account Number",
+                            enabled: _accountEditable, required: _accountEditable),
+                        _input(wide, ifscCtrl, "IFSC Code"),
+                      ]),
+                      _input(wide, upiCtrl, "UPI ID"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const SizedBox(height: 6),
-                    Text(
-                      'Company Settings',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: BillingTheme.textPrimary,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Configure your business identity and regional preferences. This information will appear on all issued invoices and legal documents.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: BillingTheme.textMuted,
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-
-                    _whiteCard(
-                      child: CompanyUploadsSection(
-                        logoUrl: _logoFile?.path ?? _logoUrl,
-                        signatureUrl: _signatureFile?.path ?? _signatureUrl,
-                        onLogoChanged: (file) => setState(() => _logoFile = file),
-                        onSignatureChanged: (file) => setState(() => _signatureFile = file),
-                      ),
-                    ),
-
-                    _sectionHeader("Entity Identity"),
-                    _whiteCard(
-                      child: Column(
-                        children: [
-                          _input(nameCtrl, "Legal Company Name", required: true),
-                          _input(gstCtrl, "Tax Identification / GST"),
-                        ],
-                      ),
-                    ),
-
-                    _sectionHeader("Operational Reach"),
-                    _whiteCard(
-                      child: Column(
-                        children: [
-                          _input(
-                            addressCtrl,
-                            "Physical Headquarters",
-                            maxLines: 2,
-                            leading: Icons.location_on_outlined,
-                          ),
-                          _buildFieldGrid([
-                            _input(stateCtrl, "Jurisdiction / State"),
-                            _input(countryCtrl, "Country"),
-                          ]),
-                        ],
-                      ),
-                    ),
-
-                    _sectionHeader("Regional Settings"),
-                    _whiteCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CurrencyDropdown(
-                            value: _currency,
-                            onChanged: (v) => setState(() => _currency = v),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              'This currency will be used by default for all new invoices and reporting metrics.',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                color: BillingTheme.textMuted,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    _sectionHeader("Bank payment details"),
-                    _whiteCard(
-                      child: Column(
-                        children: [
-                          _buildFieldGrid([
-                            _input(accountHolderCtrl, "Account holder name"),
-                            _input(bankNameCtrl, "Bank name", required: true),
-                          ]),
-                          _buildFieldGrid([
-                            _input(
-                              accountNumberCtrl,
-                              "Account number",
-                              required: _accountEditable,
-                              enabled: _accountEditable,
-                            ),
-                            _input(ifscCtrl, "IFSC code"),
-                          ]),
-                          _input(upiCtrl, "UPI ID"),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-                    const Divider(height: 1, color: BillingTheme.border),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: _saving ? null : () {
-                            _resetForm();
-                            setState(() {});
-                          },
-                          child: Text(
-                            'Discard changes',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w800,
-                              color: BillingTheme.textMuted,
-                            ),
-                          ),
+                    TextButton(
+                      onPressed: _saving ? null : _resetForm,
+                      child: Text(
+                        'Reset',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF74777F),
                         ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _saving ? null : _saveCompany,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: BillingTheme.purple,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                          child: _saving
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                )
-                              : Text(
-                                  'Save company',
-                                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900),
-                                ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: _saving ? null : _saveCompany,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: wide ? const Color(0xFF0C56D0) : const Color(0xFF8D5B39),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: _saving
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : Text('Save Profile', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                    ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _whiteCard({required Widget child}) {
+  Widget _sectionCard(bool wide, {required Widget child}) {
+    if (wide) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BillingTheme.cardDecoration(),
+        child: child,
+      );
+    }
     return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: BillingTheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: BillingTheme.border),
+        color: _cardPaper,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
         boxShadow: [
           BoxShadow(
-            color: BillingTheme.purple.withValues(alpha: 0.05),
-            blurRadius: 24,
+            color: _accentOrange.withOpacity(0.04),
+            blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
@@ -386,75 +346,48 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   }
 
   Widget _sectionHeader(String title) => Padding(
-        padding: const EdgeInsets.only(top: 26, bottom: 14),
-        child: Text(
-          title.toUpperCase(),
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.3,
-            color: BillingTheme.purple,
-          ),
-        ),
-      );
-
-  Widget _buildFieldGrid(List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children
-            .map(
-              (w) => Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: w,
-                ),
-              ),
-            )
-            .toList(),
+    padding: const EdgeInsets.only(top: 24, bottom: 12, left: 4),
+    child: Text(
+      title.toUpperCase(),
+      style: GoogleFonts.inter(
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 1.3,
+        color: _accentOrange,
       ),
+    ),
+  );
+
+  Widget _buildGrid(bool wide, List<Widget> children) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children.map((w) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: w))).toList(),
     );
   }
 
-  Widget _input(
-    TextEditingController ctrl,
-    String label, {
-    bool required = false,
-    bool enabled = true,
-    int maxLines = 1,
-    IconData? leading,
-  }) {
+  Widget _input(bool wide, TextEditingController ctrl, String label, {bool required = false, bool enabled = true, int maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: ctrl,
         maxLines: maxLines,
         enabled: enabled,
-        style: const TextStyle(color: BillingTheme.textPrimary, fontSize: 14),
-        validator: required ? (v) => v == null || v.isEmpty ? "Entry Required" : null : null,
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: _inkText),
+        validator: required ? (v) => v == null || v.isEmpty ? "Required" : null : null,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: leading == null ? null : Icon(leading, color: BillingTheme.textMuted),
-          labelStyle: const TextStyle(color: BillingTheme.textMuted, fontSize: 12),
+          labelStyle: GoogleFonts.inter(color: const Color(0xFF74777F), fontSize: 12, fontWeight: FontWeight.w700),
           filled: true,
-          fillColor: BillingTheme.scaffoldBg,
+          fillColor: wide ? BillingAdaptiveTheme.bg(context) : _clayFill,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.border),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: wide ? BillingAdaptiveTheme.border(context) : _accentOrange.withOpacity(0.08)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.purple, width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: wide ? const Color(0xFF0C56D0) : _accentOrange, width: 1.5),
           ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.border),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFDC2626)),
-          ),
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );

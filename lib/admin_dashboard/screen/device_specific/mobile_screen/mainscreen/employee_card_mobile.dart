@@ -114,7 +114,7 @@ class EmployeeCardMobile extends StatelessWidget {
 
           const SizedBox(height: 8),
 
-          /// 🔥 CHECK-IN + STATUS (LIKE DESKTOP)
+
           Row(
             children: [
               Icon(Icons.login, size: 14, color: Colors.green),

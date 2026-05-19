@@ -35,7 +35,10 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
   void initState() {
     super.initState();
     _selected = List.from(widget.selected);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reload(reset: true));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _reload(reset: true);
+    });
   }
 
   @override
@@ -129,6 +132,12 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
 
   @override
   Widget build(BuildContext context) {
+    const bg = Color(0xFFFAF3E0);
+    const terracotta = Color(0xFFC05E41);
+    const cardBeige = Color(0xFFEADBC8);
+    const textDark = Color(0xFF3E2723);
+    const textMuted = Color(0xFF8D6E63);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       maxChildSize: 0.95,
@@ -145,8 +154,8 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
           },
           child: Container(
             decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              color: bg,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -157,7 +166,7 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                   height: 4,
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: terracotta.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -165,10 +174,16 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
                     controller: _searchCtrl,
-                    decoration: const InputDecoration(
-                      hintText: 'Search by username (e.g. sum)',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
+                    decoration: InputDecoration(
+                      hintText: 'Search people…',
+                      hintStyle: const TextStyle(color: textMuted),
+                      prefixIcon: const Icon(Icons.search, color: terracotta),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.65),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                     onChanged: _onSearchChanged,
                   ),
@@ -181,8 +196,8 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                     child: Text(
                       'Selected (${_selected.length})',
                       style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w800,
+                        color: textMuted,
                       ),
                     ),
                   ),
@@ -194,7 +209,7 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                           child: Text(
                             'Tap a user below to add',
                             style: TextStyle(
-                              color: AppTheme.textHint,
+                              color: textMuted,
                               fontSize: 13,
                             ),
                           ),
@@ -210,6 +225,15 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                               label: Text(p.username, maxLines: 1),
                               onDeleted: () =>
                                   setState(() => _selected.removeAt(i)),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.65),
+                              deleteIconColor: terracotta,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                                side: BorderSide(
+                                  color: terracotta.withValues(alpha: 0.18),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -255,18 +279,83 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                             }
                             final u = _results[i];
                             final already = _selected.any((p) => p.id == u.id);
-                            return ListTile(
-                              title: Text(u.username),
-                              subtitle: u.email != null && u.email!.isNotEmpty
-                                  ? Text(u.email!)
-                                  : null,
-                              trailing: already
-                                  ? const Icon(
-                                      Icons.check_circle,
-                                      color: AppTheme.primaryBlue,
-                                    )
-                                  : const Icon(Icons.add_circle_outline),
-                              onTap: already ? null : () => _addUser(u),
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              child: Material(
+                                color: cardBeige,
+                                borderRadius: BorderRadius.circular(18),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(18),
+                                  onTap: already ? null : () => _addUser(u),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 18,
+                                          backgroundColor:
+                                              Colors.white.withValues(alpha: 0.65),
+                                          child: Text(
+                                            (u.username.isNotEmpty
+                                                    ? u.username.characters.first
+                                                    : '?')
+                                                .toUpperCase(),
+                                            style: const TextStyle(
+                                              color: terracotta,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                u.username,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w800,
+                                                  color: textDark,
+                                                ),
+                                              ),
+                                              if (u.email != null &&
+                                                  u.email!.isNotEmpty)
+                                                Text(
+                                                  u.email!,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    color: textMuted,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 12.5,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Icon(
+                                          already
+                                              ? Icons.check_circle_rounded
+                                              : Icons.add_circle_outline_rounded,
+                                          color: already
+                                              ? terracotta
+                                              : textMuted,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         ),
@@ -276,6 +365,14 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: terracotta,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
                       onPressed: () => Navigator.pop(context, _selected),
                       child: const Text('Done'),
                     ),

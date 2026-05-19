@@ -47,6 +47,16 @@ class AppNotification extends Equatable {
   bool get hasPost => postId != null && postId!.isNotEmpty;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    DateTime _parseCreatedAt(dynamic raw) {
+      final s = raw?.toString();
+      if (s == null || s.isEmpty) return DateTime.now();
+      try {
+        final dt = DateTime.parse(s);
+        return dt.isUtc ? dt.toLocal() : dt;
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
     return AppNotification(
       id: json['id'].toString(),
       type: json['notif_type'] ?? '',
@@ -54,7 +64,7 @@ class AppNotification extends Equatable {
       body: json['body'] ?? '',
       isRead: json['is_read'] ?? false,
       isClickable: json['is_clickable'] ?? true,
-      createdAt: DateTime.parse(json['created_at']),
+      createdAt: _parseCreatedAt(json['created_at']),
       eventId: json['event_id']?.toString(),
       eventColor: json['event_color'],
       taskId: json['task_id']?.toString(),

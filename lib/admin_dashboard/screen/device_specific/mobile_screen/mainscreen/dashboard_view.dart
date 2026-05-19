@@ -3,13 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
-import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
-import 'package:my_app/admin_dashboard/model/employee.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/header.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/welcome_section.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/dashboard_grid.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/bottom_nav.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/admin_top_bar_mobile.dart';
+import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/dashboard_grid.dart';
+import 'package:my_app/screens/device_specific/profile_screen_mobile.dart';
 
 import 'employee_list_screen_mobile.dart';
 
@@ -28,18 +26,16 @@ class _DashboardViewState extends State<DashboardView> {
     return BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor: const Color(0xFFF8FAFC),
+          backgroundColor:Color(0xFFFAF9F6),
           body: IndexedStack(
             index: _selectedIndex,
             children: [
               _buildHomeTab(state),
-
               EmployeeListScreenMobile(
                 onBack: () => setState(() => _selectedIndex = 0),
               ),
-
-              _buildPlaceholder("Messages"),
-              _buildPlaceholder("Profile"),
+              _buildPlaceholder("Logs"),
+              const ProfileScreen(),
             ],
           ),
           bottomNavigationBar: BottomNav(
@@ -67,14 +63,13 @@ class _DashboardViewState extends State<DashboardView> {
     return SafeArea(
       child: Column(
         children: [
-          const Header(),
+          const AdminTopBarMobile(),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
                 context
                     .read<AdminDashboardBloc>()
                     .add(const AdminDashboardRefreshed());
-                context.read<DashboardBloc>().add(DashboardRefreshRequested());
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(
@@ -84,18 +79,11 @@ class _DashboardViewState extends State<DashboardView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    WelcomeSection(
-                      firstName:
-                          state.user?.firstName ?? (state.username ?? 'Admin'),
-                      lastName: state.user?.lastName ?? '',
+
+                    DashboardGrid(
+                      employees: displayList,
+                      isSuperuser: state.isSuperuser,
                     ),
-
-                    const SizedBox(height: 32),
-
-                    DashboardGrid(employees: displayList),
-
-                    const SizedBox(height: 24),
-                    const MainDashboardEventsPanel(),
                   ],
                 ),
               ),
@@ -118,4 +106,5 @@ class _DashboardViewState extends State<DashboardView> {
       ),
     );
   }
+
 }

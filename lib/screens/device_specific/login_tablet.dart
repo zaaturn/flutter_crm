@@ -12,7 +12,7 @@ class LoginTablet extends StatelessWidget {
       body: Center(
         child: SizedBox(
           width: 520,
-          child: LoginMobile(role: role),
+          child: LoginMobile(role: role, showHeaderImages: true),
         ),
       ),
     );

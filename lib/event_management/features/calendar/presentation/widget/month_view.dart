@@ -8,6 +8,7 @@ import 'package:my_app/event_management/features/events/domain/entities/event.da
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/widgets/quick_add_sheet.dart';
 import 'package:my_app/event_management/shared/themes/event_colors.dart';
+import 'package:my_app/event_management/shared/themes/event_adaptive_theme.dart';
 
 class MonthView extends StatelessWidget {
   final CalendarState calState;
@@ -31,107 +32,115 @@ class MonthView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final showDayPanel = MediaQuery.sizeOf(context).width < 900;
 
     return Container(
-      color: Colors.white,
+      color: EventAdaptiveTheme.bg(context),
       child: Column(
         children: [
-          Expanded(
-            child: TableCalendar<Event>(
-              firstDay: DateTime(2020),
-              lastDay: DateTime(2030),
-              focusedDay: calState.focusedMonth,
-              selectedDayPredicate: (d) => isSameDay(d, calState.selectedDate),
-              eventLoader: _eventsForDay,
-              startingDayOfWeek: StartingDayOfWeek.monday,
-              rowHeight: 112,
+          Flexible(
+            flex: showDayPanel ? 6 : 1,
+            child: LayoutBuilder(
+              builder: (context, c) {
+                // Fit calendar cells for mobile. Typical month has 6 rows.
+                final available = c.maxHeight;
+                const dowH = 36.0;
+                // Conservative sizing to avoid bottom overflow on small devices
+                // (calendar header/toolbars + day panel + bottom nav).
+                final rawRow = ((available - dowH) / 6).clamp(46.0, 74.0);
 
-              onDaySelected: (selected, _) => onDaySelected(selected),
-              onDayLongPressed: (selected, _) => onDaySelected(selected),
-              onPageChanged: onMonthChanged,
+                return TableCalendar<Event>(
+                  firstDay: DateTime(2020),
+                  lastDay: DateTime(2030),
+                  focusedDay: calState.focusedMonth,
+                  selectedDayPredicate: (d) => isSameDay(d, calState.selectedDate),
+                  eventLoader: _eventsForDay,
+                  startingDayOfWeek: StartingDayOfWeek.monday,
+                  rowHeight: rawRow,
 
-              // ── Calendar style ───────────────────────────────────────────────
-              calendarStyle: CalendarStyle(
-                // No circle decorations — we use the square cell itself
-                outsideDaysVisible: true,
-                defaultDecoration: const BoxDecoration(),
-                weekendDecoration: const BoxDecoration(),
-                selectedDecoration: const BoxDecoration(), // handled in builder
-                todayDecoration: const BoxDecoration(), // handled in builder
-                outsideDecoration: const BoxDecoration(),
-                markerSize: 0, // We draw our own event pills
-                markersMaxCount: 0,
-                cellMargin: EdgeInsets.zero,
-                cellPadding: EdgeInsets.zero,
-              ),
+                  onDaySelected: (selected, _) => onDaySelected(selected),
+                  onDayLongPressed: (selected, _) => onDaySelected(selected),
+                  onPageChanged: onMonthChanged,
 
-              // ── Header hidden — title lives in AppBar ────────────────────────
-              headerVisible: false,
+                  // ── Calendar style ───────────────────────────────────────────
+                  calendarStyle: const CalendarStyle(
+                    outsideDaysVisible: true,
+                    defaultDecoration: BoxDecoration(),
+                    weekendDecoration: BoxDecoration(),
+                    selectedDecoration: BoxDecoration(),
+                    todayDecoration: BoxDecoration(),
+                    outsideDecoration: BoxDecoration(),
+                    markerSize: 0,
+                    markersMaxCount: 0,
+                    cellMargin: EdgeInsets.zero,
+                    cellPadding: EdgeInsets.zero,
+                  ),
 
-              daysOfWeekStyle: DaysOfWeekStyle(
-                weekdayStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                  letterSpacing: 0.2,
-                ),
-                weekendStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280),
-                  letterSpacing: 0.2,
-                ),
-                dowTextFormatter: (date, locale) =>
-                    DateFormat.E(locale).format(date),
-              ),
+                  headerVisible: false,
 
-              daysOfWeekHeight: 36,
+                  daysOfWeekStyle: DaysOfWeekStyle(
+                    weekdayStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: EventAdaptiveTheme.muted(context),
+                      letterSpacing: 0.2,
+                    ),
+                    weekendStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: EventAdaptiveTheme.muted(context),
+                      letterSpacing: 0.2,
+                    ),
+                    dowTextFormatter: (date, locale) =>
+                        DateFormat.E(locale).format(date),
+                  ),
 
-              // ── Custom cell builder — the core of the square look ────────────
-              calendarBuilders: CalendarBuilders(
-                defaultBuilder: (ctx, day, focusedDay) => _DayCell(
-                  day: day,
-                  events: _eventsForDay(day),
-                  isSelected: isSameDay(day, calState.selectedDate),
-                  isToday: isSameDay(day, DateTime.now()),
-                  isOutside: false,
-                  onTap: () => onDaySelected(day),
-                ),
-                selectedBuilder: (ctx, day, focusedDay) => _DayCell(
-                  day: day,
-                  events: _eventsForDay(day),
-                  isSelected: true,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isOutside: false,
-                  onTap: () => onDaySelected(day),
-                ),
-                todayBuilder: (ctx, day, focusedDay) => _DayCell(
-                  day: day,
-                  events: _eventsForDay(day),
-                  isSelected: isSameDay(day, calState.selectedDate),
-                  isToday: true,
-                  isOutside: false,
-                  onTap: () => onDaySelected(day),
-                ),
-                outsideBuilder: (ctx, day, focusedDay) => _DayCell(
-                  day: day,
-                  events: _eventsForDay(day),
-                  isSelected: false,
-                  isToday: false,
-                  isOutside: true,
-                  onTap: () {}, // outside days non-tappable
-                ),
-                disabledBuilder: (ctx, day, focusedDay) => _DayCell(
-                  day: day,
-                  events: const [],
-                  isSelected: false,
-                  isToday: false,
-                  isOutside: true,
-                  onTap: () {},
-                ),
-              ),
+                  daysOfWeekHeight: dowH,
+
+                  calendarBuilders: CalendarBuilders(
+                    defaultBuilder: (ctx, day, focusedDay) => _DayCell(
+                      day: day,
+                      events: _eventsForDay(day),
+                      isSelected: isSameDay(day, calState.selectedDate),
+                      isToday: isSameDay(day, DateTime.now()),
+                      isOutside: false,
+                      onTap: () => onDaySelected(day),
+                    ),
+                    selectedBuilder: (ctx, day, focusedDay) => _DayCell(
+                      day: day,
+                      events: _eventsForDay(day),
+                      isSelected: true,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isOutside: false,
+                      onTap: () => onDaySelected(day),
+                    ),
+                    todayBuilder: (ctx, day, focusedDay) => _DayCell(
+                      day: day,
+                      events: _eventsForDay(day),
+                      isSelected: isSameDay(day, calState.selectedDate),
+                      isToday: true,
+                      isOutside: false,
+                      onTap: () => onDaySelected(day),
+                    ),
+                    outsideBuilder: (ctx, day, focusedDay) => _DayCell(
+                      day: day,
+                      events: _eventsForDay(day),
+                      isSelected: false,
+                      isToday: false,
+                      isOutside: true,
+                      onTap: () {},
+                    ),
+                    disabledBuilder: (ctx, day, focusedDay) => _DayCell(
+                      day: day,
+                      events: const [],
+                      isSelected: false,
+                      isToday: false,
+                      isOutside: true,
+                      onTap: () {},
+                    ),
+                  ),
+                );
+              },
             ),
           ),
 
@@ -140,9 +149,10 @@ class MonthView extends StatelessWidget {
             Divider(
               height: 1,
               thickness: 0.5,
-              color: theme.dividerColor.withOpacity(0.2),
+              color: EventAdaptiveTheme.border(context).withValues(alpha: 0.7),
             ),
-            Expanded(
+            Flexible(
+              flex: 4,
               child: _DayPanel(
                 date: calState.selectedDate ?? DateTime.now(),
                 events: _eventsForDay(calState.selectedDate ?? DateTime.now()),
@@ -329,6 +339,9 @@ class _DayPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primary = EventAdaptiveTheme.primary(context);
+    final muted = EventAdaptiveTheme.muted(context);
+    final border = EventAdaptiveTheme.border(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +365,7 @@ class _DayPanel extends StatelessWidget {
                 icon: const Icon(Icons.add, size: 16),
                 label: const Text('Add event'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF1A73E8),
+                  foregroundColor: primary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
@@ -360,7 +373,7 @@ class _DayPanel extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                     side: BorderSide(
-                      color: theme.dividerColor.withOpacity(0.3),
+                      color: border.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -381,14 +394,14 @@ class _DayPanel extends StatelessWidget {
                   Icon(
                     Icons.event_note_outlined,
                     size: 40,
-                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                    color: muted.withValues(alpha: 0.55),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     'No events scheduled',
                     style: TextStyle(
                       fontSize: 14,
-                      color: theme.colorScheme.onSurface.withOpacity(0.35),
+                      color: muted,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -397,9 +410,9 @@ class _DayPanel extends StatelessWidget {
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('Schedule event'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF1A73E8),
+                      foregroundColor: primary,
                       side: BorderSide(
-                        color: theme.dividerColor.withOpacity(0.3),
+                        color: border.withValues(alpha: 0.7),
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -440,10 +453,11 @@ class _DayEventRow extends StatelessWidget {
     final bg = EventColors.background(event.type);
     final tc = EventColors.text(event.type);
     final theme = Theme.of(context);
+    final surface = EventAdaptiveTheme.surface(context);
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         border: Border(left: BorderSide(color: solid, width: 3)),
         borderRadius: const BorderRadius.only(
           topRight: Radius.circular(8),
@@ -451,7 +465,7 @@ class _DayEventRow extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.shadowColor.withOpacity(0.04),
+            color: theme.shadowColor.withValues(alpha: 0.04),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -473,7 +487,7 @@ class _DayEventRow extends StatelessWidget {
                     '${event.location != null && event.location!.isNotEmpty ? '  ·  ${event.location}' : ''}',
           style: TextStyle(
             fontSize: 11,
-            color: theme.colorScheme.onSurface.withOpacity(0.45),
+            color: EventAdaptiveTheme.muted(context),
           ),
         ),
         trailing: Container(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/company_model.dart';
+import '../theme/billing_adaptive_theme.dart';
 
 class BillingFromDropdown extends StatelessWidget {
   final List<CompanyModel> companies;
@@ -17,10 +19,30 @@ class BillingFromDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     if (companies.isEmpty) return const SizedBox();
 
+    final bool isMobile = BillingAdaptiveTheme.isMobile(context);
+
+    const Color inkText = Color(0xFF1A1C1E);
+    const Color accentOrange = Color(0xFFB14D1E);
+    const Color clayFill = Color(0xFFF5E6DA);
+    const Color paperWhite = Color(0xFFFFFDFB);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: isMobile
+          ? BoxDecoration(
+        color: paperWhite,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: accentOrange.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      )
+          : BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
@@ -28,37 +50,51 @@ class BillingFromDropdown extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "BILLING FROM",
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF64748B),
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: isMobile ? accentOrange : const Color(0xFF64748B),
               letterSpacing: 1.4,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
-          // 🔹 Single company → text only
           if (companies.length == 1)
-            Text(
-              companies.first.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF0F172A),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isMobile ? clayFill : const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                companies.first.name.toUpperCase(),
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: inkText,
+                  letterSpacing: 0.5,
+                ),
               ),
             )
-
-          // 🔹 Multiple companies → dropdown
           else
             DropdownButtonFormField<CompanyModel>(
               value: selected,
               isExpanded: true,
+              dropdownColor: isMobile ? paperWhite : Colors.white,
+              icon: Icon(Icons.expand_more_rounded, color: isMobile ? accentOrange : null),
               items: companies.map((c) {
                 return DropdownMenuItem(
                   value: c,
-                  child: Text(c.name),
+                  child: Text(
+                    c.name,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      color: inkText,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (c) {
@@ -66,9 +102,17 @@ class BillingFromDropdown extends StatelessWidget {
               },
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFFF9FAFB),
+                fillColor: isMobile ? clayFill : const Color(0xFFF9FAFB),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: isMobile ? Colors.transparent : const Color(0xFFE2E8F0),
+                  ),
                 ),
               ),
             ),

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:my_app/admin_dashboard/model/user.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
@@ -15,21 +14,17 @@ class AssignTaskScreenMobile extends StatefulWidget {
 }
 
 class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
-  // Dependencies
   final AdminRepository _repository = AdminRepository();
 
-  // State
   List<User> users = [];
   User? selectedUser;
   bool submitting = false;
 
-  // SaaS Design Tokens
-  static const primaryColor = Color(0xFF6366F1);
-  static const successColor = Color(0xFF10B981);
-  static const surfaceColor = Colors.white;
-  static const scaffoldBg = Color(0xFFF8FAFC);
-  static const textPrimary = Color(0xFF1E293B);
-  static const textSecondary = Color(0xFF64748B);
+  // Updated Theme Tokens
+  static const terracotta = Color(0xFFB35A38);
+  static const darkSlate = Color(0xFF0F172A);
+  static const lightCream = Color(0xFFFAF9F6);
+  static const midCream = Color(0xFFEBDDCF); // Slightly darker for card depth
 
   String priority = "Medium";
   DateTime? dueDate;
@@ -50,9 +45,7 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
       final data = await _repository.fetchEmployees();
       if (mounted) setState(() => users = data);
     } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar("Error loading users: ${e.toString()}");
-      }
+      if (mounted) _showErrorSnackBar("Error loading users: ${e.toString()}");
     }
   }
 
@@ -60,62 +53,51 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.redAccent,
+        backgroundColor: darkSlate,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
-      ),
-      child: Scaffold(
-        backgroundColor: scaffoldBg,
-        appBar: _buildModernAppBar(),
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionHeader("Who's responsible?"),
-              _buildAssigneePicker(),
-              const SizedBox(height: 24),
-
-              _buildSectionHeader("Task Details"),
-              _buildModernTextField(
-                controller: taskController,
-                hint: "What needs to be done?",
-                icon: Icons.edit_note_rounded,
-              ),
-              const SizedBox(height: 16),
-
-              _buildModernTextField(
-                controller: descriptionController,
-                hint: "Add more context or instructions...",
-                maxLines: 4,
-              ),
-              const SizedBox(height: 24),
-
-              Row(
-                children: [
-                  Expanded(child: _buildDatePicker()),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildPriorityPicker()),
-                ],
-              ),
-              const SizedBox(height: 24),
-
-              _buildAttachmentSection(),
-              const SizedBox(height: 40),
-
-              _buildGradientSubmitButton(),
-            ],
-          ),
+    return Scaffold(
+      backgroundColor: lightCream,
+      appBar: _buildModernAppBar(),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader("Who's responsible?"),
+            _buildAssigneePicker(),
+            const SizedBox(height: 24),
+            _buildSectionHeader("Task Details"),
+            _buildModernTextField(
+              controller: taskController,
+              hint: "What needs to be done?",
+              icon: Icons.edit_note_rounded,
+            ),
+            const SizedBox(height: 16),
+            _buildModernTextField(
+              controller: descriptionController,
+              hint: "Add more context or instructions...",
+              maxLines: 4,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(child: _buildDatePicker()),
+                const SizedBox(width: 16),
+                Expanded(child: _buildPriorityPicker()),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildAttachmentSection(),
+            const SizedBox(height: 40),
+            _buildTerracottaButton(),
+          ],
         ),
       ),
     );
@@ -123,25 +105,19 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
 
   PreferredSizeWidget _buildModernAppBar() {
     return AppBar(
-      backgroundColor: Colors.transparent,
+      backgroundColor: lightCream,
       elevation: 0,
-      centerTitle: false,
-      leadingWidth: 56,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16),
-        child: CircleAvatar(
-          backgroundColor: Colors.white,
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: textPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
+      scrolledUnderElevation: 0, // Prevents white color change on scroll
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: darkSlate),
+        onPressed: () => Navigator.pop(context),
       ),
       title: Text(
         "Create New Task",
-        style: GoogleFonts.inter(
-          color: textPrimary,
-          fontWeight: FontWeight.w700,
+        style: GoogleFonts.manrope(
+          color: darkSlate,
+          fontWeight: FontWeight.w900,
           fontSize: 20,
         ),
       ),
@@ -153,11 +129,11 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
       padding: const EdgeInsets.only(left: 4, bottom: 12),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.inter(
-          fontSize: 12,
+        style: GoogleFonts.manrope(
+          fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.2,
-          color: textSecondary,
+          color: terracotta,
         ),
       ),
     );
@@ -167,22 +143,23 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
     return Container(
       decoration: _cardDecoration(),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFFE0E7FF),
+          backgroundColor: terracotta.withOpacity(0.1),
           child: selectedUser == null
-              ? const Icon(Icons.person_outline_rounded, color: primaryColor)
-              : Text(selectedUser!.displayName[0].toUpperCase(), style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+              ? const Icon(Icons.person_add_alt_1_rounded, color: terracotta)
+              : Text(selectedUser!.displayName[0].toUpperCase(),
+              style: const TextStyle(color: terracotta, fontWeight: FontWeight.w900)),
         ),
         title: Text(
             selectedUser?.assignmentLabel ?? "Assignee",
-            style: GoogleFonts.inter(fontWeight: FontWeight.w500, color: selectedUser == null ? textSecondary : textPrimary)
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: darkSlate)
         ),
         subtitle: Text(
-            selectedUser?.username != null ? "@${selectedUser!.username}" : "Search or select member",
-            style: const TextStyle(color: textSecondary, fontSize: 13)
+            selectedUser?.username != null ? "@${selectedUser!.username}" : "Search member",
+            style: GoogleFonts.manrope(color: darkSlate.withOpacity(0.5), fontSize: 12)
         ),
-        trailing: const Icon(Icons.chevron_right_rounded, color: textSecondary),
+        trailing: const Icon(Icons.chevron_right_rounded, color: terracotta),
         onTap: _showEmployeeSearch,
       ),
     );
@@ -199,13 +176,13 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
+        style: GoogleFonts.manrope(color: darkSlate, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           hintText: hint,
-          prefixIcon: icon != null ? Icon(icon, color: textSecondary, size: 20) : null,
-          hintStyle: const TextStyle(color: textSecondary, fontSize: 15),
+          prefixIcon: icon != null ? Icon(icon, color: terracotta, size: 22) : null,
+          hintStyle: GoogleFonts.manrope(color: darkSlate.withOpacity(0.3), fontSize: 14),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(16),
+          contentPadding: const EdgeInsets.all(18),
         ),
       ),
     );
@@ -220,11 +197,11 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(Icons.calendar_today_rounded, size: 18, color: primaryColor),
+            const Icon(Icons.calendar_month_rounded, size: 20, color: terracotta),
             const SizedBox(height: 8),
             Text(
-              dueDate == null ? "Set Due Date" : DateFormat("MMM dd, yyyy").format(dueDate!),
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14),
+              dueDate == null ? "Due Date" : DateFormat("MMM dd").format(dueDate!),
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 14, color: darkSlate),
             ),
           ],
         ),
@@ -234,17 +211,18 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
 
   Widget _buildPriorityPicker() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: _cardDecoration(),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: priority,
-          icon: const Icon(Icons.expand_more_rounded, color: textSecondary),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: terracotta),
           isExpanded: true,
+          dropdownColor: midCream,
           items: ["Low", "Medium", "High"].map((String value) {
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
+              child: Text(value, style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 14, color: darkSlate)),
             );
           }).toList(),
           onChanged: (v) => setState(() => priority = v!),
@@ -260,17 +238,17 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0), style: BorderStyle.solid),
+          color: midCream.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: terracotta.withOpacity(0.2), width: 1.5),
         ),
         child: Column(
           children: [
-            const Icon(Icons.cloud_upload_outlined, color: primaryColor, size: 32),
+            const Icon(Icons.attachment_rounded, color: terracotta, size: 28),
             const SizedBox(height: 8),
             Text(
-              attachedFileName ?? "Drop files here or browse",
-              style: GoogleFonts.inter(color: textSecondary, fontWeight: FontWeight.w500),
+              attachedFileName ?? "Attach Files",
+              style: GoogleFonts.manrope(color: terracotta, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -278,33 +256,22 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
     );
   }
 
-  Widget _buildGradientSubmitButton() {
-    return Container(
+  Widget _buildTerracottaButton() {
+    return SizedBox(
       width: double.infinity,
-      height: 60,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [primaryColor, Color(0xFF4F46E5)]),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: primaryColor.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+      height: 62,
       child: ElevatedButton(
         onPressed: submitting ? null : _submitTask,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
+          backgroundColor: terracotta,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 0,
         ),
         child: submitting
-            ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            ? const CircularProgressIndicator(color: Colors.white)
             : Text(
-          "Create Task",
-          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+          "CREATE TASK",
+          style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1),
         ),
       ),
     );
@@ -312,15 +279,9 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(
-      color: surfaceColor,
-      borderRadius: BorderRadius.circular(16),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.03),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
+      color: midCream, // Updated to match your tile theme
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: darkSlate.withOpacity(0.1), width: 1.5),
     );
   }
 
@@ -330,6 +291,14 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
       initialDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(primary: terracotta, onPrimary: Colors.white, surface: lightCream),
+          ),
+          child: child!,
+        );
+      },
     );
     if (date != null) setState(() => dueDate = date);
   }
@@ -352,8 +321,7 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.6,
-          maxChildSize: 0.9,
+          initialChildSize: 0.7,
           builder: (_, controller) {
             return EmployeeSearchSheet(
               scrollController: controller,
@@ -371,10 +339,9 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
 
   Future<void> _submitTask() async {
     if (selectedUser == null || taskController.text.isEmpty || dueDate == null) {
-      _showErrorSnackBar("Please fill all required fields (Assignee, Title, and Date)");
+      _showErrorSnackBar("Please complete all required fields");
       return;
     }
-
     setState(() => submitting = true);
     try {
       await _repository.createTask(
@@ -384,32 +351,9 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
         priority: priority,
         dueDate: DateFormat("yyyy-MM-dd").format(dueDate!),
       );
-
-      if (mounted) {
-        // Success Notification
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 12),
-                Text("Task assigned successfully!", style: TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            backgroundColor: successColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.all(20),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        Navigator.pop(context);
-      }
+      if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        setState(() => submitting = false);
-        _showErrorSnackBar("Error: ${e.toString()}");
-      }
+      if (mounted) setState(() => submitting = false);
     }
   }
 }
@@ -431,72 +375,132 @@ class EmployeeSearchSheet extends StatefulWidget {
 }
 
 class _EmployeeSearchSheetState extends State<EmployeeSearchSheet> {
-  String searchQuery = '';
-  late List<User> filteredUsers;
+  static const _bg = Color(0xFFFAF9F6);
+  static const _terracotta = Color(0xFFB35A38);
+  static const _dark = Color(0xFF0F172A);
+  static const _card = Color(0xFFEBDDCF);
+
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _query = '';
 
   @override
-  void initState() {
-    super.initState();
-    filteredUsers = widget.users;
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
-  void _filterUsers(String query) {
-    final lowerCaseQuery = query.toLowerCase();
-    setState(() {
-      filteredUsers = widget.users.where((user) {
-        return user.displayName.toLowerCase().contains(lowerCaseQuery) ||
-            user.username.toLowerCase().contains(lowerCaseQuery) ||
-            user.assignmentLabel.toLowerCase().contains(lowerCaseQuery);
-      }).toList();
-    });
+  bool _matches(User u, String q) {
+    if (q.isEmpty) return true;
+    final t = q.toLowerCase();
+    final a = u.assignmentLabel.toLowerCase();
+    final d = u.displayName.toLowerCase();
+    final un = u.username.toLowerCase();
+    return a.contains(t) || d.contains(t) || un.contains(t);
   }
 
   @override
   Widget build(BuildContext context) {
+    final filtered =
+        widget.users.where((u) => _matches(u, _query)).toList(growable: false);
+
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFFF8FAFC),
+        color: _bg,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
           const SizedBox(height: 12),
-          Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: TextField(
-              onChanged: _filterUsers,
-              decoration: InputDecoration(
-                hintText: "Search team members...",
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF64748B)),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: _card,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _dark.withValues(alpha: 0.08)),
+              ),
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _query = v.trim()),
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  color: _dark,
+                ),
+                decoration: InputDecoration(
+                  prefixIcon:
+                      const Icon(Icons.search_rounded, color: _terracotta),
+                  hintText: 'Search staff name / username',
+                  hintStyle: GoogleFonts.manrope(
+                    color: _dark.withValues(alpha: 0.35),
+                    fontWeight: FontWeight.w600,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                ),
               ),
             ),
           ),
           Expanded(
-            child: filteredUsers.isEmpty
-                ? const Center(child: Text("No members found", style: TextStyle(color: Colors.grey)))
+            child: filtered.isEmpty
+                ? Center(
+                    child: Text(
+                      'No results',
+                      style: GoogleFonts.manrope(
+                        color: _dark.withValues(alpha: 0.55),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
                 : ListView.builder(
-              controller: widget.scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              itemCount: filteredUsers.length,
-              itemBuilder: (context, index) {
-                final user = filteredUsers[index];
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: CircleAvatar(
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    child: Text(user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?', style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+                    controller: widget.scrollController,
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final user = filtered[index];
+                      final initial = user.displayName.isNotEmpty
+                          ? user.displayName[0].toUpperCase()
+                          : '?';
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: _terracotta.withValues(alpha: 0.10),
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              color: _terracotta,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          user.assignmentLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+                        ),
+                        subtitle: user.username.isNotEmpty
+                            ? Text(
+                                '@${user.username}',
+                                style: GoogleFonts.manrope(
+                                  color: _dark.withValues(alpha: 0.5),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              )
+                            : null,
+                        onTap: () => widget.onSelect(user),
+                      );
+                    },
                   ),
-                  title: Text(user.assignmentLabel, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                  subtitle: Text("@${user.username}", style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                  onTap: () => widget.onSelect(user),
-                );
-              },
-            ),
           ),
         ],
       ),

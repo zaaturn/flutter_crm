@@ -145,7 +145,7 @@ class EmployeeRepository {
   }
 
   // ----------------------------
-  //  NOTIFICATIONS (WEB + MOBILE)
+  //  NOTIFICATIONS (WEB + mobile)
   // ----------------------------
 
   Future<String?> getFcmToken() async {

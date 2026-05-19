@@ -117,14 +117,17 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
     }
   }
 
-  // ================= PENDING LEAVES =================
+  // ================= ADMIN LEAVE QUEUE (all statuses) =================
+  /// [LoadPendingLeaves] loads the **admin** leave list used by approval UIs.
+  /// Uses `/api/leaves/all/` (same as desktop) so pending / approved / rejected
+  /// filters work; `/api/leaves/pending/` only returned open requests.
   Future<void> _onLoadPendingLeaves(
       LoadPendingLeaves event,
       Emitter<LeaveState> emit,
       ) async {
     emit(PendingLeavesLoading());
     try {
-      final leaves = await apiService.getPendingLeaves();
+      final leaves = await apiService.getAllLeaves();
       emit(PendingLeavesLoaded(leaves));
     } catch (e) {
       emit(LeaveError(_extractErrorMessage(e)));

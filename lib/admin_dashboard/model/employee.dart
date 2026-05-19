@@ -9,6 +9,7 @@ class Employee {
   final String lastName;
   final String email;
   final String employeeId;
+  final String? username;
   final String? phoneNumber;
   final String? designation;
   final String? department;
@@ -30,6 +31,7 @@ class Employee {
     required this.lastName,
     required this.email,
     required this.employeeId,
+    this.username,
     this.phoneNumber,
     this.designation,
     this.department,
@@ -45,6 +47,94 @@ class Employee {
   });
 
   String get fullName => '$firstName $lastName'.trim();
+
+
+  /// Shown on profile; uses [username] as returned by API (no trim — preserves intentional spacing).
+  String get profileUsernameHandle {
+    final raw = _usernameAsStored(username);
+    if (raw != null) return raw;
+    final n = name.trim();
+    if (n.isNotEmpty) {
+      if (n.contains('@')) return n;
+      return n.startsWith('@') ? n : '@$n';
+    }
+    return '—';
+  }
+
+  /// `null` / empty only; does **not** trim (backend `username` must round-trip as sent).
+  static String? _usernameAsStored(String? s) {
+    if (s == null || s.isEmpty) return null;
+    return s;
+  }
+
+  static String? _usernameFromJsonValue(dynamic v) {
+    if (v == null) return null;
+    if (v is String) return v.isEmpty ? null : v;
+    final s = v.toString();
+    return s.isEmpty ? null : s;
+  }
+
+  /// Reads login fields without trimming (EmployeeListSerializer `username` etc.).
+  static String? _readUsernameKeys(Map<String, dynamic> m) {
+    for (final key in const ['username', 'user_name', 'userName']) {
+      final hit = _usernameFromJsonValue(m[key]);
+      if (hit != null) return hit;
+    }
+    for (final key in const [
+      'org_username',
+      'organization_username',
+      'crm_username',
+      'employee_login',
+      'company_username',
+      'login_username',
+      'dax_username',
+    ]) {
+      final s = _optStr(m[key]);
+      if (s != null) return s;
+    }
+    return null;
+  }
+
+  static String? _optStr(dynamic v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty) ? null : s;
+  }
+
+  /// After nested `user` merge, restores list root `username` if merge left it missing/null
+  /// (nested payload often omits or nulls `username` while `EmployeeListSerializer` sets it on root).
+  static Map<String, dynamic> _flattenEmployeesListItem(
+      Map<String, dynamic> json) {
+    final nested = json['user'];
+    if (nested is! Map || nested.isEmpty) {
+      return Map<String, dynamic>.from(json);
+    }
+    final u = Map<String, dynamic>.from(nested);
+    if (u['id'] == null &&
+        u['username'] == null &&
+        u['first_name'] == null &&
+        u['email'] == null) {
+      return Map<String, dynamic>.from(json);
+    }
+    final merged = Map<String, dynamic>.from(json);
+    final rootUsername = json['username'];
+    final rootUserName = json['user_name'];
+    merged
+      ..remove('name')
+      ..remove('full_name');
+    u.forEach((k, v) => merged[k] = v);
+    if (json['employee_id'] != null) {
+      merged['employee_id'] = json['employee_id'];
+    }
+    if (_usernameFromJsonValue(merged['username']) == null &&
+        _usernameFromJsonValue(rootUsername) != null) {
+      merged['username'] = rootUsername;
+    }
+    if (_usernameFromJsonValue(merged['user_name']) == null &&
+        _usernameFromJsonValue(rootUserName) != null) {
+      merged['user_name'] = rootUserName;
+    }
+    return merged;
+  }
 
   String get initials {
     final f = firstName.isNotEmpty ? firstName[0] : '';
@@ -88,6 +178,9 @@ class Employee {
   }
 
   factory Employee.fromJson(Map<String, dynamic> json) {
+    final original = Map<String, dynamic>.from(json);
+    final j = _flattenEmployeesListItem(original);
+
     bool truthy(dynamic v) {
       if (v == null) return false;
       if (v is bool) return v;
@@ -96,32 +189,41 @@ class Employee {
       return s == 'true' || s == '1' || s == 'yes' || s == 'y';
     }
 
-    final onBreak = truthy(json['on_break']) ||
-        truthy(json['is_on_break']) ||
-        truthy(json['is_break']) ||
-        truthy(json['break']) ||
-        truthy(json['break_time']) ||
-        truthy(json['onBreak']);
+    final onBreak = truthy(j['on_break']) ||
+        truthy(j['is_on_break']) ||
+        truthy(j['is_break']) ||
+        truthy(j['break']) ||
+        truthy(j['break_time']) ||
+        truthy(j['onBreak']);
+    String? optStr(dynamic v) {
+      final s = v?.toString().trim();
+      return (s == null || s.isEmpty) ? null : s;
+    }
+
+    final resolvedLogin =
+        _readUsernameKeys(j) ?? _readUsernameKeys(original) ?? optStr(j['userName']);
+
     return Employee(
-      id: json['id'] ?? 0,
-      name: json['name']?.toString() ?? '',
-      firstName: json['first_name']?.toString() ?? '',
-      lastName: json['last_name']?.toString() ?? '',
-      email: json['email']?.toString() ?? '',
-      employeeId: json['employee_id']?.toString() ?? '',
-      phoneNumber: json['phone_number']?.toString(),
-      designation: json['designation']?.toString(),
-      department: json['department']?.toString(),
-      workLocation: json['work_location']?.toString(),
-      address: json['address']?.toString(),
-      dateOfBirth: json['date_of_birth']?.toString(),
-      dateOfJoining: json['date_of_joining']?.toString(),
-      isActive: json['is_active'] ?? true,
-      profilePhoto: json['profile_photo']?.toString(),
+      id: j['id'] ?? 0,
+      name: j['name']?.toString() ?? '',
+      firstName: j['first_name']?.toString() ?? '',
+      lastName: j['last_name']?.toString() ?? '',
+      email: j['email']?.toString() ?? '',
+      employeeId: j['employee_id']?.toString() ?? '',
+      username: resolvedLogin,
+      phoneNumber: j['phone_number']?.toString(),
+      designation: j['designation']?.toString(),
+      department: j['department']?.toString(),
+      workLocation: j['work_location']?.toString(),
+      address: j['address']?.toString(),
+      dateOfBirth: j['date_of_birth']?.toString(),
+      dateOfJoining: j['date_of_joining']?.toString(),
+      isActive: j['is_active'] ?? true,
+      profilePhoto: j['profile_photo']?.toString(),
       liveStatus:
-          onBreak ? LiveStatus.breakTime : _parseLiveStatus(json['status']),
-      checkIn: json['check_in']?.toString() ?? '-',
-      checkOut: json['check_out']?.toString() ?? '-',
+          onBreak ? LiveStatus.breakTime : _parseLiveStatus(j['status']),
+      checkIn: j['check_in']?.toString() ?? '-',
+      checkOut: j['check_out']?.toString() ?? '-',
 
     );
   }
@@ -132,6 +234,7 @@ class Employee {
     String? checkOut,
     bool? isActive,
     String? profilePhoto,
+    String? username,
   }) {
     return Employee(
       id: id,
@@ -140,6 +243,7 @@ class Employee {
       lastName: lastName,
       email: email,
       employeeId: employeeId,
+      username: username ?? this.username,
       phoneNumber: phoneNumber,
       designation: designation,
       department: department,

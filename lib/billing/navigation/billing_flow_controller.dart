@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:my_app/billing/screen/billing_home_screen.dart';
 import 'package:my_app/billing/screen/invoice_dashboard_screen.dart';
 import 'dart:typed_data';
+import 'package:open_filex/open_filex.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../screen/company_profile_screen.dart';
 import '../screen/create_invoice_screen.dart';
@@ -50,10 +52,21 @@ class BillingFlowController {
   }) async {
     final path = await savePdfBytes(bytes: bytes, filename: filename);
     if (!context.mounted) return;
+
+    if (path != null) {
+      // Try to open the file directly (Android/iOS/Desktop).
+      final res = await OpenFilex.open(path);
+      if (res.type != ResultType.done) {
+        // Fallback: let the user share/save it.
+        await Share.shareXFiles([XFile(path)], text: 'Invoice PDF');
+      }
+    }
+
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          path == null ? 'Invoice download started.' : 'Invoice saved successfully.',
+          path == null ? 'Invoice download started.' : 'Invoice saved. Opening…',
         ),
         backgroundColor: const Color(0xFF059669),
         behavior: SnackBarBehavior.floating,

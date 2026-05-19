@@ -39,6 +39,16 @@ class NotificationModel extends AppNotification {
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     final task = _taskMap(json);
+    DateTime _parseCreatedAt(dynamic raw) {
+      final s = raw?.toString();
+      if (s == null || s.isEmpty) return DateTime.now();
+      try {
+        final dt = DateTime.parse(s);
+        return dt.isUtc ? dt.toLocal() : dt;
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
     return NotificationModel(
       id: json['id'].toString(),
       type: json['notif_type'] as String? ?? 'general',
@@ -46,7 +56,8 @@ class NotificationModel extends AppNotification {
       body: json['body'] as String? ?? '',
       isRead: json['is_read'] as bool? ?? false,
       isClickable: json['is_clickable'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      // API usually returns UTC timestamps; normalize to device-local for UI grouping/formatting.
+      createdAt: _parseCreatedAt(json['created_at']),
       eventId: json['event_id']?.toString(),
       eventColor: json['event_color'] as String?,
       taskId: json['task_id']?.toString() ?? _pickStr(task, 'id'),

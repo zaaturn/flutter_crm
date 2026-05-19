@@ -9,6 +9,22 @@ abstract class EventEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Server-driven updates (WebSocket / background sync).
+class ExternalEventUpserted extends EventEvent {
+  final Event event;
+  const ExternalEventUpserted(this.event);
+  @override
+  List<Object?> get props => [event];
+}
+
+/// Server-driven deletes (WebSocket / background sync).
+class ExternalEventDeleted extends EventEvent {
+  final String eventId;
+  const ExternalEventDeleted(this.eventId);
+  @override
+  List<Object?> get props => [eventId];
+}
+
 class FetchEventsRequested extends EventEvent {
   final DateTime startDate;
   final DateTime endDate;

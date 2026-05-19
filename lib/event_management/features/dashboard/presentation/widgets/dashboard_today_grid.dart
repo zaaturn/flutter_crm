@@ -107,6 +107,7 @@ class _TodayCard extends StatelessWidget {
     final color = Color(int.parse('0xFF${event.displayColor.replaceAll('#', '')}'));
     final start = event.startTime.toLocal();
     final time = event.isAllDay ? 'All day' : DateFormat.jm().format(start);
+    final loc = (event.location ?? '').trim();
 
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
@@ -175,14 +176,14 @@ class _TodayCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (event.location != null && event.location!.isNotEmpty) ...[
+                      if (loc.isNotEmpty) ...[
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 6),
                           child: Text("•", style: TextStyle(color: Color(0xFFCBD5E1))),
                         ),
                         Expanded(
                           child: Text(
-                            event.location!,
+                            loc,
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF94A3B8),

@@ -32,103 +32,155 @@ class PayrollTableSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
-      builder: (context, state) {
-        final rows = state.tableRows;
-        final paidCount = rows.where((r) => r.paid == true).length;
-        final pendingCount = rows.where((r) => r.paid == false).length;
+    return LayoutBuilder(
+      builder: (context, outerConstraints) {
+        final narrow = outerConstraints.maxWidth < 760;
+        const minTableWidth = 700.0;
 
-        // Current Period Label
-        final m = state.monthIndex.clamp(1, 12);
-        final periodLabel = DateFormat('MMMM').format(DateTime(state.year, m));
+        return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
+          builder: (context, state) {
+            final rows = state.tableRows;
+            final paidCount = rows.where((r) => r.paid == true).length;
+            final pendingCount = rows.where((r) => r.paid == false).length;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: WorkspaceTheme.cardSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: WorkspaceTheme.borderSubtle),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.02),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // HEADER SECTION
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$periodLabel ${state.year} Payroll',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: WorkspaceTheme.textMain,
+            final m = state.monthIndex.clamp(1, 12);
+            final periodLabel = DateFormat('MMMM').format(DateTime(state.year, m));
+            final pad = narrow ? 14.0 : 24.0;
+
+            final tableColumn = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(pad),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$periodLabel ${state.year} Payroll',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: narrow ? 16 : 18,
+                                fontWeight: FontWeight.w800,
+                                color: WorkspaceTheme.textMain,
+                              ),
                             ),
-                          ),
-                          Text(
-                            'Management of employee disbursements',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: WorkspaceTheme.textMuted,
+                            Text(
+                              'Management of employee disbursements',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: WorkspaceTheme.textMuted,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      if (narrow)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            _SummaryPill(
+                              '$paidCount Paid',
+                              WorkspaceTheme.successBg,
+                              WorkspaceTheme.successText,
+                            ),
+                            const SizedBox(height: 6),
+                            _SummaryPill(
+                              '$pendingCount Pending',
+                              WorkspaceTheme.warningBg,
+                              WorkspaceTheme.warningText,
+                            ),
+                          ],
+                        )
+                      else ...[
+                        _SummaryPill(
+                          '$paidCount Paid',
+                          WorkspaceTheme.successBg,
+                          WorkspaceTheme.successText,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryPill(
+                          '$pendingCount Pending',
+                          WorkspaceTheme.warningBg,
+                          WorkspaceTheme.warningText,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  color: WorkspaceTheme.tableHeaderBg,
+                  padding: EdgeInsets.symmetric(horizontal: pad, vertical: 12),
+                  child: Row(
+                    children: [
+                      _HdrText('#', flex: 0, width: 40),
+                      _HdrText('EMPLOYEE', flex: 4),
+                      _HdrText('STATUS', flex: 2),
+                      _HdrText('AMOUNT', flex: 2),
+                      _HdrText('LAST UPDATE', flex: 2),
+                    ],
+                  ),
+                ),
+                if (rows.isEmpty &&
+                    state.loadStatus == PayrollDashboardLoadStatus.success)
+                  _EmptyState()
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: rows.length,
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 1,
+                      color: WorkspaceTheme.borderSubtle,
                     ),
-                    _SummaryPill('$paidCount Paid', WorkspaceTheme.successBg, WorkspaceTheme.successText),
-                    const SizedBox(width: 8),
-                    _SummaryPill('$pendingCount Pending', WorkspaceTheme.warningBg, WorkspaceTheme.warningText),
-                  ],
-                ),
+                    itemBuilder: (context, index) {
+                      final row = rows[index];
+                      return _PayrollInlineRow(
+                        row: row,
+                        index: index + 1,
+                        rowSaving: state.savingRecordId == row.recordId ||
+                            state.savingEmployeeId == row.employeeId,
+                        compactPadding: narrow,
+                      );
+                    },
+                  ),
+                _TableFooter(state: state),
+              ],
+            );
+
+            final decorated = Container(
+              decoration: BoxDecoration(
+                color: WorkspaceTheme.cardSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: WorkspaceTheme.borderSubtle),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.02),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
+              clipBehavior: Clip.antiAlias,
+              child: narrow
+                  ? Scrollbar(
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: SizedBox(
+                          width: minTableWidth,
+                          child: tableColumn,
+                        ),
+                      ),
+                    )
+                  : tableColumn,
+            );
 
-              // TABLE HEADER
-              Container(
-                color: WorkspaceTheme.tableHeaderBg,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Row(
-                  children: [
-                    _HdrText('#', flex: 0, width: 40),
-                    _HdrText('EMPLOYEE', flex: 4),
-                    _HdrText('STATUS', flex: 2),
-                    _HdrText('AMOUNT', flex: 2),
-                    _HdrText('LAST UPDATE', flex: 2),
-                  ],
-                ),
-              ),
-
-              // EMPTY STATES
-              if (rows.isEmpty && state.loadStatus == PayrollDashboardLoadStatus.success)
-                _EmptyState()
-              else
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: rows.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: WorkspaceTheme.borderSubtle),
-                  itemBuilder: (context, index) {
-                    final row = rows[index];
-                    return _PayrollInlineRow(
-                      row: row,
-                      index: index + 1,
-                      rowSaving: state.savingRecordId == row.recordId || state.savingEmployeeId == row.employeeId,
-                    );
-                  },
-                ),
-
-              _TableFooter(state: state),
-            ],
-          ),
+            return decorated;
+          },
         );
       },
     );
@@ -159,10 +211,16 @@ class _HdrText extends StatelessWidget {
 }
 
 class _PayrollInlineRow extends StatefulWidget {
-  const _PayrollInlineRow({required this.row, required this.index, required this.rowSaving});
+  const _PayrollInlineRow({
+    required this.row,
+    required this.index,
+    required this.rowSaving,
+    this.compactPadding = false,
+  });
   final PayrollMergedRow row;
   final int index;
   final bool rowSaving;
+  final bool compactPadding;
 
   @override
   State<_PayrollInlineRow> createState() => _PayrollInlineRowState();
@@ -308,8 +366,9 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
   @override
   Widget build(BuildContext context) {
     final r = widget.row;
+    final hPad = widget.compactPadding ? 12.0 : 24.0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 16),
       child: Row(
         children: [
           SizedBox(

@@ -65,7 +65,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           );
           return;
         }
-        // Refetch path emits EventsLoaded; ensure spinner stops if RSVP cleared.
+
         if (state is EventsLoaded && _rsvpBusy) {
           SecureStorageService().readUserId().then((uid) {
             if (!context.mounted || uid == null || uid.isEmpty) return;

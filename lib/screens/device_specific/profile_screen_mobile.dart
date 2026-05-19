@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:my_app/services/api_services.dart';
-
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,35 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final data = await profileService.getProfile();
       setState(() => profile = data);
     } catch (e) {
-      print("PROFILE LOAD ERROR: $e");
-    }
-  }
-
-  // ------------------- Pick & Upload Photo -------------------
-
-  void _pickImage() async {
-    final picker = ImagePicker();
-    // picked is already an XFile?
-    final XFile? picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
-
-    try {
-      // Pass the XFile 'picked' directly instead of 'picked.path'
-      final result = await profileService.uploadProfilePhoto(picked);
-
-      if (result["profile_photo"] != null) {
-        setState(() {
-          profile!["profile_photo"] = result["profile_photo"];
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Profile photo updated!")),
-        );
-      }
-    } catch (e) {
-      print("PHOTO UPLOAD ERROR: $e");
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed to upload photo")));
+      debugPrint("PROFILE LOAD ERROR: $e");
     }
   }
 
@@ -68,170 +38,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
+    const bg = Color(0xFFFAF3E0);
+    const card = Color(0xFFEADBC8);
+    const terracotta = Color(0xFFC05E41);
+    const textDark = Color(0xFF3E2723);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
-      appBar: _modernAppBar(),
-      body: Stack(
-        children: [
-          _glowingBG(),
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(22),
-              children: [
-                _profileHeader(),
-                const SizedBox(height: 25),
-                _glassCard(
-                  child: Column(
-                    children: [
-                      _infoRow("Name", profile!["username"]),
-                      _infoRow("Employee ID", profile!["employee_id"]),
-                      _infoRow("Email", profile!["email"]),
-                      _infoRow("Phone", profile!["phone_number"]),
-                      _infoRow("Address", profile!["address"]),
-                      _infoRow("DOB", profile!["date_of_birth"]),
-                      _infoRow("Joining Date", profile!["date_of_joining"]),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------- AppBar -------------------
-
-  AppBar _modernAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      centerTitle: true,
-      title: const Text(
-        "My Profile",
-        style: TextStyle(
-          color: Color(0xFF333333),
-          fontWeight: FontWeight.bold,
-          fontSize: 20,
-        ),
-      ),
-      leading: GestureDetector(
-        onTap: () => Navigator.pop(context),
-        child: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.07),
-                blurRadius: 12,
-              ),
-            ],
-          ),
-          child: const Icon(Icons.arrow_back, color: Colors.black87),
-        ),
-      ),
-    );
-  }
-
-  // ------------------- Animated Background -------------------
-
-  Widget _glowingBG() {
-    return Stack(
-      children: [
-        Positioned(top: 80, left: 40, child: _orb(180, const Color(0xFF6A8DFF))),
-        Positioned(bottom: 120, right: 40, child: _orb(200, const Color(0xFFF48FB1))),
-      ],
-    );
-  }
-
-  Widget _orb(double size, Color color) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withOpacity(0.07),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.2),
-            blurRadius: 120,
-            spreadRadius: 50,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------- Profile Header -------------------
-
-  Widget _profileHeader() {
-    return Column(
-      children: [
-        const Icon(Icons.business, size: 55, color: Color(0xFF6A8DFF)),
-        const SizedBox(height: 6),
-        const Text(
-          "Dax Arrow",
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        title: const Text(
+          'Profile',
           style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF333333),
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -0.2,
           ),
         ),
-        const SizedBox(height: 25),
-
-        GestureDetector(
-          onTap: _pickImage,
-          child: Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.indigoAccent.withOpacity(0.4),
-                  blurRadius: 30,
-                  spreadRadius: 5,
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            _card(
+              cardColor: card,
+              borderColor: terracotta.withValues(alpha: 0.18),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'My Details',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _infoRow('Name', _fullName()),
+                    _infoRow('Employee ID', profile!['employee_id']),
+                    _infoRow('Email', profile!['email']),
+                    _infoRow('Phone', profile!['phone_number']),
+                    _infoRow('Address', profile!['address']),
+                    _infoRow('DOB', profile!['date_of_birth']),
+                    _infoRow('Joining Date', profile!['date_of_joining']),
+                  ],
                 ),
-              ],
-            ),
-            child: CircleAvatar(
-              radius: 55,
-              backgroundImage: NetworkImage(
-                _profilePhotoUrl(),
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  String _profilePhotoUrl() {
-    final photo = profile!["profile_photo"];
-    if (photo == null || photo == "") {
-      return "https://i.pravatar.cc/200";
-    }
-
-    // Use the baseUrl from the service to avoid hardcoded IP issues
-    final base = profileService.baseUrl.replaceAll('/api/v1', '');
-    return photo.toString().startsWith('http') ? photo : "$base$photo";
+  String _fullName() {
+    final first = (profile?['first_name'] ?? profile?['firstName'] ?? '').toString().trim();
+    final last = (profile?['last_name'] ?? profile?['lastName'] ?? '').toString().trim();
+    final full = ('$first $last').trim();
+    if (full.isNotEmpty) return full;
+    return (profile?['username'] ?? '—').toString();
   }
 
-  // ------------------- Glass Card -------------------
-
-  Widget _glassCard({required Widget child}) {
+  Widget _card({
+    required Widget child,
+    Color cardColor = Colors.white,
+    Color borderColor = const Color(0xFFE2E8F0),
+  }) {
     return Container(
-      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(22),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.07),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -249,9 +137,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(
             "$title: ",
             style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF555555),
-              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: Color(0xFF8D6E63),
+              fontWeight: FontWeight.w700,
             ),
           ),
           Expanded(
@@ -259,9 +147,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value == null || value.toString().isEmpty ? "—" : value.toString(),
               textAlign: TextAlign.right,
               style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF333333),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF3E2723),
               ),
             ),
           ),

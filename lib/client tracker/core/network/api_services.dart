@@ -19,6 +19,7 @@ class ApiClient {
   final Duration _timeout = const Duration(seconds: 30);
 
   bool _isRefreshing = false;
+  Future<String?>? _refreshingFuture;
 
   // GLOBAL LOADER
   static final ValueNotifier<bool> loader = ValueNotifier(false);
@@ -80,28 +81,33 @@ class ApiClient {
       res = await _executeRequest(method, uri, headers, body);
 
       // TOKEN REFRESH
-      if (res.statusCode == 401 && !_isRefreshing) {
-
-        _isRefreshing = true;
-
-        showLoader();
-
-        final newToken = await _refreshToken();
-
-        hideLoader();
-
-        _isRefreshing = false;
-
-        if (newToken != null) {
-
-          headers = await _getHeaders();
-          res = await _executeRequest(method, uri, headers, body);
-
+      if (res.statusCode == 401) {
+        // If a refresh is already in progress, wait for it and retry once.
+        if (_refreshingFuture != null) {
+          final token = await _refreshingFuture!;
+          if (token != null && token.isNotEmpty) {
+            headers = await _getHeaders();
+            res = await _executeRequest(method, uri, headers, body);
+          } else {
+            await _storage.clearTokens();
+            throw ApiException(401, "Session expired. Please login again.");
+          }
         } else {
+          _isRefreshing = true;
+          showLoader();
+          _refreshingFuture = _refreshToken();
+          final newToken = await _refreshingFuture!;
+          hideLoader();
+          _isRefreshing = false;
+          _refreshingFuture = null;
 
-          await _storage.clearTokens();
-          throw ApiException(401, "Session expired. Please login again.");
-
+          if (newToken != null && newToken.isNotEmpty) {
+            headers = await _getHeaders();
+            res = await _executeRequest(method, uri, headers, body);
+          } else {
+            await _storage.clearTokens();
+            throw ApiException(401, "Session expired. Please login again.");
+          }
         }
       }
 

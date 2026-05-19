@@ -5,6 +5,7 @@ import '../models/invoice_list_item.dart';
 import '../navigation/billing_flow_controller.dart';
 import '../services/billing_dio_api.dart';
 import '../theme/billing_theme.dart';
+import '../theme/billing_adaptive_theme.dart';
 import '../widgets/billing_app_bar.dart';
 import 'invoice_review_screen.dart';
 import 'edit_invoice_draft_screen.dart';
@@ -80,7 +81,7 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
       firstDate: DateTime(2020, 1, 1),
       lastDate: DateTime(2100, 12, 31),
       builder: (ctx, child) =>
-          Theme(data: BillingTheme.datePickerTheme(ctx), child: child!),
+          Theme(data: BillingAdaptiveTheme.datePickerTheme(ctx), child: child!),
     );
     if (picked == null) return;
     final m =
@@ -215,7 +216,7 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
     if (_page > pages - 1) _page = pages - 1;
 
     return Scaffold(
-      backgroundColor: BillingTheme.scaffoldBg,
+      backgroundColor: BillingAdaptiveTheme.bg(context),
       appBar: billingAppBar(
         title: 'Invoices',
         onBack: () => BillingFlowController.backToAdminDashboard(context),
@@ -224,12 +225,15 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: TextButton.icon(
               onPressed: _pickMonth,
-              icon: const Icon(Icons.calendar_month_rounded,
-                  color: BillingTheme.purple, size: 22),
+              icon: Icon(
+                Icons.calendar_month_rounded,
+                color: BillingAdaptiveTheme.primary(context),
+                size: 22,
+              ),
               label: Text(
                 _month,
-                style: const TextStyle(
-                  color: BillingTheme.purple,
+                style: TextStyle(
+                  color: BillingAdaptiveTheme.primary(context),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -238,7 +242,7 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
         ],
       ),
       body: RefreshIndicator(
-        color: BillingTheme.purple,
+        color: BillingAdaptiveTheme.primary(context),
         onRefresh: _load,
         child: _loading
             ? const Center(child: CircularProgressIndicator())
@@ -251,7 +255,7 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
                         child: Text(
                           _error!,
                           textAlign: TextAlign.center,
-                          style: BillingTheme.body(),
+                          style: BillingTheme.body().copyWith(color: BillingAdaptiveTheme.muted(context)),
                         ),
                       ),
                     ],

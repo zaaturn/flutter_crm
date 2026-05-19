@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 import '../bloc/payroll_dashboard_bloc.dart';
 import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
-import '../widget/payroll_filter_section.dart';
 import '../widget/payroll_header.dart';
 import '../widget/payroll_kpi_cards.dart';
-import '../widget/payroll_mobile_nav.dart';
 import '../widget/payroll_sidebar.dart';
+import '../widget/payroll_filter_section.dart';
 import '../widget/payroll_table_section.dart';
+import 'mobile_screen/payroll_mobile_dashboard.dart';
 
 
 class WorkspaceTheme {
@@ -47,30 +48,33 @@ class PayrollAdminScreen extends StatelessWidget {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= _lgBreakpoint;
 
+            if (!wide) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  scaffoldBackgroundColor: LeaveManagerColors.background,
+                  textTheme: GoogleFonts.manropeTextTheme(Theme.of(context).textTheme),
+                ),
+                child: const Scaffold(
+                  backgroundColor: LeaveManagerColors.background,
+                  body: PayrollMobileDashboard(),
+                ),
+              );
+            }
+
             return Theme(
               data: Theme.of(context).copyWith(
                 scaffoldBackgroundColor: WorkspaceTheme.scaffoldBg,
                 textTheme: GoogleFonts.interTextTheme(),
               ),
               child: Scaffold(
-                // Drawer for Mobile/Tablet
-                drawer: wide
-                    ? null
-                    : Drawer(
-                  backgroundColor: WorkspaceTheme.cardSurface,
-                  child: const PayrollSidebar(),
-                ),
-
-                // Bottom Nav for Mobile
-                bottomNavigationBar: wide ? null : const PayrollMobileNav(),
-
-                body: wide
-                    ? Row(
+                body: Row(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const PayrollSidebar(),
-                    // Vertical Divider line between Sidebar and Content
-                    const VerticalDivider(width: 1, color: WorkspaceTheme.borderSubtle),
+                    const VerticalDivider(
+                      width: 1,
+                      color: WorkspaceTheme.borderSubtle,
+                    ),
                     Expanded(
                       child: _MainColumn(
                         showDrawerBtn: false,
@@ -78,10 +82,6 @@ class PayrollAdminScreen extends StatelessWidget {
                       ),
                     ),
                   ],
-                )
-                    : _MainColumn(
-                  showDrawerBtn: true,
-                  state: state,
                 ),
               ),
             );
@@ -103,6 +103,11 @@ class _MainColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    final compact = w < 600;
+    final hPad = compact ? 12.0 : 24.0;
+    final vPad = compact ? 16.0 : 32.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -147,7 +152,7 @@ class _MainColumn extends StatelessWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1280),

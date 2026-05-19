@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Visual tokens aligned with admin dashboard / workspace chooser (purple + white).
 abstract final class BillingTheme {
   static const Color purple = Color(0xFF7C3AED);
   static const Color purpleDark = Color(0xFF4C1D95);

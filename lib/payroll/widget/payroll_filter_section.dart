@@ -36,134 +36,152 @@ class _PayrollFilterSectionState extends State<PayrollFilterSection> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
-      builder: (context, state) {
-        return Container(
+    return LayoutBuilder(
+      builder: (context, cons) {
+        final narrow = cons.maxWidth < 560;
+        final pad = narrow ? 16.0 : 24.0;
+        final searchW = narrow ? cons.maxWidth : 320.0;
 
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: WorkspaceTheme.cardSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: WorkspaceTheme.borderSubtle),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+        return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
+          builder: (context, state) {
+            final searchField = Container(
+              width: searchW,
+              decoration: BoxDecoration(
+                color: WorkspaceTheme.inputBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: WorkspaceTheme.borderSubtle),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'FILTER BY PERIOD',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: WorkspaceTheme.textMuted,
+              child: TextField(
+                controller: _searchCtrl,
+                cursorColor: WorkspaceTheme.primaryPurple,
+                onSubmitted: (v) => context
+                    .read<PayrollDashboardBloc>()
+                    .add(PayrollDashboardSearchSubmitted(v.trim())),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: WorkspaceTheme.textMain,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search employee name...',
+                  hintStyle: GoogleFonts.inter(
+                    color: WorkspaceTheme.textMuted,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: WorkspaceTheme.primaryPurple,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  _StyledDropdown<PayrollRecordsPaidFilter>(
-                    value: state.recordsPaidFilter,
-                    items: PayrollRecordsPaidFilter.values,
-                    labelBuilder: (f) {
-                      switch (f) {
-                        case PayrollRecordsPaidFilter.all:
-                          return 'Paid: All';
-                        case PayrollRecordsPaidFilter.paid:
-                          return 'Paid: Yes';
-                        case PayrollRecordsPaidFilter.unpaid:
-                          return 'Paid: No';
-                        case PayrollRecordsPaidFilter.unset:
-                          return 'Paid: Unset';
-                      }
-                    },
-                    onChanged: (f) {
-                      if (f == null) return;
-                      context.read<PayrollDashboardBloc>().add(
-                            PayrollRecordsPaidFilterChanged(f),
-                          );
-                    },
+            );
+
+            final applyBtn = ElevatedButton(
+              onPressed: () => context.read<PayrollDashboardBloc>().add(
+                    PayrollDashboardSearchSubmitted(_searchCtrl.text.trim()),
                   ),
-                  _StyledDropdown<int>(
-                    value: state.monthIndex.clamp(1, 12),
-                    items: List.generate(12, (i) => i + 1),
-                    labelBuilder: (m) => DateFormat('MMMM').format(DateTime(2024, m)),
-                    onChanged: (m) => context
-                        .read<PayrollDashboardBloc>()
-                        .add(PayrollDashboardMonthChanged(m!)),
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WorkspaceTheme.primaryPurple,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: narrow ? const Size.fromHeight(48) : null,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Apply Filter',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+              ),
+            );
 
-
-                  _StyledDropdown<int>(
-                    value: state.year,
-                    items: List.generate(5, (i) => DateTime.now().year - i),
-                    labelBuilder: (y) => '$y',
-                    onChanged: (y) => context
-                        .read<PayrollDashboardBloc>()
-                        .add(PayrollDashboardYearChanged(y!)),
-                  ),
-
-
-                  Container(
-                    width: 320,
-                    decoration: BoxDecoration(
-                      color: WorkspaceTheme.inputBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: WorkspaceTheme.borderSubtle),
-                    ),
-                    child: TextField(
-                      controller: _searchCtrl,
-                      cursorColor: WorkspaceTheme.primaryPurple,
-                      onSubmitted: (v) => context
-                          .read<PayrollDashboardBloc>()
-                          .add(PayrollDashboardSearchSubmitted(v.trim())),
-                      style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: WorkspaceTheme.textMain
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Search employee name...',
-                        hintStyle: GoogleFonts.inter(color: WorkspaceTheme.textMuted, fontWeight: FontWeight.w400),
-                        prefixIcon: const Icon(Icons.search_rounded,
-                            size: 20, color: WorkspaceTheme.primaryPurple),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
-                  ),
-
-
-                  ElevatedButton(
-                    onPressed: () => context.read<PayrollDashboardBloc>().add(
-                      PayrollDashboardSearchSubmitted(_searchCtrl.text.trim()),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: WorkspaceTheme.primaryPurple,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      'Apply Filter',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
-                    ),
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(pad),
+              decoration: BoxDecoration(
+                color: WorkspaceTheme.cardSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: WorkspaceTheme.borderSubtle),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'FILTER BY PERIOD',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: WorkspaceTheme.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _StyledDropdown<PayrollRecordsPaidFilter>(
+                        value: state.recordsPaidFilter,
+                        items: PayrollRecordsPaidFilter.values,
+                        labelBuilder: (f) {
+                          switch (f) {
+                            case PayrollRecordsPaidFilter.all:
+                              return 'Paid: All';
+                            case PayrollRecordsPaidFilter.paid:
+                              return 'Paid: Yes';
+                            case PayrollRecordsPaidFilter.unpaid:
+                              return 'Paid: No';
+                            case PayrollRecordsPaidFilter.unset:
+                              return 'Paid: Unset';
+                          }
+                        },
+                        onChanged: (f) {
+                          if (f == null) return;
+                          context.read<PayrollDashboardBloc>().add(
+                                PayrollRecordsPaidFilterChanged(f),
+                              );
+                        },
+                      ),
+                      _StyledDropdown<int>(
+                        value: state.monthIndex.clamp(1, 12),
+                        items: List.generate(12, (i) => i + 1),
+                        labelBuilder: (m) =>
+                            DateFormat('MMMM').format(DateTime(2024, m)),
+                        onChanged: (m) => context.read<PayrollDashboardBloc>().add(
+                              PayrollDashboardMonthChanged(m!),
+                            ),
+                      ),
+                      _StyledDropdown<int>(
+                        value: state.year,
+                        items: List.generate(5, (i) => DateTime.now().year - i),
+                        labelBuilder: (y) => '$y',
+                        onChanged: (y) => context.read<PayrollDashboardBloc>().add(
+                              PayrollDashboardYearChanged(y!),
+                            ),
+                      ),
+                      searchField,
+                      if (narrow)
+                        SizedBox(width: cons.maxWidth, child: applyBtn)
+                      else
+                        applyBtn,
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

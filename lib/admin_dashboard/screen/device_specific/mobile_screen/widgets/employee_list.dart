@@ -33,7 +33,7 @@ class EmployeeList extends StatelessWidget {
           employee: employee,
           onTap: () => onTap?.call(employee),
         );
-      },
+      }
     );
   }
 }

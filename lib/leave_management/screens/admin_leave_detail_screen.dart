@@ -1,457 +1,195 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
-import '../models/leave_request.dart';
 import '../block/leave_bloc.dart';
 import '../block/leave_event.dart';
+import '../models/leave_request.dart';
 
 class AdminLeaveDetailScreen extends StatelessWidget {
-  final LeaveRequest leave;
-
   const AdminLeaveDetailScreen({
     super.key,
     required this.leave,
   });
 
+  final LeaveRequest leave;
+
+  // Elite SaaS Palette from your shared images
+  static const Color _bgScreen = Color(0xFFFEF7F1);
+  static const Color _textMain = Color(0xFF1A1C1E);
+  static const Color _textMuted = Color(0xFF74777F);
+
   @override
   Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(leave);
+    final statusBg = statusColor.withOpacity(0.08);
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: _bgScreen,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.grey[900],
-        title: const Text(
-          "Leave Request Details",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-          ),
+        backgroundColor: Colors.transparent,
+        foregroundColor: _textMain,
+        title: Text(
+          'Request Detail',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 18),
         ),
-        centerTitle: false,
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
           children: [
-            // Status Banner
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _getStatusGradient(),
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: statusBg,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: statusColor.withOpacity(0.12), width: 1.5),
               ),
-              child: Row(
+              child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: statusColor,
+                      shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      _getStatusIcon(),
-                      color: Colors.white,
-                      size: 24,
+                    child: Icon(_getStatusIcon(leave), color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    leave.statusLabel.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: statusColor,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          leave.statusLabel,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Applied on ${leave.appliedAt.toString().split(' ')[0]}",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Applied on ${DateFormat('MMM d, yyyy').format(leave.appliedAt)}',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: _textMuted,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            // Employee Info Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.blue.shade400,
-                                  Colors.blue.shade600,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Center(
-                              child: Text(
-                                (leave.employeeName?.isNotEmpty ?? false)
-                                    ? leave.employeeName![0].toUpperCase()
-                                    : "E",
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  leave.employeeName ?? "Unknown",
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1a1a1a),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "Employee",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
             const SizedBox(height: 16),
 
-            // Leave Details Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+            // EMPLOYEE INFO
+            _DetailSection(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: const Color(0xFF4C4DBC).withOpacity(0.1),
+                    child: Text(
+                      leave.employeeName?[0].toUpperCase() ?? 'E',
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF4C4DBC),
+                      ),
                     ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Leave Information",
-                        style: TextStyle(
+                      Text(
+                        leave.employeeName ?? 'Unknown',
+                        style: GoogleFonts.manrope(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1a1a1a),
+                          fontWeight: FontWeight.w800,
+                          color: _textMain,
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      _modernInfoRow(
-                        Icons.category_outlined,
-                        "Leave Type",
-                        leave.displayLeaveType ?? "-",
-                        Colors.purple,
-                      ),
-                      _modernInfoRow(
-                        Icons.calendar_today_outlined,
-                        "Start Date",
-                        leave.startDate.toString().split(' ')[0],
-                        Colors.green,
-                      ),
-                      _modernInfoRow(
-                        Icons.event_outlined,
-                        "End Date",
-                        leave.endDate.toString().split(' ')[0],
-                        Colors.orange,
-                      ),
-                      _modernInfoRow(
-                        Icons.access_time_outlined,
-                        "Total Days",
-                        "${leave.totalDays} days",
-                        Colors.blue,
-                        isLast: true,
+                      Text(
+                        'Team Member',
+                        style: GoogleFonts.inter(fontSize: 13, color: _textMuted),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // Reason Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.description_outlined,
-                              size: 20,
-                              color: Colors.amber.shade700,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            "Reason",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1a1a1a),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.grey.shade200,
-                          ),
-                        ),
-                        child: Text(
-                          (leave.reason?.isNotEmpty ?? false)
-                              ? leave.reason!
-                              : "No reason provided",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: (leave.reason?.isNotEmpty ?? false)
-                                ? Colors.grey[800]
-                                : Colors.grey[500],
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
+            // LEAVE DATA SECTION
+            _DetailSection(
+              title: 'Leave Information',
+              child: Column(
+                children: [
+                  _InfoRow(label: 'TYPE', value: leave.displayLeaveType, icon: Icons.category_rounded),
+                  _InfoRow(
+                    label: 'DURATION',
+                    value: '${DateFormat('MMM d').format(leave.startDate)} - ${DateFormat('MMM d').format(leave.endDate)}',
+                    icon: Icons.calendar_month_rounded,
                   ),
-                ),
+                  _InfoRow(label: 'TOTAL', value: '${leave.totalDays} Days', icon: Icons.timer_rounded, isLast: true),
+                ],
               ),
             ),
 
+            const SizedBox(height: 16),
+
+            // REASON SECTION
+            _DetailSection(
+              title: 'Reason for Leave',
+              child: Text(
+                leave.reason.isNotEmpty ? leave.reason : 'No specific reason provided.',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: _textMain.withOpacity(0.8),
+                ),
+              ),
+            ),
             const SizedBox(height: 100),
           ],
         ),
       ),
-      // Action Buttons
-      bottomNavigationBar: leave.isPending
-          ? Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade500,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    context.read<LeaveBloc>().add(
-                      RejectLeaveEvent(
-                        leaveId: leave.id!,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.close, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        "Reject",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade500,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: () {
-                    context.read<LeaveBloc>().add(
-                      ApproveLeaveEvent(
-                        leaveId: leave.id!,
-                      ),
-                    );
-                    Navigator.pop(context);
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        "Approve",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      )
-          : null,
+      bottomNavigationBar: leave.isPending ? _buildActionButtons(context) : null,
     );
   }
 
-  // Modern Info Row with Icon
-  Widget _modernInfoRow(
-      IconData icon,
-      String label,
-      String value,
-      Color color, {
-        bool isLast = false,
-      }) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+  Widget _buildActionButtons(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: color,
+          Expanded(
+            child: _ActionBtn(
+              label: 'Reject',
+              color: const Color(0xFFB91C1C),
+              onPressed: () {
+                context.read<LeaveBloc>().add(RejectLeaveEvent(leaveId: leave.id!));
+                Navigator.pop(context);
+              },
+              isOutline: true,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF1a1a1a),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            child: _ActionBtn(
+              label: 'Approve',
+              color: const Color(0xFF15803D),
+              onPressed: () {
+                context.read<LeaveBloc>().add(ApproveLeaveEvent(leaveId: leave.id!));
+                Navigator.pop(context);
+              },
+              isOutline: false,
             ),
           ),
         ],
@@ -459,27 +197,108 @@ class AdminLeaveDetailScreen extends StatelessWidget {
     );
   }
 
-  // Get status gradient colors
-  List<Color> _getStatusGradient() {
-    if (leave.isPending) {
-      return [Colors.amber.shade400, Colors.amber.shade600];
-    } else if (leave.statusLabel.toLowerCase().contains('approve')) {
-      return [Colors.green.shade400, Colors.green.shade600];
-    } else if (leave.statusLabel.toLowerCase().contains('reject')) {
-      return [Colors.red.shade400, Colors.red.shade600];
-    }
-    return [Colors.grey.shade400, Colors.grey.shade600];
+  Color _getStatusColor(LeaveRequest leave) {
+    if (leave.isApproved) return const Color(0xFF15803D);
+    if (leave.isRejected) return const Color(0xFFB91C1C);
+    return const Color(0xFFF1833E);
   }
 
-  // Get status icon
-  IconData _getStatusIcon() {
-    if (leave.isPending) {
-      return Icons.pending_outlined;
-    } else if (leave.statusLabel.toLowerCase().contains('approve')) {
-      return Icons.check_circle_outline;
-    } else if (leave.statusLabel.toLowerCase().contains('reject')) {
-      return Icons.cancel_outlined;
-    }
-    return Icons.info_outline;
+  IconData _getStatusIcon(LeaveRequest leave) {
+    if (leave.isApproved) return Icons.check_rounded;
+    if (leave.isRejected) return Icons.close_rounded;
+    return Icons.hourglass_top_rounded;
+  }
+}
+
+class _DetailSection extends StatelessWidget {
+  final Widget child;
+  final String? title;
+  const _DetailSection({required this.child, this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Color(0xFFE9D8C8),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFFB14D1E).withOpacity(0.08),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFB14D1E).withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title != null) ...[
+            Text(
+              title!,
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+                color: const Color(0xFF1A1C1E),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          child,
+        ],
+      ),
+    );
+  }
+}
+class _InfoRow extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final bool isLast;
+  const _InfoRow({required this.label, required this.value, required this.icon, this.isLast = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFFB14D1E).withOpacity(0.7)),
+          const SizedBox(width: 12),
+          Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: const Color(0xFF74777F))),
+          const Spacer(),
+          Text(value, style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF1A1C1E))),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+  final bool isOutline;
+  const _ActionBtn({required this.label, required this.color, required this.onPressed, required this.isOutline});
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        elevation: 0,
+        backgroundColor: isOutline ? Colors.transparent : color,
+        foregroundColor: isOutline ? color : Colors.white,
+        side: isOutline ? BorderSide(color: color, width: 1.5) : BorderSide.none,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      child: Text(label, style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 16)),
+    );
   }
 }

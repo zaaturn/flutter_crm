@@ -14,6 +14,15 @@ class StartTaskPolling extends EmployeeEvent {}
 
 class StopTaskPolling extends EmployeeEvent {}
 
+/// Internal: 1-second UI ticker for attendance timers.
+class AttendanceTicked extends EmployeeEvent {}
+
+/// Internal: periodic server sync for tasks list.
+class PollTasksRequested extends EmployeeEvent {}
+
+/// Internal: periodic server sync for attendance.
+class PollAttendanceRequested extends EmployeeEvent {}
+
 class UpdateTaskStatus extends EmployeeEvent {
   final int taskId;
   final String status;

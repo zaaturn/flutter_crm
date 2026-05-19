@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'firebase_options.dart';
+import 'services/firebase_push_background_handler.dart';
 
 // Admin Lead
 import 'admin_page/bloc/lead_bloc.dart';
@@ -40,6 +41,9 @@ import 'package:my_app/event_management/features/notification/data/repositories/
 import 'package:my_app/event_management/features/notification/domain/usecases/fetch_notification_usecases.dart';
 import 'package:my_app/event_management/features/notification/domain/usecases/mark_read_usecases.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/event_management/core/network/websocket_client.dart';
+import 'package:my_app/event_management/features/notification/data/model/notification_model.dart';
+import 'package:my_app/event_management/features/events/data/models/event_model.dart';
 
 // Dashboards Feature
 import 'dashboards/data/datasource/post_remote_datasource.dart';
@@ -66,13 +70,6 @@ import 'package:my_app/client tracker/features/clients/repository/client_reposit
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-@pragma('vm:entry-point')
-Future<void> firebaseBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -91,7 +88,7 @@ Future<void> main() async {
 
   // Top-level background handler is for mobile isolates; on web it can error or block startup.
   if (!kIsWeb) {
-    FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
   // Shared API Client
@@ -182,8 +179,10 @@ Future<void> main() async {
             ),
           ),
         ],
-        child: const _NotificationAppResumeRefresh(
-          child: _GlobalLoaderOverlay(child: MyApp()),
+        child: const _RealtimeWsBootstrap(
+          child: _NotificationAppResumeRefresh(
+            child: _GlobalLoaderOverlay(child: MyApp()),
+          ),
         ),
       ),
     ),
@@ -201,6 +200,7 @@ Future<void> _initPushNotificationsAfterFirstFrame() async {
   try {
     if (kIsWeb) {
       // Web: tray = firebase-messaging-sw.js only; foreground onMessage refreshes in-app notifications.
+      // Avoid duplicate listeners: NotificationService replaces prior onMessage/onTokenRefresh subscriptions.
       final notificationService = NotificationService();
       await notificationService.init(navigatorKey);
       notificationService.listenForegroundMessages(navigatorKey);
@@ -215,6 +215,7 @@ Future<void> _initPushNotificationsAfterFirstFrame() async {
     await notificationService.init(navigatorKey);
     notificationService.listenForegroundMessages(navigatorKey);
     notificationService.handleNotificationTap(navigatorKey);
+    notificationService.listenForTokenRefresh(owner: 'mobile');
     await notificationService.handleInitialMessage(navigatorKey);
   } catch (e, st) {
     debugPrint('Push notification setup failed: $e\n$st');
@@ -230,6 +231,89 @@ class _NotificationAppResumeRefresh extends StatefulWidget {
   @override
   State<_NotificationAppResumeRefresh> createState() =>
       _NotificationAppResumeRefreshState();
+}
+
+/// Establishes a WebSocket connection and applies server-side event/notification
+/// changes into the in-memory blocs so mobile/desktop stay in sync.
+class _RealtimeWsBootstrap extends StatefulWidget {
+  final Widget child;
+  const _RealtimeWsBootstrap({required this.child});
+
+  @override
+  State<_RealtimeWsBootstrap> createState() => _RealtimeWsBootstrapState();
+}
+
+class _RealtimeWsBootstrapState extends State<_RealtimeWsBootstrap> {
+  final WebSocketClient _ws = WebSocketClient();
+  StreamSubscription<Map<String, dynamic>>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Fire-and-forget; client reconnects on drop.
+    unawaited(_ws.connect());
+    _sub = _ws.stream.listen(_onMessage, onError: (_) {});
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _ws.disconnect();
+    super.dispose();
+  }
+
+  void _onMessage(Map<String, dynamic> raw) {
+    if (!mounted) return;
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+
+    final data = Map<String, dynamic>.from(raw);
+    final type = (data['type'] ?? data['notif_type'] ?? '').toString().toLowerCase();
+
+    // Notifications (WS payloads are often already shaped like local push payloads).
+    final looksLikeNotification =
+        data.containsKey('title') ||
+        data.containsKey('body') ||
+        data.containsKey('notif_type') ||
+        data.containsKey('notif_id');
+    if (looksLikeNotification) {
+      try {
+        final notif = NotificationModel.fromWebSocket(data);
+        ctx.read<NotificationBloc>().add(NotificationReceived(notif));
+      } catch (_) {}
+    }
+
+    // Event sync: support a few common payload shapes.
+    try {
+      final action = (data['action'] ?? '').toString().toLowerCase();
+      final eventId = (data['event_id'] ?? data['id'])?.toString();
+      final eventRaw = data['event'];
+
+      if (eventId != null &&
+          (type.contains('event') || action.isNotEmpty) &&
+          (action == 'deleted' ||
+              action == 'delete' ||
+              action == 'removed' ||
+              action == 'remove' ||
+              type.contains('deleted') ||
+              type.contains('delete'))) {
+        ctx.read<EventBloc>().add(ExternalEventDeleted(eventId));
+        return;
+      }
+
+      if (eventRaw is Map) {
+        final eventJson = Map<String, dynamic>.from(
+          eventRaw.map((k, v) => MapEntry(k.toString(), v)),
+        );
+        final ev = EventModel.fromJson(eventJson);
+        ctx.read<EventBloc>().add(ExternalEventUpserted(ev));
+        return;
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _NotificationAppResumeRefreshState

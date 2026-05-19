@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/company_model.dart';
 import '../models/invoice_item_model.dart';
 import '../models/pdf_design_option.dart';
 import '../services/billing_api.dart';
 import '../services/billing_dio_api.dart';
-import '../theme/billing_theme.dart';
+import 'package:intl/intl.dart';
+import '../theme/billing_adaptive_theme.dart';
 import '../utils/pdf_design_mapper.dart';
 import '../widgets/amount_summary.dart';
 import '../widgets/billing_app_bar.dart';
@@ -22,6 +24,11 @@ class EditInvoiceDraftScreen extends StatefulWidget {
 }
 
 class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
+  static const Color _inkText = Color(0xFF1A1C1E);
+  static const Color _accentOrange = Color(0xFFB14D1E);
+  static const Color _clayFill = Color(0xFFF5E6DA);
+  static const Color _zaaturnInk = Color(0xFF8D5B39);
+
   final _clientNameCtrl = TextEditingController();
   final _clientGstinCtrl = TextEditingController();
   final _clientAddressCtrl = TextEditingController();
@@ -76,11 +83,7 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
       final client = (json['client_manual'] is Map<String, dynamic>)
           ? (json['client_manual'] as Map<String, dynamic>)
           : <String, dynamic>{};
-      final addr = (client['address'] is Map<String, dynamic>)
-          ? (client['address'] as Map<String, dynamic>)
-          : <String, dynamic>{};
 
-      // Backend may not include `client_manual` on GET; prefer `billing_to` / `client`.
       final billingTo = (json['billing_to'] is Map<String, dynamic>)
           ? (json['billing_to'] as Map<String, dynamic>)
           : <String, dynamic>{};
@@ -89,23 +92,14 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
           : <String, dynamic>{};
 
       final fallbackName = (billingTo['name'] ??
-              (json['client'] is Map<String, dynamic> ? (json['client']['name']) : null) ??
-              json['client_name'] ??
-              '')
-          .toString();
-      final fallbackGstin =
-          (billingTo['gstin'] ?? (json['client'] is Map<String, dynamic> ? (json['client']['gstin']) : null) ?? '')
-              .toString();
-      final fallbackAddress = (billingToAddr['full_address'] ??
-              billingTo['address'] ??
-              (json['client'] is Map<String, dynamic> ? (json['client']['address']?['full_address']) : null) ??
-              '')
+          (json['client'] is Map<String, dynamic> ? (json['client']['name']) : null) ??
+          json['client_name'] ??
+          '')
           .toString();
 
       _clientNameCtrl.text = (client['name'] ?? fallbackName).toString();
-      _clientGstinCtrl.text = (client['gstin'] ?? fallbackGstin).toString();
-      _clientAddressCtrl.text =
-          (addr['full_address'] ?? client['address'] ?? fallbackAddress).toString();
+      _clientGstinCtrl.text = (client['gstin'] ?? (billingTo['gstin'] ?? '')).toString();
+      _clientAddressCtrl.text = (client['address']?['full_address'] ?? billingToAddr['full_address'] ?? '').toString();
       _clientStateCtrl.text = (client['state'] ?? '').toString();
 
       invoiceDate = _parseDate(json['invoice_date'], DateTime.now());
@@ -119,17 +113,12 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
       items = parsedItems.isEmpty ? [InvoiceItemModel.empty()] : parsedItems;
 
       if (_companies.isNotEmpty) {
-        _selectedCompany = _companies.firstWhere(
-              (c) => c.id == companyId,
-          orElse: () => _companies.first,
-        );
+        _selectedCompany = _companies.firstWhere((c) => c.id == companyId, orElse: () => _companies.first);
       }
 
       if (_pdfDesigns.isNotEmpty) {
         final canonical = pdfDesign == null ? null : canonicalPdfDesignId(pdfDesign);
-        _selectedPdfDesign = canonical == null
-            ? _pdfDesigns.first
-            : _pdfDesigns.firstWhere(
+        _selectedPdfDesign = _pdfDesigns.firstWhere(
               (d) => canonicalPdfDesignId(d.id) == canonical,
           orElse: () => _pdfDesigns.first,
         );
@@ -184,27 +173,27 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
       SnackBar(
         content: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF059669),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: isError ? Colors.redAccent : const Color(0xFF0C56D0),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
     if (_loading) {
       return Scaffold(
-        backgroundColor: BillingTheme.scaffoldBg,
-        body: const Center(child: CircularProgressIndicator(color: BillingTheme.purple)),
+        backgroundColor: BillingAdaptiveTheme.bg(context),
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFF0C56D0))),
       );
     }
 
     final isDraft = (_status ?? '').toUpperCase() == 'DRAFT';
 
     return Scaffold(
-      backgroundColor: BillingTheme.scaffoldBg,
+      backgroundColor: BillingAdaptiveTheme.bg(context),
       appBar: billingAppBar(
-        title: isDraft ? 'Edit draft' : 'Invoice (read-only)',
+        title: isDraft ? 'Edit Draft' : 'Review Invoice',
         onBack: () => Navigator.of(context).maybePop(),
       ),
       body: Stack(
@@ -213,178 +202,133 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1000),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(40, 32, 40, 140),
+                padding: EdgeInsets.fromLTRB(wide ? 40 : 16, 32, wide ? 40 : 16, 160),
                 children: [
-                  _sectionHeader("SENDER INFRASTRUCTURE"),
+                  _sectionHeader(wide, "SENDER INFRASTRUCTURE"),
                   BillingFromDropdown(
                     companies: _companies,
                     selected: _selectedCompany,
                     onChanged: isDraft ? (c) => setState(() => _selectedCompany = c) : (_) {},
                   ),
                   const SizedBox(height: 32),
-                  _sectionHeader("VISUAL SCHEMATIC"),
-                  _pdfDesignPicker(enabled: isDraft),
+                  _sectionHeader(wide, "VISUAL SCHEMATIC"),
+                  _pdfDesignPicker(wide, enabled: isDraft),
                   const SizedBox(height: 32),
-                  _sectionHeader("TEMPORAL DATA"),
-                  Row(
-                    children: [
-                      Expanded(child: _dateField(label: "INVOICE DATE", value: invoiceDate, enabled: isDraft, onChanged: (d) => setState(() => invoiceDate = d))),
-                      const SizedBox(width: 16),
-                      Expanded(child: _dateField(label: "MATURITY DATE", value: dueDate, enabled: isDraft, onChanged: (d) => setState(() => dueDate = d))),
-                    ],
-                  ),
+                  _sectionHeader(wide, "TEMPORAL DATA"),
+                  _buildGrid(wide, [
+                    _dateField(wide, label: "INVOICE DATE", value: invoiceDate, enabled: isDraft, onChanged: (d) => setState(() => invoiceDate = d)),
+                    _dateField(wide, label: "DUE DATE", value: dueDate, enabled: isDraft, onChanged: (d) => setState(() => dueDate = d)),
+                  ]),
                   const SizedBox(height: 32),
-                  _sectionHeader("RECEIVER ENTITY"),
-                  _field("CLIENT LEGAL NAME", _clientNameCtrl, required: true, enabled: isDraft),
-                  Row(
-                    children: [
-                      Expanded(child: _field("TAX ID / GSTIN", _clientGstinCtrl, enabled: isDraft)),
-                      const SizedBox(width: 16),
-                      Expanded(child: _field("JURISDICTION / STATE", _clientStateCtrl, enabled: isDraft)),
-                    ],
-                  ),
-                  _field("OPERATIONAL ADDRESS", _clientAddressCtrl, enabled: isDraft),
+                  _sectionHeader(wide, "RECEIVER ENTITY"),
+                  _field(wide, "CLIENT LEGAL NAME", _clientNameCtrl, required: true, enabled: isDraft),
+                  _buildGrid(wide, [
+                    _field(wide, "TAX ID / GSTIN", _clientGstinCtrl, enabled: isDraft),
+                    _field(wide, "JURISDICTION / STATE", _clientStateCtrl, enabled: isDraft),
+                  ]),
+                  _field(wide, "OPERATIONAL ADDRESS", _clientAddressCtrl, enabled: isDraft),
                   const SizedBox(height: 32),
-                  _sectionHeader("LEDGER ITEMS"),
-                  _itemsSection(enabled: isDraft),
+                  _sectionHeader(wide, "LEDGER ITEMS"),
+                  _itemsSection(wide, enabled: isDraft),
                   const SizedBox(height: 48),
                   AmountSummary(items: items),
                 ],
               ),
             ),
           ),
-          _bottomSaveBar(enabled: isDraft),
+          _bottomSaveBar(wide, enabled: isDraft),
         ],
       ),
     );
   }
 
-  Widget _sectionHeader(String title) => Padding(
-    padding: const EdgeInsets.only(bottom: 24),
+  Widget _buildGrid(bool wide, List<Widget> children) {
+    if (!wide) return Column(children: children);
+    return Row(children: children.map((w) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: w))).toList());
+  }
+
+  Widget _sectionHeader(bool wide, String title) => Padding(
+    padding: const EdgeInsets.only(bottom: 20),
     child: Row(
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 11,
-            letterSpacing: 1.5,
+        Text(title,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            letterSpacing: 1.2,
             fontWeight: FontWeight.w900,
-            color: BillingTheme.purple,
+            color: wide ? const Color(0xFF0C56D0) : _accentOrange,
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(child: Container(height: 1, color: BillingTheme.border)),
+        const SizedBox(width: 12),
+        Expanded(child: Divider(color: wide ? const Color(0xFFE2E8F0) : _accentOrange.withOpacity(0.1))),
       ],
     ),
   );
 
-  Widget _field(String label, TextEditingController controller, {bool required = false, bool enabled = true}) {
+  Widget _field(bool wide, String label, TextEditingController controller, {bool required = false, bool enabled = true}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
         enabled: enabled,
-        style: TextStyle(
-          color: enabled ? BillingTheme.textPrimary : BillingTheme.textMuted,
-          fontSize: 14,
-        ),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: _inkText),
         decoration: InputDecoration(
-          labelText: required ? "${label.toUpperCase()} *" : label.toUpperCase(),
-          labelStyle: const TextStyle(color: BillingTheme.textMuted, fontSize: 10, letterSpacing: 1),
+          labelText: required ? "$label *" : label,
+          labelStyle: GoogleFonts.inter(color: const Color(0xFF74777F), fontSize: 11, fontWeight: FontWeight.w700),
           filled: true,
-          fillColor: BillingTheme.scaffoldBg,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          fillColor: wide ? Colors.white : _clayFill,
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.border),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: wide ? const Color(0xFFE2E8F0) : Colors.black.withOpacity(0.05)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.purple, width: 1.5),
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: wide ? const Color(0xFF0C56D0) : _accentOrange, width: 1.5),
           ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: BillingTheme.border),
-          ),
+          contentPadding: const EdgeInsets.all(16),
         ),
       ),
     );
   }
 
-  Widget _dateField({required String label, required DateTime value, required ValueChanged<DateTime> onChanged, required bool enabled}) {
+  Widget _dateField(bool wide, {required String label, required DateTime value, required ValueChanged<DateTime> onChanged, required bool enabled}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: !enabled ? null : () async {
-          final picked = await showDatePicker(
-            context: context,
-            initialDate: value,
-            firstDate: DateTime(2020),
-            lastDate: DateTime(2100),
-            builder: (ctx, child) => Theme(
-              data: BillingTheme.datePickerTheme(ctx),
-              child: child!,
-            ),
-          );
+          final picked = await showDatePicker(context: context, initialDate: value, firstDate: DateTime(2020), lastDate: DateTime(2100));
           if (picked != null) onChanged(picked);
         },
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
-            labelStyle: const TextStyle(color: BillingTheme.textMuted, fontSize: 10, letterSpacing: 1),
+            labelStyle: GoogleFonts.inter(color: const Color(0xFF74777F), fontSize: 11, fontWeight: FontWeight.w700),
             filled: true,
-            fillColor: BillingTheme.scaffoldBg,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BillingTheme.border),
-            ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: BillingTheme.border),
-            ),
+            fillColor: wide ? Colors.white : _clayFill,
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: wide ? const Color(0xFFE2E8F0) : Colors.transparent)),
           ),
-          child: Text(
-            _formatDate(value),
-            style: TextStyle(
-              color: enabled ? BillingTheme.textPrimary : BillingTheme.textMuted,
-              fontSize: 14,
-            ),
-          ),
+          child: Text(DateFormat('dd MMM yyyy').format(value), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: _inkText)),
         ),
       ),
     );
   }
 
-  Widget _pdfDesignPicker({required bool enabled}) {
+  Widget _pdfDesignPicker(bool wide, {required bool enabled}) {
     return DropdownButtonFormField<PdfDesignOption>(
       initialValue: _selectedPdfDesign,
-      dropdownColor: BillingTheme.surface,
-      style: TextStyle(
-        color: enabled ? BillingTheme.textPrimary : BillingTheme.textMuted,
-        fontSize: 14,
-      ),
       decoration: InputDecoration(
-        labelText: "SELECT PDF DESIGN",
-        labelStyle: const TextStyle(color: BillingTheme.textMuted, fontSize: 10, letterSpacing: 1),
+        labelText: "PDF SCHEMATIC",
+        labelStyle: GoogleFonts.inter(color: const Color(0xFF74777F), fontSize: 11, fontWeight: FontWeight.w700),
         filled: true,
-        fillColor: BillingTheme.scaffoldBg,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BillingTheme.border),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BillingTheme.border),
-        ),
+        fillColor: wide ? Colors.white : _clayFill,
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: wide ? const Color(0xFFE2E8F0) : Colors.transparent)),
       ),
-      items: _pdfDesigns.map((d) => DropdownMenuItem(value: d, child: Text(d.label.isNotEmpty ? d.label : d.id))).toList(),
+      items: _pdfDesigns.map((d) => DropdownMenuItem(value: d, child: Text(d.label))).toList(),
       onChanged: !enabled ? null : (v) => setState(() => _selectedPdfDesign = v),
     );
   }
 
-  Widget _itemsSection({required bool enabled}) {
+  Widget _itemsSection(bool wide, {required bool enabled}) {
     return Column(
       children: [
         ...items.asMap().entries.map((e) => InvoiceItemCard(
@@ -399,10 +343,10 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
             icon: const Icon(Icons.add_circle_outline, size: 18),
             label: const Text("APPEND ITEM LINE"),
             style: OutlinedButton.styleFrom(
-              foregroundColor: BillingTheme.purple,
-              side: const BorderSide(color: BillingTheme.purple),
+              foregroundColor: wide ? const Color(0xFF0C56D0) : _accentOrange,
+              side: BorderSide(color: wide ? const Color(0xFF0C56D0) : _accentOrange.withOpacity(0.2)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
           ),
         ]
@@ -410,14 +354,16 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
     );
   }
 
-  Widget _bottomSaveBar({required bool enabled}) {
+  Widget _bottomSaveBar(bool wide, {required bool enabled}) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(40, 20, 40, 40),
-        decoration: const BoxDecoration(
-          color: BillingTheme.surface,
-          border: Border(top: BorderSide(color: BillingTheme.border)),
+        padding: EdgeInsets.fromLTRB(wide ? 40 : 16, 20, wide ? 40 : 16, 20 + bottomPadding),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: wide ? null : const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
         ),
         child: SizedBox(
           width: double.infinity,
@@ -425,19 +371,13 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
           child: ElevatedButton(
             onPressed: (!enabled || _saving) ? null : _updateDraft,
             style: ElevatedButton.styleFrom(
-              backgroundColor: enabled ? BillingTheme.purple : BillingTheme.border,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              backgroundColor: wide ? const Color(0xFF0C56D0) : _zaaturnInk,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
             child: _saving
                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : Text(
-                    enabled ? 'Update draft' : 'Issued',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
+                : Text(enabled ? 'Update Draft' : 'Invoice Issued', style: GoogleFonts.manrope(fontWeight: FontWeight.w900, color: Colors.white)),
           ),
         ),
       ),

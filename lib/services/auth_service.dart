@@ -11,7 +11,7 @@ class AuthService {
   final SecureStorageService _storage = SecureStorageService();
 
   // =========================
-  // BASE URL (WEB + MOBILE)
+  // BASE URL (WEB + mobile)
   // =========================
   static const String _base =
   String.fromEnvironment('BASE_URL', defaultValue: 'http://192.168.1.13:8000');

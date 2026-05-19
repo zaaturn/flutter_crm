@@ -1,6 +1,14 @@
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
+// --- Duplicate web notifications (troubleshooting) ---
+// 1) Only this file should call showNotification for FCM background; Flutter web does NOT call it on onMessage.
+// 2) Build with: flutter build web --release --pwa-strategy=none (see build_web_for_fcm.bat) so Flutter does not
+//    register a second service worker at "/" that can interfere with push.
+// 3) Same Firebase project on two hostnames can register two SW scopes / duplicate tokens — clear site data or
+//    unregister old workers (Chrome DevTools → Application → Service Workers).
+// 4) Backend: dedupe FCM tokens per user so register-device is not stored twice for the same browser.
+
 // Activate this worker immediately so background push can show without waiting for tab refresh.
 self.addEventListener('install', function () {
   self.skipWaiting();

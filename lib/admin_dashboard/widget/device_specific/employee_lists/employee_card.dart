@@ -17,7 +17,7 @@ class EmployeeCard extends StatelessWidget {
     this.onEmail,
   });
 
-  // Consistant avatar color per employee
+  // Consistant avatar color per employ
   Color get _avatarColor {
     const colors = [
       AppColors.primary,
@@ -51,66 +51,77 @@ class EmployeeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── #EMP ID (top-right) ───────────────────
-          Align(
-            alignment: Alignment.topRight,
-            child: Text(
-              '#${employee.employeeId ?? ""}',
-              style: AppTextStyles.small, // Inherited theme style
+          // ── Main Content Area (Scrollable to prevent overflow) ──
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── #EMP ID (top-right) ───────────────────
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Text(
+                      '#${employee.employeeId ?? ""}',
+                      style: AppTextStyles.small,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // ── Avatar + status dot ───────────────────
+                  _buildAvatarStack(),
+                  const SizedBox(height: 10),
+
+                  // ── Name ─────────────────────────────────
+                  Text(
+                    employee.fullName,
+                    style: AppTextStyles.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+
+                  // ── Designation ───────────────────────────
+                  Text(
+                    employee.designation ?? '—',
+                    style: AppTextStyles.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ── Status badge ──────────────────────────
+                  _buildStatusBadge(),
+                  const SizedBox(height: 10),
+
+                  // ── Location + Department tags ─────────────
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      if (employee.workLocation?.isNotEmpty == true)
+                        _Tag(
+                          icon: Icons.location_on_outlined,
+                          label: employee.workLocation!,
+                          color: AppColors.textBody,
+                          bg: const Color(0xFFF3F4F6),
+                        ),
+                      if (employee.department?.isNotEmpty == true)
+                        _Tag(
+                          icon: Icons.corporate_fare,
+                          label: employee.department!,
+                          color: AppColors.primary,
+                          bg: AppColors.primaryLight,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 6),
 
-          // ── Avatar + status dot ───────────────────
-          _buildAvatarStack(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // ── Name ─────────────────────────────────
-          Text(
-            employee.fullName,
-            style: AppTextStyles.title, // Inherited theme style
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-
-          // ── Designation ───────────────────────────
-          Text(
-            employee.designation ?? '—',
-            style: AppTextStyles.subtitle, // Inherited theme style
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 10),
-
-          // ── Status badge ──────────────────────────
-          _buildStatusBadge(),
-          const SizedBox(height: 10),
-
-          // ── Location + Department tags ─────────────
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              if (employee.workLocation?.isNotEmpty == true)
-                _Tag(
-                  icon: Icons.location_on_outlined,
-                  label: employee.workLocation!,
-                  color: AppColors.textBody,
-                  bg: const Color(0xFFF3F4F6),
-                ),
-              if (employee.department?.isNotEmpty == true)
-                _Tag(
-                  icon: Icons.corporate_fare,
-                  label: employee.department!,
-                  color: AppColors.primary,
-                  bg: AppColors.primaryLight,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Action Buttons ────────────────────────
+          // ── Action Buttons (Fixed at bottom) ───────
           Row(
             children: [
               Expanded(

@@ -16,6 +16,12 @@ class SessionOverviewSection extends StatefulWidget {
 }
 
 class _SessionOverviewSectionState extends State<SessionOverviewSection> {
+  static const Color _bg = Color(0xFFFAF3E0);
+  static const Color _card = Color(0xFFEADBC8);
+  static const Color _terracotta = Color(0xFFC05E41);
+  static const Color _textDark = Color(0xFF3E2723);
+  static const Color _textMuted = Color(0xFF8D6E63);
+
   @override
   void initState() {
     super.initState();
@@ -70,8 +76,9 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
+        color: _card,
         borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: _terracotta.withValues(alpha: 0.10)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -90,14 +97,17 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Current Session', style: AppTextStyles.label(color: AppColors.onSurfaceVariant)),
+                  Text(
+                    'Current Session',
+                    style: AppTextStyles.label(color: _textMuted),
+                  ),
                   const SizedBox(height: 4),
                   Text(
                     isCheckedIn ? _fmtTimer(a?.netWork ?? Duration.zero) : '00:00:00',
                     style: AppTextStyles.headline(
                       fontSize: 42,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      color: _terracotta,
                     ).copyWith(letterSpacing: -1.0), // Corrected using copyWith
                   ),
                 ],
@@ -140,7 +150,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
           const SizedBox(height: 8),
           Text(
             'Breaks taken: ${a?.breakCount ?? 0}',
-            style: AppTextStyles.label(color: AppColors.onSurfaceVariant),
+            style: AppTextStyles.label(color: _textMuted),
           ),
           const SizedBox(height: 24),
           Row(
@@ -152,8 +162,8 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
                     label: Text(isOnBreak ? "Resume" : "Break"),
                     onPressed: loading ? null : () => context.read<EmployeeBloc>().add(ToggleBreakEvent()),
                     style: ElevatedButton.styleFrom(
-                      foregroundColor: AppColors.onSurface,
-                      backgroundColor: AppColors.surfaceContainerHigh,
+                      foregroundColor: _textDark,
+                      backgroundColor: Colors.white.withValues(alpha: 0.55),
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -169,7 +179,7 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
                   onPressed: loading ? null : () => _handlePunchInOut(context, isCheckedIn),
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
-                    backgroundColor: isCheckedIn ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    backgroundColor: isCheckedIn ? const Color(0xFFEF4444) : _terracotta,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -202,8 +212,21 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
         ),
       );
       if (confirm != true) return;
+    } else {
+      final a = context.read<EmployeeBloc>().state.attendance;
+      if (a != null && a.checkOutTime != null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Attendance is already complete for today.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
     }
-    if (mounted) context.read<EmployeeBloc>().add(ToggleCheckInEvent());
+    if (!context.mounted) return;
+    context.read<EmployeeBloc>().add(ToggleCheckInEvent());
   }
 
   Widget _buildStat(String label, String value) {
@@ -212,10 +235,21 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
       children: [
         Text(
             label.toUpperCase(),
-            style: AppTextStyles.label(fontSize: 10, fontWeight: FontWeight.w700).copyWith(letterSpacing: 1.1)
+            style: AppTextStyles.label(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: _textMuted,
+            ).copyWith(letterSpacing: 1.1)
         ),
         const SizedBox(height: 4),
-        Text(value, style: AppTextStyles.body(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.onSurface)),
+        Text(
+          value,
+          style: AppTextStyles.body(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: _textDark,
+          ),
+        ),
       ],
     );
   }

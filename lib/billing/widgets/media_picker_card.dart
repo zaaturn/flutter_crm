@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/billing/theme/billing_theme.dart';
 
 class MediaPickerCard extends StatefulWidget {
@@ -8,6 +9,7 @@ class MediaPickerCard extends StatefulWidget {
   final String? url;
   final ValueChanged<XFile> onUploaded;
   final String? helperText;
+  final BoxDecoration? decoration;
 
   const MediaPickerCard({
     super.key,
@@ -15,6 +17,7 @@ class MediaPickerCard extends StatefulWidget {
     required this.url,
     required this.onUploaded,
     this.helperText,
+    this.decoration,
   });
 
   @override
@@ -28,7 +31,6 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
   @override
   void didUpdateWidget(covariant MediaPickerCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // If the source url changes (e.g. after save), clear local preview bytes.
     if (oldWidget.url != widget.url) {
       _pickedBytes = null;
       _bytesSourceHint = null;
@@ -62,7 +64,7 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
     if (!hasUrl && _pickedBytes == null) {
       return const Icon(
         Icons.add_a_photo_outlined,
-        color: Colors.grey,
+        color: Color(0xFF74777F),
       );
     }
 
@@ -73,7 +75,7 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
         errorBuilder: (_, __, ___) {
           return const Icon(
             Icons.image_not_supported_outlined,
-            color: Colors.grey,
+            color: Color(0xFF74777F),
           );
         },
       );
@@ -86,13 +88,12 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
         errorBuilder: (_, __, ___) {
           return const Icon(
             Icons.image_not_supported_outlined,
-            color: Colors.grey,
+            color: Color(0xFF74777F),
           );
         },
       );
     }
 
-    // Fallback: try to load bytes from local path/blob URL.
     return FutureBuilder<Uint8List>(
       future: XFile(url ?? '').readAsBytes(),
       builder: (context, snapshot) {
@@ -100,7 +101,7 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
         if (bytes == null || snapshot.hasError) {
           return const Icon(
             Icons.image_not_supported_outlined,
-            color: Colors.grey,
+            color: Color(0xFF74777F),
           );
         }
         return Image.memory(bytes, fit: BoxFit.contain);
@@ -110,15 +111,20 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 840;
+
+    final Color inkColor = wide ? const Color(0xFF1A1C1E) : const Color(0xFF8D5B39);
+    final Color accentColor = wide ? BillingTheme.purple : const Color(0xFFB14D1E);
+
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: widget.decoration ?? BoxDecoration(
         color: BillingTheme.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: BillingTheme.border),
         boxShadow: [
           BoxShadow(
-            color: BillingTheme.purple.withValues(alpha: 0.05),
+            color: accentColor.withOpacity(0.05),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -128,23 +134,27 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
         children: [
           Text(
             widget.title,
-            style: const TextStyle(
+            style: GoogleFonts.manrope(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
+              color: inkColor,
             ),
           ),
           if ((widget.helperText ?? '').trim().isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               widget.helperText!,
-              style: const TextStyle(fontSize: 11, color: BillingTheme.textMuted),
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                color: const Color(0xFF74777F),
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
           const SizedBox(height: 12),
-
           _DashedBorder(
-            color: BillingTheme.purple.withValues(alpha: 0.55),
+            color: accentColor.withOpacity(0.3),
             radius: 14,
             strokeWidth: 1.6,
             dash: 6,
@@ -153,7 +163,7 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
               height: 110,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: BillingTheme.scaffoldBg,
+                color: wide ? BillingTheme.scaffoldBg : const Color(0xFFFFFDFB),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: ClipRRect(
@@ -162,24 +172,22 @@ class _MediaPickerCardState extends State<MediaPickerCard> {
               ),
             ),
           ),
-
           const SizedBox(height: 8),
-
           if ((_bytesSourceHint ?? "").isNotEmpty)
             Text(
               _bytesSourceHint!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: Colors.grey),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF74777F)),
             ),
-
           TextButton(
             onPressed: _pickImage,
-            child: const Text(
+            child: Text(
               "Change",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w900,
                 fontSize: 13,
+                color: accentColor,
               ),
             ),
           ),

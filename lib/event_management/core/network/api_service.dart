@@ -1,6 +1,6 @@
 
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 class ApiClient {
   /// Host root only; paths in [ApiEndpoints] include the `/api` prefix so this matches [services.ApiClient].
@@ -31,10 +31,11 @@ class ApiClient {
 }
 
 class _AuthInterceptor extends Interceptor {
+  final SecureStorageService _storage = SecureStorageService();
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = await _storage.readToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
@@ -48,9 +49,10 @@ class _AuthInterceptor extends Interceptor {
       final refreshed = await _refreshToken();
       if (refreshed) {
         // Retry original request
-        final prefs = await SharedPreferences.getInstance();
-        final newToken = prefs.getString('access_token');
-        err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+        final newToken = await _storage.readToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+        }
         try {
           final dio = Dio();
           final response = await dio.fetch(err.requestOptions);
@@ -63,17 +65,32 @@ class _AuthInterceptor extends Interceptor {
 
   Future<bool> _refreshToken() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString('refresh_token');
+      final refreshToken = await _storage.readRefreshToken();
       if (refreshToken == null) return false;
 
-      final dio = Dio();
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: ApiClient.baseUrl,
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 15),
+          headers: const {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        ),
+      );
       final response = await dio.post(
-        '${ApiClient.baseUrl}/api/auth/token/refresh/',
+        '/api/accounts/crm/token/refresh/',
         data: {'refresh': refreshToken},
       );
 
-      await prefs.setString('access_token', response.data['access']);
+      final access = response.data['access']?.toString();
+      if (access == null || access.isEmpty) return false;
+      await _storage.saveToken(access);
+      final newRefresh = response.data['refresh']?.toString();
+      if (newRefresh != null && newRefresh.isNotEmpty) {
+        await _storage.saveRefreshToken(newRefresh);
+      }
       return true;
     } catch (_) {
       return false;
@@ -109,7 +126,7 @@ class ApiEndpoints {
   // Auth
   static const String login = '/api/auth/token/';
   static const String register = '/api/auth/register/';
-  static const String tokenRefresh = '/api/auth/token/refresh/';
+  static const String tokenRefresh = '/api/accounts/crm/token/refresh/';
   static const String profile = '/api/auth/profile/';
   static const String users = '/api/auth/users/';
 

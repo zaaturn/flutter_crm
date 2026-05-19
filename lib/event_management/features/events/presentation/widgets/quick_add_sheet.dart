@@ -24,7 +24,7 @@ class QuickAddSheet extends StatefulWidget {
     if (isDesktop) {
       return showDialog(
         context: context,
-        barrierColor: Colors.black.withOpacity(0.35),
+        barrierColor: Colors.black.withValues(alpha: 0.35),
         builder: (dialogCtx) => _inheritBlocs(
           context,
           Dialog(
@@ -79,6 +79,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _focusNode.requestFocus();
     });
   }
@@ -243,15 +244,23 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (_) => EventCreateScreen(
-                            prefillDate: widget.selectedDate,
-                            prefillTitle: _titleController.text.trim(),
-                          ),
-                        ),
-                      );
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      final nav = Navigator.of(context, rootNavigator: true);
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!context.mounted) return;
+                        if (nav.canPop()) nav.pop();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!context.mounted) return;
+                          Navigator.of(context, rootNavigator: true).push<void>(
+                            MaterialPageRoute<void>(
+                              builder: (_) => EventCreateScreen(
+                                prefillDate: widget.selectedDate,
+                                prefillTitle: _titleController.text.trim(),
+                              ),
+                            ),
+                          );
+                        });
+                      });
                     },
                     icon: const Icon(Icons.tune, size: 16),
                     label: const Text('More options'),

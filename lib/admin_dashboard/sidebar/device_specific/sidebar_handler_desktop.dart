@@ -25,7 +25,7 @@ import 'package:my_app/leave_management/screens/device_specific/admin_leave_appr
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
 
-import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_desktop.dart';
+import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
 
 import 'package:my_app/admin_dashboard/screen/device_specific/employee_list_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';
@@ -179,7 +179,7 @@ class SidebarHandler {
           break;
 
         case SidebarAction.events:
-          _push(parentContext, const CalendarScreenDesktop());
+          _push(parentContext, const EventManagementShell());
           break;
 
         case SidebarAction.superadminUsers:

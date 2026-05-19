@@ -173,10 +173,17 @@ class EventDetailLocationCard extends StatelessWidget {
   }
 
   Future<void> _open(String url) async {
-    final uri = Uri.tryParse(url);
+    final normalized = _normalizeWebUrl(url);
+    final uri = Uri.tryParse(normalized);
     if (uri == null) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  String _normalizeWebUrl(String raw) {
+    final v = raw.trim();
+    if (v.isEmpty) return v;
+    final lower = v.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return v;
+    return 'https://$v';
   }
 }

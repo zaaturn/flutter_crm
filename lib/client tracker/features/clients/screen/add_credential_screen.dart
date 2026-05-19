@@ -4,7 +4,8 @@ import '../bloc/client_bloc.dart';
 import '../bloc/client_event.dart';
 import 'package:my_app/client tracker/core/constants/crm_widget.dart';
 import 'package:my_app/client tracker/core/constants/app_theme.dart';
-import 'package:my_app/client tracker/core/constants/app_constant.dart';
+import 'package:my_app/client tracker/features/clients/models/client_platform_choices.dart';
+import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 class AddCredentialScreen extends StatefulWidget {
   final int clientId;
@@ -19,16 +20,6 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
   String platform = "youtube";
   final username = TextEditingController();
   final password = TextEditingController();
-
-  final List<Map<String, String>> platformChoices = [
-    {'value': 'youtube', 'label': 'YouTube'},
-    {'value': 'facebook', 'label': 'Facebook'},
-    {'value': 'instagram', 'label': 'Instagram'},
-    {'value': 'google_ads', 'label': 'Google Ads'},
-    {'value': 'meta_ads', 'label': 'Meta Ads'},
-    {'value': 'website', 'label': 'Website'},
-    {'value': 'other', 'label': 'Other'},
-  ];
 
   void _save() {
     if (username.text.isEmpty || password.text.isEmpty) {
@@ -57,28 +48,26 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Using kRadius from your app_constant.dart
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+    final narrow = MediaQuery.sizeOf(context).width < 900;
+    final scaffold = Scaffold(
+      backgroundColor:
+          narrow ? LeaveManagerColors.background : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Add New Credential"),
+        title: Text(
+          'Add New Credential',
+          style: AppTextStyles.subheading.copyWith(
+            color: narrow ? LeaveManagerColors.primary : AppColors.text,
+          ),
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: narrow ? LeaveManagerColors.primary : Colors.black,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CrmButton(
-              '← Back',
-              style: BtnStyle.ghost,
-              onTap: () => Navigator.pop(context),
-            ),
-
-            const SizedBox(height: 24),
-
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -99,7 +88,7 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
                   CrmDropdown<String>(
                     label: "Select Platform",
                     value: platform,
-                    items: platformChoices.map((choice) {
+                    items: ClientPlatformChoices.entries.map((choice) {
                       return DropdownMenuItem(
                         value: choice['value']!,
                         child: Text(choice['label']!),
@@ -131,6 +120,10 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
                     child: CrmButton(
                       "Save Credential",
                       onTap: _save,
+                      brandPrimary:
+                          narrow ? LeaveManagerColors.primary : null,
+                      brandPrimaryHover:
+                          narrow ? LeaveManagerColors.primaryDark : null,
                     ),
                   )
                 ],
@@ -139,6 +132,19 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
           ],
         ),
       ),
+    );
+
+    if (!narrow) return scaffold;
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: LeaveManagerColors.primary,
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: LeaveManagerColors.background,
+      ),
+      child: scaffold,
     );
   }
 }

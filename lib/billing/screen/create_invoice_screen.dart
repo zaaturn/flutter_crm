@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 import '../models/company_model.dart';
@@ -7,6 +8,7 @@ import '../models/invoice_model.dart';
 import '../models/pdf_design_option.dart';
 import '../services/billing_api.dart';
 import '../theme/billing_theme.dart';
+import '../theme/billing_adaptive_theme.dart';
 import '../utils/pdf_design_mapper.dart';
 import '../widgets/billing_app_bar.dart';
 import '../widgets/billing_from_dropdown.dart';
@@ -27,8 +29,13 @@ class CreateInvoiceScreen extends StatefulWidget {
 }
 
 class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
-  final SecureStorageService _storage = SecureStorageService();
+  static const Color _inkText = Color(0xFF1A1C1E);
+  static const Color _accentOrange = Color(0xFFB14D1E);
+  static const Color _clayFill = Color(0xFFF5E6DA);
+  static const Color _paperWhite = Color(0xFFFFFDFB);
+  static const Color _zaaturnInk = Color(0xFF8D5B39);
 
+  final SecureStorageService _storage = SecureStorageService();
   final _clientNameCtrl = TextEditingController();
   final _clientGstinCtrl = TextEditingController();
   final _clientAddressCtrl = TextEditingController();
@@ -140,8 +147,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       SnackBar(
         content: Text(msg, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? const Color(0xFFDC2626) : BillingTheme.purple,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF0C56D0),
       ),
     );
   }
@@ -150,17 +156,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Widget build(BuildContext context) {
     if (_initializing) {
       return Scaffold(
-        backgroundColor: BillingTheme.scaffoldBg,
-        body: const Center(
-          child: CircularProgressIndicator(color: BillingTheme.purple),
-        ),
+        backgroundColor: BillingAdaptiveTheme.bg(context),
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFF0C56D0))),
       );
     }
 
     return Scaffold(
-      backgroundColor: BillingTheme.scaffoldBg,
+      backgroundColor: BillingAdaptiveTheme.bg(context),
       appBar: billingAppBar(
-        title: 'Create invoice',
+        title: 'Create Invoice',
         onBack: () => Navigator.of(context).maybePop(),
       ),
       body: LayoutBuilder(
@@ -169,42 +173,28 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
           final left = _leftColumn(wide: wide);
           final right = _rightColumn(wide: wide);
 
-          if (!wide) {
-            return Stack(
-              children: [
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 120),
-                  children: [
-                    left,
-                    const SizedBox(height: 16),
-                    right,
-                  ],
-                ),
-                _bottomBar(),
-              ],
-            );
-          }
-
           return Stack(
             children: [
               Align(
                 alignment: Alignment.topCenter,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 22, 20, 120),
+                  padding: EdgeInsets.fromLTRB(wide ? 20 : 16, 22, wide ? 20 : 16, 140),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1280),
-                    child: Row(
+                    child: wide
+                        ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(flex: 3, child: left),
                         const SizedBox(width: 18),
                         Expanded(flex: 2, child: right),
                       ],
-                    ),
+                    )
+                        : Column(children: [left, const SizedBox(height: 16), right]),
                   ),
                 ),
               ),
-              _bottomBar(),
+              _bottomBar(wide),
             ],
           );
         },
@@ -212,79 +202,85 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _bottomBar() {
+  Widget _bottomBar(bool wide) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPadding),
         decoration: BoxDecoration(
-          color: BillingTheme.surface,
-          border: const Border(top: BorderSide(color: BillingTheme.border)),
+          color: Colors.white,
+          borderRadius: wide ? null : const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
           boxShadow: [
             BoxShadow(
-              color: BillingTheme.purple.withValues(alpha: 0.06),
+              color: _accentOrange.withOpacity(0.06),
               blurRadius: 18,
               offset: const Offset(0, -8),
             ),
           ],
         ),
-        child: SizedBox(
-          width: double.infinity,
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: BillingTheme.textPrimary,
-                    side: const BorderSide(color: BillingTheme.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text('Discard', style: TextStyle(fontWeight: FontWeight.w800)),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _inkText,
+                  side: BorderSide(color: Colors.black.withOpacity(0.1)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
+                child: const Text('Discard', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _saving ? null : _createInvoice,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: BillingTheme.purple,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: _saving
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Save & Continue', style: TextStyle(fontWeight: FontWeight.w900)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _saving ? null : _createInvoice,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: wide ? const Color(0xFF0C56D0) : _zaaturnInk,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
+                child: _saving
+                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Save & Continue', style: TextStyle(fontWeight: FontWeight.w900)),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _leftColumn({required bool wide}) {
+    final Color fieldFill = wide ? BillingTheme.surface : _clayFill;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Create new invoice', style: BillingTheme.titleLarge()),
+        Text('Create New Invoice',
+            style: GoogleFonts.manrope(
+              fontSize: wide ? 32 : 28,
+              fontWeight: FontWeight.w900,
+              color: _inkText,
+              letterSpacing: -0.5,
+            )),
         const SizedBox(height: 6),
-        Text('Draft', style: BillingTheme.body()),
+        Text('DRAFT MODE',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+              color: _accentOrange,
+            )),
         const SizedBox(height: 18),
         InvoiceSectionCard(
           icon: Icons.business_rounded,
-          title: 'Sender infrastructure',
+          title: 'Sender Infrastructure',
           child: BillingFromDropdown(
             companies: _companies,
             selected: _state.selectedCompany,
@@ -294,41 +290,38 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         const SizedBox(height: 14),
         InvoiceSectionCard(
           icon: Icons.person_outline_rounded,
-          title: 'Receiver entity',
+          title: 'Receiver Entity',
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: InvoiceTextField(
-                      controller: _state.clientNameCtrl,
-                      label: 'Client legal name',
-                      hint: 'e.g. Acme Corp',
-                      requiredField: true,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InvoiceTextField(
-                      controller: _state.clientGstinCtrl,
-                      label: 'Tax ID / GSTIN',
-                      hint: 'e.g. GST123...',
-                    ),
-                  ),
-                ],
-              ),
+              _buildGrid(wide, [
+                InvoiceTextField(
+                  controller: _state.clientNameCtrl,
+                  label: 'Client Legal Name',
+                  hint: 'Acme Corp',
+                  requiredField: true,
+                  fillColor: fieldFill,
+                ),
+                InvoiceTextField(
+                  controller: _state.clientGstinCtrl,
+                  label: 'Tax ID / GSTIN',
+                  hint: 'GST...',
+                  fillColor: fieldFill,
+                ),
+              ]),
               const SizedBox(height: 12),
               InvoiceTextField(
                 controller: _state.clientAddressCtrl,
-                label: 'Operational address',
-                hint: 'Street address, building, suite...',
+                label: 'Operational Address',
+                hint: 'Building, Suite...',
                 maxLines: 2,
+                fillColor: fieldFill,
               ),
               const SizedBox(height: 12),
               InvoiceTextField(
                 controller: _state.clientStateCtrl,
-                label: 'Jurisdiction / state',
+                label: 'State',
                 hint: 'State',
+                fillColor: fieldFill,
               ),
             ],
           ),
@@ -336,8 +329,8 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         const SizedBox(height: 14),
         InvoiceSectionCard(
           icon: Icons.list_alt_rounded,
-          title: 'Ledger items',
-          child: _itemsEditor(),
+          title: 'Ledger Items',
+          child: _itemsEditor(wide),
         ),
       ],
     );
@@ -349,7 +342,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       children: [
         InvoiceSectionCard(
           icon: Icons.palette_outlined,
-          title: 'Visual schematic',
+          title: 'Visual Schematic',
           child: PdfDesignGrid(
             options: _pdfDesigns,
             selected: _state.selectedDesign,
@@ -359,7 +352,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         const SizedBox(height: 14),
         InvoiceSectionCard(
           icon: Icons.calendar_month_rounded,
-          title: 'Temporal data',
+          title: 'Temporal Data',
           child: TemporalCard(
             invoiceDate: _state.invoiceDate,
             dueDate: _state.dueDate,
@@ -377,28 +370,35 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     );
   }
 
-  Widget _itemsEditor() {
+  Widget _buildGrid(bool wide, List<Widget> children) {
+    if (!wide) return Column(children: children.map((w) => Padding(padding: const EdgeInsets.only(bottom: 12), child: w)).toList());
+    return Row(children: children.map((w) => Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: w))).toList());
+  }
+
+  Widget _itemsEditor(bool wide) {
     return Column(
       children: [
         ..._state.items.asMap().entries.map(
               (e) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ItemEditorCard(
-                  item: e.value,
-                  onRemove: () => setState(() => _state.items.removeAt(e.key)),
-                  onChanged: () => setState(() {}),
-                ),
-              ),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _ItemEditorCard(
+              wide: wide,
+              item: e.value,
+              onRemove: () => setState(() => _state.items.removeAt(e.key)),
+              onChanged: () => setState(() {}),
             ),
+          ),
+        ),
         OutlinedButton.icon(
           onPressed: () => setState(() => _state.items.add(InvoiceItemModel.empty())),
-          icon: const Icon(Icons.add_circle_outline_rounded),
-          label: const Text('Append item line'),
+          icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+          label: const Text('APPEND ITEM LINE'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: BillingTheme.purple,
-            side: const BorderSide(color: BillingTheme.border),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            foregroundColor: _accentOrange,
+            side: BorderSide(color: _accentOrange.withOpacity(0.15)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            textStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.1),
           ),
         ),
       ],
@@ -407,11 +407,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 }
 
 class _ItemEditorCard extends StatelessWidget {
+  final bool wide;
   final InvoiceItemModel item;
   final VoidCallback onRemove;
   final VoidCallback onChanged;
 
   const _ItemEditorCard({
+    required this.wide,
     required this.item,
     required this.onRemove,
     required this.onChanged,
@@ -419,91 +421,92 @@ class _ItemEditorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color fill = wide ? BillingTheme.scaffoldBg : const Color(0xFFF5E6DA);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: BillingTheme.scaffoldBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: BillingTheme.border),
+        color: wide ? BillingTheme.scaffoldBg : const Color(0xFFFFFDFB),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
       ),
       child: Column(
         children: [
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: TextEditingController(text: item.name)
-                    ..selection = TextSelection.collapsed(offset: item.name.length),
+                child: _field(
+                  label: 'Product / Service',
+                  value: item.name,
+                  fill: fill,
+                  keyboardType: TextInputType.text,
+                  hintText: 'Service or product',
                   onChanged: (v) {
                     item.name = v;
                     onChanged();
                   },
-                  decoration: InputDecoration(
-                    labelText: 'Service / product',
-                    filled: true,
-                    fillColor: BillingTheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: BillingTheme.border),
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: onRemove,
-                icon: const Icon(Icons.delete_outline_rounded),
+                icon: const Icon(Icons.delete_outline_rounded, size: 20),
                 color: const Color(0xFFDC2626),
-                tooltip: 'Remove',
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: _numField(
-                  label: 'HSN/SAC',
-                  value: item.hsnSacCode,
-                  onChanged: (v) {
-                    item.hsnSacCode = v;
-                    onChanged();
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
+                  child: _field(
+                      label: 'HSN',
+                      value: item.hsnSacCode,
+                      fill: fill,
+                      keyboardType: TextInputType.number,
+                      hintText: 'HSN/SAC',
+                      onChanged: (v) {
+                        item.hsnSacCode = v;
+                        onChanged();
+                      })),
+              const SizedBox(width: 8),
               Expanded(
-                child: _numField(
-                  label: 'Qty',
-                  value: item.quantity.toString(),
-                  onChanged: (v) {
-                    item.quantity = double.tryParse(v) ?? item.quantity;
-                    onChanged();
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
+                  child: _field(
+                      label: 'Qty',
+                      value: item.quantity.toString(),
+                      fill: fill,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      hintText: '0',
+                      onChanged: (v) {
+                        item.quantity = double.tryParse(v) ?? 1;
+                        onChanged();
+                      })),
+              const SizedBox(width: 8),
               Expanded(
-                child: _numField(
-                  label: 'Unit price',
-                  value: item.unitPrice == 0 ? '' : item.unitPrice.toString(),
-                  onChanged: (v) {
-                    item.unitPrice = double.tryParse(v) ?? item.unitPrice;
-                    onChanged();
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
+                  child: _field(
+                      label: 'Price',
+                      value: item.unitPrice.toString(),
+                      fill: fill,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      hintText: '0.00',
+                      onChanged: (v) {
+                        item.unitPrice = v.isEmpty ? 0.0 : (double.tryParse(v) ?? item.unitPrice);
+                        onChanged();
+                      })),
+              const SizedBox(width: 8),
               Expanded(
-                child: _numField(
-                  label: 'Tax %',
-                  value: item.taxRate.toString(),
-                  onChanged: (v) {
-                    item.taxRate = double.tryParse(v) ?? item.taxRate;
-                    onChanged();
-                  },
-                ),
-              ),
+                  child: _field(
+                      label: 'Tax %',
+                      value: item.taxRate.toString(),
+                      fill: fill,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      hintText: '0',
+                      onChanged: (v) {
+                        item.taxRate = double.tryParse(v) ?? 0;
+                        onChanged();
+                      })),
             ],
           ),
         ],
@@ -511,25 +514,36 @@ class _ItemEditorCard extends StatelessWidget {
     );
   }
 
-  Widget _numField({
+  Widget _field({
     required String label,
     required String value,
+    required Color fill,
     required ValueChanged<String> onChanged,
+    required TextInputType keyboardType,
+    required String hintText,
   }) {
-    return TextField(
-      controller: TextEditingController(text: value)
-        ..selection = TextSelection.collapsed(offset: value.length),
+    return TextFormField(
+
+      initialValue: (value == '0.0' || value == '0') ? '' : value,
       onChanged: onChanged,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: keyboardType,
+      style: GoogleFonts.inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF1A1C1E),
+      ),
       decoration: InputDecoration(
         labelText: label,
+        hintText: hintText,
+        hintStyle: GoogleFonts.inter(color: const Color(0xFF74777F).withOpacity(0.4)),
+        labelStyle: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF74777F)),
         filled: true,
-        fillColor: BillingTheme.surface,
+        fillColor: fill,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: BillingTheme.border),
+          borderSide: BorderSide.none,
         ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       ),
     );
-  }
-}
+  }}

@@ -257,7 +257,7 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 1.5,
+        childAspectRatio: 1.1, // Adjusted from 1.5 to provide more vertical space
       ),
       itemCount: employees.length +
           (state.status == EmployeeListStatus.loadingMore ? 1 : 0),

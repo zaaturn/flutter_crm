@@ -4,7 +4,12 @@ import 'package:intl/intl.dart';
 
 import 'package:my_app/dashboards/domain/models/post_model.dart';
 import 'package:my_app/dashboards/domain/repository/post_repository.dart';
+import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
+import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
+import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/employee_dashboard/widget/employee_feed_chrome.dart';
 
 class SharedPostsSection extends StatefulWidget {
   const SharedPostsSection({super.key});
@@ -14,12 +19,13 @@ class SharedPostsSection extends StatefulWidget {
 }
 
 class _SharedPostsSectionState extends State<SharedPostsSection> {
-  // --- DAXARROW Purple Palette ---
-  static const _purple = Color(0xFF7C3AED);
-  static const _purpleLight = Color(0xFFF5F3FF);
   static const _textMain = Color(0xFF0F172A);
   static const _textMuted = Color(0xFF64748B);
-  static const _borderPurple = Color(0xFFEDE9FE);
+  static const _creamBg = Color(0xFFFAF3E0);
+  static const _beigeCard = Color(0xFFEADBC8);
+  static const _terracotta = Color(0xFFC05E41);
+  static const _coffee = Color(0xFF3E2723);
+  static const _coffeeMuted = Color(0xFF8D6E63);
 
   Future<List<PostModel>> _load(PostRepository repo) async {
     final allPosts = await repo.fetchPosts(category: 'shared', pageSize: 10);
@@ -41,27 +47,32 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
   @override
   Widget build(BuildContext context) {
     final repo = context.read<PostRepository>();
+    final chrome = EmployeeFeedChrome.of(context);
+    final narrow = MediaQuery.sizeOf(context).width < 900;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               'Shared Items',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: _textMain,
+                color: narrow ? _coffee : _textMain,
                 letterSpacing: -0.5,
               ),
             ),
             const Spacer(),
             TextButton(
-              onPressed: () => Navigator.of(context).pushNamed('/feed'),
-              child: const Text(
+              onPressed: () => EmployeeDashboardNavigator.feed(context),
+              child: Text(
                 'View all',
-                style: TextStyle(color: _purple, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: narrow ? _terracotta : chrome.accent,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -69,12 +80,18 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: narrow ? _beigeCard : Colors.white,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _borderPurple, width: 1.5),
+            border: Border.all(
+              color: narrow
+                  ? _terracotta.withValues(alpha: 0.14)
+                  : chrome.borderAccent,
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
-                color: _purple.withOpacity(0.04),
+                color: (narrow ? _terracotta : chrome.accent)
+                    .withValues(alpha: 0.06),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -86,21 +103,29 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
               future: _load(repo),
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _purple)),
+                  return Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: chrome.accent,
+                      ),
+                    ),
                   );
                 }
 
                 final posts = snap.data ?? [];
 
                 if (posts.isEmpty) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.all(30),
                     child: Center(
                       child: Text(
                         'No fresh items shared in the last 24h',
-                        style: TextStyle(color: _textMuted, fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: narrow ? _coffeeMuted : _textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   );
@@ -113,9 +138,10 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
                     thickness: 1,
-                    color: _borderPurple.withOpacity(0.5),
+                    color: chrome.borderAccent.withValues(alpha: 0.65),
                   ),
-                  itemBuilder: (context, i) => _Row(post: posts[i]),
+                  itemBuilder: (context, i) =>
+                      _Row(post: posts[i], chrome: chrome),
                 );
               },
             ),
@@ -128,11 +154,13 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
 
 class _Row extends StatelessWidget {
   final PostModel post;
-  const _Row({required this.post});
+  final EmployeeFeedChrome chrome;
+  const _Row({required this.post, required this.chrome});
 
   @override
   Widget build(BuildContext context) {
     final title = post.title?.trim().isNotEmpty == true ? post.title!.trim() : 'Untitled Post';
+    final narrow = MediaQuery.sizeOf(context).width < 900;
 
 
     final localTime = post.createdAt.toLocal();
@@ -140,9 +168,41 @@ class _Row extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => PostDetailScreen(postId: post.id)),
-        );
+        final narrow = MediaQuery.sizeOf(context).width < 900;
+        if (narrow) {
+          Navigator.of(context)
+              .push<void>(
+            PageRouteBuilder<void>(
+              opaque: true,
+              fullscreenDialog: true,
+              pageBuilder: (_, __, ___) => PostDetailScreenMobile(
+                postId: post.id,
+              ),
+              transitionsBuilder: (_, animation, __, child) {
+                return FadeTransition(
+                  opacity: CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOut,
+                  ),
+                  child: child,
+                );
+              },
+            ),
+          )
+              .then((_) {
+            if (context.mounted) {
+              context.read<PostBloc>().add(
+                    FetchPosts(category: 'shared'),
+                  );
+            }
+          });
+        } else {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PostDetailScreen(postId: post.id),
+            ),
+          );
+        }
       },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -152,10 +212,16 @@ class _Row extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F3FF),
+                color: narrow
+                    ? const Color(0xFFFFFFFF).withValues(alpha: 0.6)
+                    : chrome.accentLight,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.rss_feed_rounded, color: Color(0xFF7C3AED), size: 20),
+              child: Icon(
+                Icons.rss_feed_rounded,
+                color: narrow ? const Color(0xFFC05E41) : chrome.accent,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -163,9 +229,9 @@ class _Row extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: narrow ? const Color(0xFF3E2723) : const Color(0xFF0F172A),
                   fontSize: 14,
                 ),
               ),
@@ -173,14 +239,20 @@ class _Row extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               formattedTime,
-              style: const TextStyle(
-                color: Color(0xFF7C3AED),
+              style: TextStyle(
+                color: narrow ? const Color(0xFFC05E41) : chrome.accent,
                 fontWeight: FontWeight.w800,
                 fontSize: 11,
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFEDE9FE), size: 14),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: narrow
+                  ? const Color(0xFF8D6E63).withValues(alpha: 0.75)
+                  : chrome.borderAccent,
+              size: 14,
+            ),
           ],
         ),
       ),

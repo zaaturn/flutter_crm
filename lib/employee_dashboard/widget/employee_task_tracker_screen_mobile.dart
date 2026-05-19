@@ -32,11 +32,14 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
   String? _selectedPriority;
   final TextEditingController _searchCtrl = TextEditingController();
 
-  // Modern SaaS Palette
-  static const _bg = Colors.white;
-  static const _indigo = Color(0xFF5452F6);
-  static const _textMain = Color(0xFF1E293B);
-  static const _textMuted = Color(0xFF64748B);
+  // Mobile terracotta palette (matches other mobile modules)
+  static const _bg = Color(0xFFFAF3E0); // cream
+  static const _surface = Color(0xFFF6E7D2); // beige card
+  static const _terracotta = Color(0xFFD9822B);
+  static const _terracottaDark = Color(0xFFB85C1E);
+  static const _textMain = Color(0xFF3E2C1C);
+  static const _textMuted = Color(0xFF7A5C3E);
+  static const _border = Color(0x33B85C1E);
 
   @override
   void dispose() {
@@ -95,6 +98,9 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
   PreferredSizeWidget _buildAppBar() => AppBar(
     backgroundColor: _bg,
     elevation: 0,
+    scrolledUnderElevation: 0,
+    surfaceTintColor: Colors.transparent,
+    shadowColor: Colors.transparent,
     centerTitle: false,
     title: const Text("My Tasks",
         style: TextStyle(color: _textMain, fontSize: 24, fontWeight: FontWeight.w900)),
@@ -102,7 +108,7 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
       IconButton(
         onPressed: () => setState(() => _isBoardView = !_isBoardView),
         icon: Icon(_isBoardView ? Icons.view_agenda_outlined : Icons.grid_view_outlined,
-            color: _indigo),
+            color: _terracottaDark),
       )
     ],
   );
@@ -117,8 +123,9 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: _surface,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _border),
               ),
               child: TextField(
                 controller: _searchCtrl,
@@ -145,12 +152,12 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: hasActiveFilters ? _indigo : Colors.white,
+          color: hasActiveFilters ? _terracottaDark : _surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _indigo.withOpacity(0.2)),
+          border: Border.all(color: _border),
         ),
         child: Icon(Icons.tune_rounded,
-            color: hasActiveFilters ? Colors.white : _indigo),
+            color: hasActiveFilters ? Colors.white : _terracottaDark),
       ),
     );
   }
@@ -180,9 +187,9 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildBoardColumn("Pending", pending, Colors.orange),
-            _buildBoardColumn("Active", active, _indigo),
-            _buildBoardColumn("Done", done, Colors.green),
+            _buildBoardColumn("Pending", pending, _terracotta),
+            _buildBoardColumn("Active", active, _terracottaDark),
+            _buildBoardColumn("Done", done, const Color(0xFF2F7D32)),
           ],
         ),
       ),
@@ -194,9 +201,16 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
       width: MediaQuery.of(context).size.width * 0.82,
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: _surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: color.withOpacity(0.1)),
+        border: Border.all(color: color.withOpacity(0.18)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -263,7 +277,7 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
               const SizedBox(height: 30),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _indigo,
+                  backgroundColor: _terracottaDark,
                   minimumSize: const Size(double.infinity, 54),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
@@ -295,7 +309,7 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
           label: Text(opt.replaceAll('_', ' ')),
           selected: isSelected,
           onSelected: (val) => setModalState(() => onSelected(val ? opt : null)),
-          selectedColor: _indigo,
+          selectedColor: _terracottaDark,
           labelStyle: TextStyle(color: isSelected ? Colors.white : _textMain, fontWeight: FontWeight.bold, fontSize: 12),
         );
       }).toList(),
@@ -326,21 +340,29 @@ class _MobileTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const bg = _EmployeeTaskTrackerScreenMobileState._bg;
+    const surface = _EmployeeTaskTrackerScreenMobileState._surface;
+    const terracotta = _EmployeeTaskTrackerScreenMobileState._terracotta;
+    const terracottaDark = _EmployeeTaskTrackerScreenMobileState._terracottaDark;
+    const textMain = _EmployeeTaskTrackerScreenMobileState._textMain;
+    const textMuted = _EmployeeTaskTrackerScreenMobileState._textMuted;
+    const border = _EmployeeTaskTrackerScreenMobileState._border;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: highlight ? const Color(0xFF5452F6) : Colors.grey.shade100,
+          color: highlight ? terracottaDark : border,
           width: highlight ? 2.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
             color: highlight
-                ? const Color(0xFF5452F6).withOpacity(0.12)
-                : Colors.black.withOpacity(0.02),
+                ? terracottaDark.withOpacity(0.16)
+                : Colors.black.withOpacity(0.05),
             blurRadius: highlight ? 16 : 10,
             offset: const Offset(0, 4),
           )
@@ -358,12 +380,12 @@ class _MobileTaskCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text(task.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
+          Text(task.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textMain)),
           const SizedBox(height: 8),
           // Description expands to full length
           Text(
             task.description,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 14, height: 1.5),
+            style: const TextStyle(color: textMuted, fontSize: 14, height: 1.5),
           ),
         ],
       ),
@@ -371,7 +393,12 @@ class _MobileTaskCard extends StatelessWidget {
   }
 
   Widget _priorityBadge(String priority) {
-    Color color = priority == 'HIGH' ? Colors.red : (priority == 'MEDIUM' ? Colors.orange : Colors.blue);
+    // Keep priority distinct but harmonized with terracotta palette.
+    final Color color = switch (priority.toUpperCase()) {
+      'HIGH' => const Color(0xFFB42318),
+      'MEDIUM' => const Color(0xFFB85C1E),
+      _ => const Color(0xFF1D4ED8),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
@@ -386,14 +413,26 @@ class _MobileTaskCard extends StatelessWidget {
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(color: const Color(0xFF5452F6).withOpacity(0.05), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+          color: _EmployeeTaskTrackerScreenMobileState._terracottaDark.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _EmployeeTaskTrackerScreenMobileState._border),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(task.status.replaceAll('_', ' '),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF5452F6))),
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: _EmployeeTaskTrackerScreenMobileState._terracottaDark,
+                )),
             const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: Color(0xFF5452F6)),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 14,
+              color: _EmployeeTaskTrackerScreenMobileState._terracottaDark,
+            ),
           ],
         ),
       ),

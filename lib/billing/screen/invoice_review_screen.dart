@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/billing/models/invoice_review_model.dart';
 import 'package:my_app/billing/models/pdf_design_option.dart';
 import 'package:my_app/billing/screen/invoice_detail/invoice_detail_layout.dart';
 import 'package:my_app/billing/services/billing_api.dart';
 import 'package:my_app/billing/services/billing_dio_api.dart';
-import 'package:my_app/billing/utils/pdf_saver.dart';
 import 'package:my_app/billing/utils/pdf_design_mapper.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
-import '../theme/billing_theme.dart';
+import '../theme/billing_adaptive_theme.dart';
 import '../widgets/billing_app_bar.dart';
+import '../navigation/billing_flow_controller.dart';
 
 class InvoiceReviewScreen extends StatefulWidget {
   final String invoiceId;
@@ -60,8 +60,8 @@ class _InvoiceReviewScreenState extends State<InvoiceReviewScreen> {
         _selectedPdfDesign = _pickInitialDesign(current: data.pdfDesign, options: _pdfDesigns);
         loading = false;
       });
-    } catch (_) {
-      _setError("Failed to load invoice");
+    } catch (e) {
+      _setError("Failed to sync invoice details.");
     }
   }
 
@@ -101,30 +101,7 @@ class _InvoiceReviewScreenState extends State<InvoiceReviewScreen> {
       });
       _showSnackBar("Invoice issued successfully", isError: false);
     } catch (_) {
-      _showSnackBar("Issue failed");
-    } finally {
-      if (mounted) setState(() => actionLoading = false);
-    }
-  }
-
-  Future<void> _saveDesignIfDraft() async {
-    if (invoice == null || _token == null) return;
-    if (invoice!.status.toUpperCase() != "DRAFT") return;
-    if (_selectedPdfDesign == null) return;
-
-    setState(() => actionLoading = true);
-    try {
-      final selectedId = canonicalPdfDesignId(_selectedPdfDesign!.id);
-      await BillingApi.updateInvoiceDesign(token: _token!, invoiceId: invoice!.id, pdfDesign: selectedId);
-      final refreshed = await BillingApi.getInvoiceReview(token: _token!, invoiceId: widget.invoiceId);
-      if (!mounted) return;
-      setState(() {
-        invoice = refreshed;
-        _selectedPdfDesign = _pickInitialDesign(current: refreshed.pdfDesign, options: _pdfDesigns);
-      });
-      _showSnackBar("PDF design updated", isError: false);
-    } catch (_) {
-      _showSnackBar("Failed to update design");
+      _showSnackBar("Issue failed.");
     } finally {
       if (mounted) setState(() => actionLoading = false);
     }
@@ -136,76 +113,88 @@ class _InvoiceReviewScreenState extends State<InvoiceReviewScreen> {
     try {
       final bytes = await BillingDioApi.downloadInvoicePdfBytes(invoiceId: invoice!.id);
       final ts = DateTime.now().millisecondsSinceEpoch;
-      final path = await savePdfBytes(bytes: bytes, filename: "INV-${invoice!.id}-$ts.pdf");
-      _showSnackBar(path == null ? "Download started." : "Invoice saved locally.", isError: false);
+      if (!mounted) return;
+      await BillingFlowController.saveAndOpenPdf(
+        context,
+        bytes: bytes,
+        filename: "INV-${invoice!.id}-$ts.pdf",
+      );
     } catch (e) {
-      _showSnackBar("Download failed");
+      _showSnackBar("Download failed.");
     } finally {
       if (mounted) setState(() => actionLoading = false);
     }
-  }
-
-  Future<void> _share() async {
-    // Share UI removed per design requirements.
   }
 
   void _showSnackBar(String message, {bool isError = true}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF059669),
+        content: Text(message, style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF0C56D0),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = BillingAdaptiveTheme.isMobile(context);
+
     return Scaffold(
-      backgroundColor: BillingTheme.scaffoldBg,
+      backgroundColor: BillingAdaptiveTheme.bg(context),
       appBar: billingAppBar(
-        title: 'Invoice',
+        title: 'Invoice Review',
         onBack: () => Navigator.of(context).maybePop(),
       ),
-      body: _buildBody(),
+      body: _buildBody(isMobile),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(bool isMobile) {
     if (loading) {
-      return const Center(child: CircularProgressIndicator(color: BillingTheme.purple));
-    }
-    if (_errorMessage != null) {
       return Center(
-        child: Text(_errorMessage!, style: const TextStyle(color: BillingTheme.textMuted)),
+        child: CircularProgressIndicator(color: isMobile ? const Color(0xFF8D5B39) : const Color(0xFF0C56D0)),
       );
     }
-    if (invoice == null) {
-      return const Center(
-        child: Text('Data missing', style: TextStyle(color: BillingTheme.textMuted)),
-      );
+
+    if (_errorMessage != null) {
+      return Center(child: Text(_errorMessage!));
     }
+
+    if (invoice == null) return const Center(child: Text('Data error.'));
 
     return Stack(
       children: [
-        InvoiceDetailLayout(
-          inv: invoice!,
-          onDownload: invoice!.status.toUpperCase() == 'DRAFT' ? () {
-            _showSnackBar('Issue invoice to enable PDF download.');
-          } : _download,
-          onIssue: invoice!.status.toUpperCase() == 'DRAFT' ? _issue : null,
+        // FIX: Replaced CustomScrollView/IntrinsicHeight with a simpler Column layout
+        // This allows the inner LayoutBuilder to receive proper width constraints.
+        SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(isMobile ? 16 : 40, 24, isMobile ? 16 : 40, 140),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: InvoiceDetailLayout(
+                    inv: invoice!,
+                    onDownload: invoice!.status.toUpperCase() == 'DRAFT'
+                        ? () => _showSnackBar('Issue the invoice first.')
+                        : _download,
+                    onIssue: invoice!.status.toUpperCase() == 'DRAFT' ? _issue : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        if (actionLoading) _buildLoadingOverlay(),
+        if (actionLoading)
+          Container(
+            color: Colors.white.withOpacity(0.7),
+            child: const Center(child: CircularProgressIndicator(color: Color(0xFF8D5B39))),
+          ),
       ],
     );
   }
-
-  Widget _buildLoadingOverlay() => Container(
-    color: BillingTheme.scaffoldBg.withValues(alpha: 0.85),
-    child: const Center(child: CircularProgressIndicator(color: BillingTheme.purple)),
-  );
-
-  // Removed bottom bar actions to match the requested UI.
 }

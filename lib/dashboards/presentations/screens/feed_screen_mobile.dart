@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -7,8 +8,10 @@ import 'package:my_app/dashboards/domain/models/post_model.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
-import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
+import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
+import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 class FeedScreenMobile extends StatefulWidget {
   const FeedScreenMobile({super.key});
@@ -18,7 +21,6 @@ class FeedScreenMobile extends StatefulWidget {
 }
 
 class _FeedScreenMobileState extends State<FeedScreenMobile> {
-  static const _bg = Colors.white;
   static const _textMuted = Color(0xFF64748B);
 
   String? _category;
@@ -28,7 +30,7 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
     if (nav.canPop()) {
       nav.pop();
     } else {
-      nav.pushNamedAndRemoveUntil('/employeeDashboard', (r) => false);
+      EmployeeDashboardNavigator.dashboard(context);
     }
   }
 
@@ -44,28 +46,43 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: LeaveManagerColors.background,
       appBar: AppBar(
-        backgroundColor: _bg,
+        backgroundColor: LeaveManagerColors.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
+        foregroundColor: LeaveManagerColors.primary,
         leading: IconButton(
           onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         ),
-        title: const Text(''),
+        title: Text(
+          'Feeds',
+          style: GoogleFonts.manrope(
+            fontWeight: FontWeight.w900,
+            fontSize: 18,
+            color: LeaveManagerColors.onBackground,
+          ),
+        ),
+        centerTitle: false,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: LeaveManagerColors.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
       ),
-      bottomNavigationBar: const BottomNav(),
+      bottomNavigationBar: const BottomNav(currentIndex: 2),
       body: RefreshIndicator(
         onRefresh: () async {
           context.read<PostBloc>().add(FetchPosts(category: _category));
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           children: [
-            const _FeedHeader(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             _Tabs(
               selected: _category,
               onSelected: (c) {
@@ -77,9 +94,13 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
             BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
                 if (state is PostLoading || state is PostInitial) {
-                  return const Padding(
-                    padding: EdgeInsets.only(top: 40),
-                    child: Center(child: CircularProgressIndicator()),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: LeaveManagerColors.primary,
+                      ),
+                    ),
                   );
                 }
                 if (state is PostError) {
@@ -97,11 +118,32 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
                         .map((p) => _Row(
                               post: p,
                               onOpen: () {
-                                Navigator.of(context).push<void>(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => PostDetailScreen(postId: p.id),
+                                Navigator.of(context)
+                                    .push<void>(
+                                  PageRouteBuilder<void>(
+                                    opaque: true,
+                                    fullscreenDialog: true,
+                                    pageBuilder: (_, __, ___) =>
+                                        PostDetailScreenMobile(
+                                      postId: p.id,
+                                    ),
+                                    transitionsBuilder: (_, animation, __, child) {
+                                      return FadeTransition(
+                                        opacity: CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOut,
+                                        ),
+                                        child: child,
+                                      );
+                                    },
                                   ),
-                                );
+                                )
+                                    .then((_) {
+                                  if (!context.mounted) return;
+                                  context.read<PostBloc>().add(
+                                        FetchPosts(category: _category),
+                                      );
+                                });
                               },
                             ))
                         .toList(),
@@ -117,43 +159,10 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
   }
 }
 
-class _FeedHeader extends StatelessWidget {
-  const _FeedHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Feeds',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1E293B),
-            letterSpacing: -0.6,
-          ),
-        ),
-        SizedBox(height: 6),
-        Text(
-          'Curated updates from across the organization.',
-          style: TextStyle(
-            fontSize: 13,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _Tabs extends StatelessWidget {
   final String? selected;
   final ValueChanged<String?> onSelected;
   const _Tabs({required this.selected, required this.onSelected});
-
-  static const _primary = Color(0xFF525FE1);
 
   @override
   Widget build(BuildContext context) {
@@ -176,10 +185,14 @@ class _Tabs extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
                 decoration: BoxDecoration(
-                  color: isSel ? _primary : const Color(0xFFF1F5F9),
+                  color: isSel
+                      ? LeaveManagerColors.primary
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: isSel ? _primary : const Color(0xFFE2E8F0),
+                    color: isSel
+                        ? LeaveManagerColors.primary
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: Text(
@@ -204,8 +217,6 @@ class _Row extends StatelessWidget {
   final PostModel post;
   final VoidCallback onOpen;
   const _Row({required this.post, required this.onOpen});
-
-  static const _purple = Color(0xFF525FE1);
 
   bool get _hasLink => (post.link ?? '').trim().isNotEmpty;
 
@@ -285,7 +296,10 @@ class _Row extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF525FE1), width: 2),
+        border: Border.all(
+          color: LeaveManagerColors.primary.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -368,14 +382,14 @@ class _Row extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: _purple),
+                      border: Border.all(color: LeaveManagerColors.primary),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.link,
                           size: 16,
-                          color: _purple,
+                          color: LeaveManagerColors.primary,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -383,10 +397,10 @@ class _Row extends StatelessWidget {
                             post.link!.trim(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: _purple,
+                              color: LeaveManagerColors.primary,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -426,7 +440,10 @@ class _Row extends StatelessWidget {
                         .read<PostBloc>()
                         .add(MarkPostAsRead(post.id)),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF525FE1), width: 2),
+                      side: BorderSide(
+                        color: LeaveManagerColors.primary,
+                        width: 2,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),
@@ -435,13 +452,13 @@ class _Row extends StatelessWidget {
                         vertical: 10,
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'MARK AS SEEN',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.0,
-                        color: Color(0xFF525FE1),
+                        color: LeaveManagerColors.primary,
                       ),
                     ),
                   ),
@@ -488,15 +505,15 @@ class _Initials extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFEEF0FF),
+        color: const Color(0xFFEFF3FF),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         initials,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w900,
-          color: Color(0xFF525FE1),
+          color: LeaveManagerColors.primary,
         ),
       ),
     );

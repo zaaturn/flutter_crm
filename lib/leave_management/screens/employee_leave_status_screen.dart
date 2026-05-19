@@ -46,15 +46,17 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: const Color(0xFFFAF3E0),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFAF3E0),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         title: const Text(
           "Leave Status",
           style: TextStyle(
-            color: Color(0xFF111827),
+            color: Color(0xFF3E2723),
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -127,10 +129,14 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreen> {
       duration: const Duration(milliseconds: 400),
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: highlight ? accentColor.withOpacity(0.05) : Colors.white,
+        color: highlight
+            ? accentColor.withOpacity(0.05)
+            : const Color(0xFFEADBC8),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: highlight ? accentColor : Colors.grey.withOpacity(0.15),
+          color: highlight
+              ? accentColor
+              : const Color(0xFFC05E41).withOpacity(0.12),
           width: highlight ? 2 : 1,
         ),
         boxShadow: [

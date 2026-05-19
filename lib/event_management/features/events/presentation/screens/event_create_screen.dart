@@ -23,7 +23,6 @@ import '../widgets/event_create/event_type_of_entry_section.dart';
 import '../widgets/participant_picker.dart';
 import '../utils/event_snackbar.dart';
 
-/// Event composer: layout widgets live under `widgets/event_create/`.
 class EventCreateScreen extends StatefulWidget {
   final DateTime? prefillDate;
   final String? prefillTitle;

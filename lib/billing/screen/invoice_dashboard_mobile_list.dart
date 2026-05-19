@@ -26,17 +26,32 @@ class InvoiceDashboardMobileList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFFF9F3EE),
+      child: _buildList(),
+    );
+  }
+
+  Widget _buildList() {
     if (items.isEmpty) {
       return ListView(
         children: [
           const SizedBox(height: 80),
-          Center(child: Text('No invoices this month.', style: BillingTheme.body())),
+          Center(
+            child: Text(
+              'No invoices this month.',
+              style: BillingTheme.body().copyWith(
+                color: const Color(0xFF1A1C1E).withOpacity(0.5),
+              ),
+            ),
+          ),
         ],
       );
     }
 
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      physics: const BouncingScrollPhysics(),
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (_, i) {
@@ -54,4 +69,3 @@ class InvoiceDashboardMobileList extends StatelessWidget {
     );
   }
 }
-

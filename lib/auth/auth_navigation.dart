@@ -9,6 +9,7 @@ import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen.dart'
 import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/aniamtion_welcome.dart';
 
 /// Central post-login and shell switching (employee / admin / superadmin).
 class AuthNavigation {
@@ -24,22 +25,21 @@ class AuthNavigation {
     if (session.isSuperuser) {
       await auth.setActiveDashboard(ActiveDashboard.admin);
       if (!context.mounted) return;
-      await _pushDashboardForAdmin(context, ActiveDashboard.admin);
+      await _pushDashboardForAdmin(context, ActiveDashboard.admin, loginResponse);
       return;
     }
 
     if (session.isAdmin) {
       final existing = await auth.readActiveDashboard();
       if (existing == null) {
+        // Default first-time admin login to the admin shell.
+        await auth.setActiveDashboard(ActiveDashboard.admin);
         if (!context.mounted) return;
-        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const DashboardChooserScreen()),
-          (_) => false,
-        );
+        await _pushDashboardForAdmin(context, ActiveDashboard.admin, loginResponse);
         return;
       }
       if (!context.mounted) return;
-      await _pushDashboardForAdmin(context, existing);
+      await _pushDashboardForAdmin(context, existing, loginResponse);
       return;
     }
 
@@ -60,16 +60,46 @@ class AuthNavigation {
   static Future<void> _pushDashboardForAdmin(
     BuildContext context,
     ActiveDashboard dash,
+    Map<String, dynamic> loginResponse,
   ) async {
     if (!context.mounted) return;
     if (dash == ActiveDashboard.admin) {
+      final String? displayName = () {
+        try {
+          final user = loginResponse['user'];
+          if (user is Map) {
+            final first = (user['first_name'] ?? user['firstName'] ?? '').toString().trim();
+            final last = (user['last_name'] ?? user['lastName'] ?? '').toString().trim();
+            final full = ('$first $last').trim();
+            if (full.isNotEmpty) return full;
+          }
+        } catch (_) {}
+        return null;
+      }();
+
       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (_) => const AdaptiveLayout(
-            mobile: AdminDashboardMobile(),
-            tablet: AdminDashboardMobile(),
-            webDesktop: AdminDashboardDesktop(),
-          ),
+          builder: (routeCtx) {
+            return AdaptiveLayout(
+              mobile: AdminWelcomeScreen(
+                displayName: displayName,
+                onDone: () {
+                  Navigator.of(routeCtx, rootNavigator: true).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => const AdaptiveLayout(
+                        mobile: AdminDashboardMobile(),
+                        tablet: AdminDashboardMobile(),
+                        webDesktop: AdminDashboardDesktop(),
+                      ),
+                    ),
+                    (_) => false,
+                  );
+                },
+              ),
+              tablet: AdminDashboardMobile(),
+              webDesktop: AdminDashboardDesktop(),
+            );
+          },
         ),
         (_) => false,
       );
@@ -92,8 +122,21 @@ class AuthNavigation {
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(
-        builder: (_) => const AdaptiveLayout(
-          mobile: AdminDashboardMobile(),
+        builder: (routeCtx) => AdaptiveLayout(
+          mobile: AdminWelcomeScreen(
+            onDone: () {
+              Navigator.of(routeCtx, rootNavigator: true).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const AdaptiveLayout(
+                    mobile: AdminDashboardMobile(),
+                    tablet: AdminDashboardMobile(),
+                    webDesktop: AdminDashboardDesktop(),
+                  ),
+                ),
+                (_) => false,
+              );
+            },
+          ),
           tablet: AdminDashboardMobile(),
           webDesktop: AdminDashboardDesktop(),
         ),

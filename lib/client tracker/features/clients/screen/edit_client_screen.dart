@@ -5,7 +5,7 @@ import '../bloc/client_event.dart';
 import 'package:my_app/client tracker/features/clients/models/client_model.dart';
 import 'package:my_app/client tracker/core/constants/crm_widget.dart';
 import 'package:my_app/client tracker/core/constants/app_theme.dart';
-import 'package:my_app/client tracker/core/constants/app_constant.dart';
+import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 class EditClientScreen extends StatefulWidget {
   final ClientModel client;
@@ -27,7 +27,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
   void initState() {
     super.initState();
 
-    name = TextEditingController(text: widget.client.name ?? '');
+    name = TextEditingController(text: widget.client.name);
     phone = TextEditingController(text: widget.client.phone ?? '');
     email = TextEditingController(text: widget.client.email ?? '');
     address = TextEditingController(text: widget.client.address ?? '');
@@ -68,27 +68,26 @@ class _EditClientScreenState extends State<EditClientScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+    final narrow = MediaQuery.sizeOf(context).width < 900;
+    final scaffold = Scaffold(
+      backgroundColor:
+          narrow ? LeaveManagerColors.background : const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Edit Client"),
+        title: Text(
+          'Edit Client',
+          style: AppTextStyles.subheading.copyWith(
+            color: narrow ? LeaveManagerColors.primary : AppColors.text,
+          ),
+        ),
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: narrow ? LeaveManagerColors.primary : Colors.black,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CrmButton(
-              '← Back',
-              style: BtnStyle.ghost,
-              onTap: () => Navigator.pop(context),
-            ),
-
-            const SizedBox(height: 24),
-
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -153,6 +152,10 @@ class _EditClientScreenState extends State<EditClientScreen> {
                     child: CrmButton(
                       'Update Client Info',
                       onTap: _save,
+                      brandPrimary:
+                          narrow ? LeaveManagerColors.primary : null,
+                      brandPrimaryHover:
+                          narrow ? LeaveManagerColors.primaryDark : null,
                     ),
                   )
                 ],
@@ -161,6 +164,19 @@ class _EditClientScreenState extends State<EditClientScreen> {
           ],
         ),
       ),
+    );
+
+    if (!narrow) return scaffold;
+
+    return Theme(
+      data: Theme.of(context).copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: LeaveManagerColors.primary,
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: LeaveManagerColors.background,
+      ),
+      child: scaffold,
     );
   }
 }

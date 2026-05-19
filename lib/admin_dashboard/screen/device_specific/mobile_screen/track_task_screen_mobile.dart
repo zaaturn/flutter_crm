@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart'; // Ensure this is in pubspec.yaml
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
@@ -9,17 +9,18 @@ import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 
 class SaasTheme {
-  static const primary = Color(0xFF4F46E5); // Modern Indigo
-  static const surface = Colors.white;
-  static const background = Color(0xFFF9FAFB);
-  static const border = Color(0xFFF1F5F9);
+  static const terracotta = Color(0xFFB35A38);
+  static const darkSlate = Color(0xFF0F172A);
+  static const lightCream = Color(0xFFFAF9F6);
+  static const midCream = Color(0xFFEBDDCF);
 
-  static const textMain = Color(0xFF0F172A);
-  static const textMuted = Color(0xFF64748B);
-
-  static const success = Color(0xFF10B981);
-  static const warning = Color(0xFFF59E0B);
-  static const info = Color(0xFF3B82F6);
+  // Status Tab Colors from Image Swatches
+  static const completedBg = Color(0xFF1D5603);
+  static const completedText = Color(0xFFC3F380);
+  static const inProgressBg = Color(0xFFC3F380);
+  static const inProgressText = Color(0xFF7523B4);
+  static const pendingBg = Color(0xFFD13F13);
+  static const pendingText = Color(0xFFFCC5C6);
 }
 
 class TaskTrackerScreenMobile extends StatelessWidget {
@@ -47,54 +48,38 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   String selectedStatus = 'pending';
   String searchQuery = '';
 
-  void _handleApprove(BuildContext context, Task task) {
-    showModalBottomSheet(
+  void _confirmArchive(BuildContext context, Task task) {
+    showDialog<void>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Archive task?', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+        content: Text(
+          'Archive "${task.title}"? It will be removed from the active workspace.',
+          style: GoogleFonts.manrope(),
         ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
-            const SizedBox(height: 24),
-            const Text("Confirm Approval", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Text("By approving \"${task.title}\", it will be marked as finalized and moved from the active tracker.",
-                textAlign: TextAlign.center, style: TextStyle(color: SaasTheme.textMuted)),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.all(16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                    child: const Text("Cancel"),
-                  ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              context.read<AdminDashboardBloc>().add(ApproveTaskRequested(taskId: task.id));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Task archived', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: const Color(0xFF10B981),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.read<AdminDashboardBloc>().add(ApproveTaskRequested(taskId: task.id));
-                      Navigator.pop(ctx);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: SaasTheme.success,
-                      padding: const EdgeInsets.all(16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text("Approve Now", style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
+              );
+            },
+            child: const Text('Archive'),
+          ),
+        ],
       ),
     );
   }
@@ -102,89 +87,184 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SaasTheme.background,
+      backgroundColor: SaasTheme.lightCream,
       appBar: AppBar(
-        backgroundColor: SaasTheme.surface,
+        backgroundColor: SaasTheme.lightCream,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: SaasTheme.textMain, size: 20),
-          // MODIFIED: Navigate back to Project Options
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: SaasTheme.darkSlate, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text("Task Tracker",
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, color: SaasTheme.textMain)),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w900, color: SaasTheme.darkSlate)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: SaasTheme.darkSlate, size: 22),
             onPressed: () => context.read<AdminDashboardBloc>().add(const AdminTasksRefreshed()),
-            icon: const Icon(Icons.refresh_rounded, color: SaasTheme.textMuted),
-          )
+          ),
         ],
       ),
-      body: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
-        builder: (context, state) {
-          if (state.isLoading) return const Center(child: CircularProgressIndicator());
-
-          final filteredTasks = state.tasks.where((t) {
-            final matchesStatus = t.status.toLowerCase() == selectedStatus;
-            return matchesStatus && t.title.toLowerCase().contains(searchQuery);
-          }).toList();
-
-          return Column(
-            children: [
-              Container(
-                color: SaasTheme.surface,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Column(
-                  children: [
-                    _SaaSSearchBar(onChanged: (v) => setState(() => searchQuery = v.toLowerCase())),
-                    const SizedBox(height: 16),
-                    _SaaSStatusTabs(
-                      selected: selectedStatus,
-                      onChanged: (s) => setState(() => selectedStatus = s),
-                    ),
-                  ],
-                ),
+      body: BlocListener<AdminDashboardBloc, AdminDashboardState>(
+        listenWhen: (prev, curr) => curr.error != null && curr.error != prev.error,
+        listener: (context, state) {
+          if (state.error != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.error!, style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: const Color(0xFFEF4444),
               ),
-
-
-              Expanded(
-                child: filteredTasks.isEmpty
-                    ? Center(child: Text("No tasks found", style: GoogleFonts.inter(color: SaasTheme.textMuted)))
-                    : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: filteredTasks.length,
-                  itemBuilder: (context, index) => _TaskListItem(
-                    task: filteredTasks[index],
-                    onApprove: filteredTasks[index].status == 'completed'
-                        ? () => _handleApprove(context, filteredTasks[index])
-                        : null,
-                  ),
-                ),
-              ),
-            ],
-          );
+            );
+          }
         },
+        child: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator(color: SaasTheme.terracotta));
+            }
+
+            final q = searchQuery.toLowerCase();
+            final filteredTasks = state.tasks.where((t) {
+              final matchesStatus = t.status.trim().toLowerCase() == selectedStatus.toLowerCase();
+              return matchesStatus &&
+                  (q.isEmpty ||
+                      t.title.toLowerCase().contains(q) ||
+                      t.assignedToName.toLowerCase().contains(q));
+            }).toList();
+
+            return Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: filteredTasks.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredTasks.length,
+                          itemBuilder: (context, index) => _TaskListItem(
+                            task: filteredTasks[index],
+                            onArchive: () => _confirmArchive(context, filteredTasks[index]),
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+      child: Column(
+        children: [
+          TextField(
+            onChanged: (v) => setState(() => searchQuery = v),
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: SaasTheme.darkSlate),
+            decoration: InputDecoration(
+              hintText: "Search tasks...",
+              prefixIcon: const Icon(Icons.search_rounded, color: SaasTheme.terracotta),
+              filled: true,
+              fillColor: SaasTheme.midCream,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SaaSStatusTabs(
+            selected: selectedStatus,
+            onChanged: (s) => setState(() => selectedStatus = s),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Text("No tasks found",
+          style: GoogleFonts.manrope(color: SaasTheme.darkSlate.withOpacity(0.4), fontWeight: FontWeight.w700)),
     );
   }
 }
 
-class _SaaSSearchBar extends StatelessWidget {
-  final ValueChanged<String> onChanged;
-  const _SaaSSearchBar({required this.onChanged});
+class _TaskListItem extends StatelessWidget {
+  final Task task;
+  final VoidCallback onArchive;
+
+  const _TaskListItem({required this.task, required this.onArchive});
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      onChanged: onChanged,
-      style: GoogleFonts.inter(fontSize: 14),
-      decoration: InputDecoration(
-        hintText: "Search tasks...",
-        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: SaasTheme.textMuted),
-        filled: true,
-        fillColor: SaasTheme.background,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+    final completed = task.status.trim().toLowerCase() == 'completed';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: SaasTheme.midCream,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: SaasTheme.darkSlate.withOpacity(0.1), width: 1.5),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: CircleAvatar(
+            backgroundColor: SaasTheme.terracotta.withOpacity(0.1),
+            child: const Icon(Icons.assignment_rounded, color: SaasTheme.terracotta, size: 20),
+          ),
+          title: Text(
+            task.title,
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w900, fontSize: 15, color: SaasTheme.darkSlate),
+          ),
+          subtitle: Text(
+            "Assigned to ${task.assignedToName}",
+            style: GoogleFonts.manrope(fontSize: 12, color: SaasTheme.darkSlate.withOpacity(0.6), fontWeight: FontWeight.w700),
+          ),
+          iconColor: SaasTheme.terracotta,
+          collapsedIconColor: SaasTheme.terracotta.withOpacity(0.5),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 1.5, color: SaasTheme.darkSlate.withOpacity(0.05)),
+                  const SizedBox(height: 16),
+                  Text(
+                    "DESCRIPTION",
+                    style: GoogleFonts.manrope(fontWeight: FontWeight.w900, fontSize: 11, color: SaasTheme.terracotta, letterSpacing: 1),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    task.description,
+                    style: GoogleFonts.manrope(color: SaasTheme.darkSlate, height: 1.6, fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  if (completed) ...[
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: onArchive,
+                        icon: const Icon(Icons.inventory_2_outlined, size: 20),
+                        label: Text('Archive', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -200,101 +280,37 @@ class _SaaSStatusTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _buildTab("Pending", 'pending'),
+        _buildTab("Pending", 'pending', SaasTheme.pendingBg, SaasTheme.pendingText),
         const SizedBox(width: 8),
-        _buildTab("In Progress", 'in_progress'),
+        _buildTab("In Progress", 'in_progress', SaasTheme.inProgressBg, SaasTheme.inProgressText),
         const SizedBox(width: 8),
-        _buildTab("Completed", 'completed'),
+        _buildTab("Completed", 'completed', SaasTheme.completedBg, SaasTheme.completedText),
       ],
     );
   }
 
-  Widget _buildTab(String label, String key) {
+  Widget _buildTab(String label, String key, Color activeBg, Color activeText) {
     bool isActive = selected == key;
     return Expanded(
       child: GestureDetector(
         onTap: () => onChanged(key),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isActive ? SaasTheme.primary : SaasTheme.surface,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: isActive ? SaasTheme.primary : SaasTheme.border),
+            color: isActive ? activeBg : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isActive ? SaasTheme.darkSlate : Colors.transparent, width: 1.5),
           ),
           alignment: Alignment.center,
-          child: Text(label,
-              style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isActive ? Colors.white : SaasTheme.textMuted
-              )),
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskListItem extends StatelessWidget {
-  final Task task;
-  final VoidCallback? onApprove;
-
-  const _TaskListItem({required this.task, this.onApprove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: SaasTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: SaasTheme.border),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          leading: Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: SaasTheme.background, borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.assignment_rounded, color: SaasTheme.primary, size: 20),
+          child: Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              color: isActive ? activeText : SaasTheme.darkSlate.withOpacity(0.4),
+            ),
           ),
-          title: Text(task.title,
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold, fontSize: 15, color: SaasTheme.textMain)),
-          subtitle: Text("Assigned to ${task.assignedToName}",
-              style: GoogleFonts.inter(fontSize: 12, color: SaasTheme.textMuted)),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Divider(height: 1, color: SaasTheme.border),
-                  const SizedBox(height: 12),
-                  Text("Description", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 4),
-                  Text(task.description, style: GoogleFonts.inter(color: SaasTheme.textMuted, height: 1.5)),
-                  if (onApprove != null) ...[
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: onApprove,
-                        icon: const Icon(Icons.check_circle_outline, size: 18),
-                        label: const Text("Approve & Close Task"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: SaasTheme.success,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                    )
-                  ]
-                ],
-              ),
-            )
-          ],
         ),
       ),
     );

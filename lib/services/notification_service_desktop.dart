@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js' as js;
 import 'dart:js_util' as js_util;
 
@@ -14,8 +15,15 @@ import 'notification_payload_router.dart';
 /// [web/firebase-messaging-sw.js] (`onBackgroundMessage`). Foreground [FirebaseMessaging.onMessage]
 /// only refreshes the in-app list — avoids duplicate tray toasts (SW + page both calling
 /// `showNotification`). When the tab is truly focused, you may see no OS banner; the bell/list still updates.
+///
+/// Listeners are **replaced** (previous [StreamSubscription.cancel]) so login/admin flows do not stack
+/// multiple `onMessage` / `onTokenRefresh` handlers (a common cause of duplicate work or duplicate toasts).
 class NotificationService {
   final ApiClient _api = ApiClient();
+
+  StreamSubscription<String>? _tokenRefreshSub;
+  StreamSubscription<RemoteMessage>? _foregroundSub;
+  StreamSubscription<RemoteMessage>? _openedSub;
 
   static const String _webVapidKey =
       'BDl2RpvxVJ442k-TJpCoAFHH3SLFxClV7Zy71uNq_MfRJPWTzi5qRkCPztfD2sIq--7LHESRCHbIVZO1ACehWhM';
@@ -70,7 +78,8 @@ class NotificationService {
   }
 
   void listenForTokenRefresh({required String owner}) {
-    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+    _tokenRefreshSub?.cancel();
+    _tokenRefreshSub = FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       try {
         await _api.post(
           '${_api.baseLeaves}/notifications/register-device/',
@@ -85,7 +94,8 @@ class NotificationService {
 
   void listenForegroundMessages(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
-    FirebaseMessaging.onMessage.listen((_) {
+    _foregroundSub?.cancel();
+    _foregroundSub = FirebaseMessaging.onMessage.listen((_) {
       _refreshNotificationList(navigatorKey);
     });
   }
@@ -100,7 +110,9 @@ class NotificationService {
 
   void handleNotificationTap(GlobalKey<NavigatorState> navigatorKey) {
     _navigatorKey = navigatorKey;
-    FirebaseMessaging.onMessageOpenedApp.listen(_navigateFromMessage);
+    _openedSub?.cancel();
+    _openedSub =
+        FirebaseMessaging.onMessageOpenedApp.listen(_navigateFromMessage);
   }
 
   Future<void> handleInitialMessage(GlobalKey<NavigatorState> navigatorKey) async {

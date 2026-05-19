@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
 
+import 'package:my_app/event_management/features/calendar/presentation/screen/mobile_screen/event_calendar_mobile_screen.dart';
 import 'package:my_app/event_management/features/calendar/presentation/screen/calender_screen.dart';
-import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/screens/dashboard_screen.dart';
-import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/event_create_screen.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/screens/mobile/event_dashboard_mobile_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/events_list_screen.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_list_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_create_screen_mobile.dart';
 
-/// Shell: full-height black sidebar + Dashboard / Calendar / Events.
+class ZaaturnUI {
+  static const Color background = Color(0xFFFAF3E0);
+  static const Color navBackground = Color(0xFFD6E4EF); // Light blue from image
+  static const Color activeHighlight = Color(0xFFEAF1F8); // Capsule highlight
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color primaryBlue = Color(0xFF0D6EFD); // FAB Blue
+}
+
 class EventManagementShell extends StatefulWidget {
   const EventManagementShell({super.key});
 
@@ -20,282 +28,208 @@ class EventManagementShell extends StatefulWidget {
 class _EventManagementShellState extends State<EventManagementShell> {
   int _sectionIndex = 0;
 
-  static const double _kSidebarWidth = 240;
-
-  bool _isWide(BuildContext context) =>
-      MediaQuery.sizeOf(context).width >= 900;
-
-  void _openNewEvent() {
-    Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (_) => const EventCreateScreen(),
-      ),
-    );
-  }
-
   void _selectSection(int index) {
     setState(() => _sectionIndex = index);
   }
 
-  void _goBackIfPossible() {
-    if (Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final wide = _isWide(context);
-    final content = BlocListener<EventBloc, EventState>(
-      listenWhen: (_, s) => s is EventDeleted,
-      listener: (ctx, _) {
-        try {
-          ctx.read<DashboardBloc>().add(DashboardRefreshRequested());
-        } catch (_) {}
-      },
-      child: IndexedStack(
-        index: _sectionIndex,
-        children: const [
-          DashboardScreen(),
-          CalendarScreen(),
-          EventsListScreen(),
-        ],
-      ),
-    );
-
-    if (wide) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF8F9FB),
-        body: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              width: _kSidebarWidth,
-              child: Material(
-                color: Colors.black,
-                child: _EventFlowSidebar(
-                  sectionIndex: _sectionIndex,
-                  onSelectSection: _selectSection,
-                  onBack: _goBackIfPossible,
-                ),
-              ),
-            ),
-            Expanded(
-              child: SafeArea(
-                child: ColoredBox(
-                  color: const Color(0xFFF8F9FB),
-                  child: content,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+    final mobileUi = AdaptiveLayout.useMobileUi(context);
+    if (!mobileUi) {
+      return _buildDesktopShell();
     }
 
-    final canPop = Navigator.of(context).canPop();
+    final sections = <Widget>[
+      const EventDashboardMobileScreen(),
+      const EventCalendarMobileScreen(),
+      const SafeArea(child: EventsListScreenMobile()),
+    ];
+
+    return Scaffold(
+      backgroundColor: ZaaturnUI.background,
+      body: IndexedStack(
+        index: _sectionIndex,
+        children: sections,
+      ),
+      floatingActionButton: _sectionIndex == 0
+          ? Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: FloatingActionButton.extended(
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EventCreateScreenMobile()),
+          ),
+          backgroundColor: ZaaturnUI.primaryBlue,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: Text(
+            'Create Event',
+            style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        ),
+      )
+          : null,
+      bottomNavigationBar: _buildFlushBottomNav(),
+    );
+  }
+
+  Widget _buildDesktopShell() {
+    const navItems = <({IconData icon, String label})>[
+      (icon: Icons.dashboard_outlined, label: 'Dashboard'),
+      (icon: Icons.calendar_month_outlined, label: 'Calendar'),
+      (icon: Icons.event_note_outlined, label: 'Events'),
+    ];
+    final sections = <Widget>[
+      const DashboardScreen(),
+      const CalendarScreen(),
+      const SafeArea(child: EventsListScreen()),
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (canPop)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: _goBackIfPossible,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  tooltip: 'Back',
-                ),
+      body: Row(
+        children: [
+          Container(
+            width: 250,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0F172A), // Dark sidebar
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+
+                  // ── Back Button ─────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: InkWell(
+                      onTap: () => Navigator.of(context).pop(),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.arrow_back, color: Colors.white70, size: 18),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Events',
+                              style: GoogleFonts.manrope(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Navigation Items ────────────────────────────────
+                  ...List.generate(navItems.length, (index) {
+                    final item = navItems[index];
+                    final selected = _sectionIndex == index;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      child: ListTile(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        selected: selected,
+                        // Subtle highlight for selected item
+                        selectedTileColor: Colors.white.withOpacity(0.08),
+                        leading: Icon(
+                          item.icon,
+                          size: 20,
+                          color: selected ? Colors.white : Colors.white54,
+                        ),
+                        title: Text(
+                          item.label,
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                            color: selected ? Colors.white : Colors.white54,
+                          ),
+                        ),
+                        onTap: () => _selectSection(index),
+                      ),
+                    );
+                  }),
+                ],
               ),
-            Expanded(child: content),
+            ),
+          ),
+          Expanded(
+            child: IndexedStack(
+              index: _sectionIndex,
+              children: sections,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlushBottomNav() {
+    return Container(
+      height: 95 + MediaQuery.of(context).padding.bottom,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: ZaaturnUI.navBackground,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(40),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _navItem(0, Icons.grid_view_rounded, "DASHBOARD"),
+            _navItem(1, Icons.calendar_today_rounded, "CALENDER"),
+            _navItem(2, Icons.chat_bubble_outline_rounded, "EVENT"),
+
           ],
         ),
       ),
-      floatingActionButton: _sectionIndex == 0
-          ? FloatingActionButton.extended(
-              onPressed: _openNewEvent,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Event'),
-              backgroundColor: AppTheme.primaryBlue,
-            )
-          : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _sectionIndex,
-        backgroundColor: Colors.white,
-        onDestinationSelected: _selectSection,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard_rounded),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.event_note_outlined),
-            selectedIcon: Icon(Icons.event_note_rounded),
-            label: 'Events',
-          ),
-        ],
-      ),
     );
   }
-}
 
-class _EventFlowSidebar extends StatelessWidget {
-  final int sectionIndex;
-  final ValueChanged<int> onSelectSection;
-  final VoidCallback onBack;
+  Widget _navItem(int index, IconData icon, String label) {
+    final bool isSelected = _sectionIndex == (index > 2 ? 0 : index);
 
-  const _EventFlowSidebar({
-    required this.sectionIndex,
-    required this.onSelectSection,
-    required this.onBack,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const activeBg = Color(0xFF1A1A1A);
-    const textDim = Color(0xFFB0B0B0);
-
-    final canPop = Navigator.of(context).canPop();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 20, 12, 20),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (index < 3) _selectSection(index);
+      },
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          if (canPop)
-            IconButton(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(bottom: 8),
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded,
-                  color: Colors.white, size: 22),
-              tooltip: 'Back',
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected ? ZaaturnUI.activeHighlight : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
             ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryBlue.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppTheme.primaryBlue,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'Event Management',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          _SidebarTile(
-            icon: Icons.dashboard_outlined,
-            selectedIcon: Icons.dashboard_rounded,
-            label: 'Dashboard',
-            selected: sectionIndex == 0,
-            activeBg: activeBg,
-            textDim: textDim,
-            onTap: () => onSelectSection(0),
+            child: Icon(
+              icon,
+              size: 26,
+              color: ZaaturnUI.textDark.withOpacity(isSelected ? 1.0 : 0.6),
+            ),
           ),
           const SizedBox(height: 4),
-          _SidebarTile(
-            icon: Icons.calendar_month_outlined,
-            selectedIcon: Icons.calendar_month_rounded,
-            label: 'Calendar',
-            selected: sectionIndex == 1,
-            activeBg: activeBg,
-            textDim: textDim,
-            onTap: () => onSelectSection(1),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+              color: ZaaturnUI.textDark.withOpacity(isSelected ? 1.0 : 0.7),
+              letterSpacing: 0.8,
+            ),
           ),
-          const SizedBox(height: 4),
-          _SidebarTile(
-            icon: Icons.event_note_outlined,
-            selectedIcon: Icons.event_note_rounded,
-            label: 'Events',
-            selected: sectionIndex == 2,
-            activeBg: activeBg,
-            textDim: textDim,
-            onTap: () => onSelectSection(2),
-          ),
-          const Spacer(),
         ],
-      ),
-    );
-  }
-}
-
-class _SidebarTile extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final bool selected;
-  final Color activeBg;
-  final Color textDim;
-  final VoidCallback onTap;
-
-  const _SidebarTile({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.selected,
-    required this.activeBg,
-    required this.textDim,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? AppTheme.primaryBlue : textDim;
-    return Material(
-      color: selected ? activeBg : Colors.transparent,
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        hoverColor: Colors.white.withValues(alpha: 0.06),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              Icon(
-                selected ? selectedIcon : icon,
-                size: 22,
-                color: fg,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    color: selected ? Colors.white : textDim,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

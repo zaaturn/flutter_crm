@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/auth/auth_navigation.dart';
@@ -63,7 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
         if (settings.authorizationStatus ==
             AuthorizationStatus.authorized) {
           await notificationService.registerDevice(owner: "login");
-          notificationService.listenForTokenRefresh(owner: "login");
+          // Web: [main.dart] already registers token refresh once; avoid stacking listeners.
+          if (!kIsWeb) {
+            notificationService.listenForTokenRefresh(owner: "login");
+          }
         } else {
           debugPrint("User did not grant notification permission.");
         }

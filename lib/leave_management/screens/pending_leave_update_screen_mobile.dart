@@ -19,10 +19,11 @@ class PendingLeaveUpdateScreen extends StatefulWidget {
 class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
   List<LeaveType> cachedLeaveTypes = [];
 
-  static const _indigo = Color(0xFF5452F6);
-  static const _textMain = Color(0xFF1E293B);
-  static const _textMuted = Color(0xFF64748B);
-  static const _bg = Colors.white;
+  static const _terracotta = Color(0xFFC05E41);
+  static const _textMain = Color(0xFF3E2723);
+  static const _textMuted = Color(0xFF8D6E63);
+  static const _bg = Color(0xFFFAF3E0);
+  static const _card = Color(0xFFEADBC8);
 
   static String _durationLabel(LeaveRequest leave) {
     final d = leave.duration.trim().toUpperCase();
@@ -47,6 +48,8 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: _bg,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -78,7 +81,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
 
             if (state is MyLeavesLoading) {
               return const Center(
-                  child: CircularProgressIndicator(color: _indigo));
+                  child: CircularProgressIndicator(color: _terracotta));
             }
 
             if (state is MyLeavesLoaded) {
@@ -119,9 +122,9 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _card,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: _terracotta.withOpacity(0.12)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -139,13 +142,13 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _indigo.withOpacity(0.1),
+                  color: _terracotta.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   (leave.leaveTypeName ?? 'General').toUpperCase(),
                   style: const TextStyle(
-                    color: _indigo,
+                    color: _terracotta,
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 0.5,
@@ -197,7 +200,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
                 ElevatedButton(
                   onPressed: () => _openEditBottomSheet(leave),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _indigo,
+                        backgroundColor: _terracotta,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shadowColor: Colors.transparent,
@@ -244,7 +247,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: _bg,
           borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
         padding: EdgeInsets.only(
@@ -332,7 +335,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
             const SizedBox(height: 32),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(foregroundColor: _indigo),
+              style: TextButton.styleFrom(foregroundColor: _terracotta),
               child: const Text('Go back',
                   style: TextStyle(fontWeight: FontWeight.w800)),
             ),

@@ -110,11 +110,10 @@ class EventDetailView extends StatelessWidget {
             onJoinEvent: link.isEmpty
                 ? null
                 : () async {
-                    final uri = Uri.tryParse(link);
-                    if (uri != null && await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
-                    }
+                    final normalized = _normalizeWebUrl(link);
+                    final uri = Uri.tryParse(normalized);
+                    if (uri == null) return;
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
                   },
           );
 
@@ -181,5 +180,13 @@ class EventDetailView extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _normalizeWebUrl(String raw) {
+    final v = raw.trim();
+    if (v.isEmpty) return v;
+    final lower = v.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return v;
+    return 'https://$v';
   }
 }

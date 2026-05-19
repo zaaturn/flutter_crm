@@ -1,12 +1,19 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:my_app/event_management/core/network/api_service.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 enum WebSocketStatus { disconnected, connecting, connected, error }
 
 class WebSocketClient {
-  static const String _wsBaseUrl = 'ws://localhost:8000/ws';
+  static String _wsBaseUrl() {
+    // Keep WS host aligned with the HTTP API host (BASE_URL).
+    final base = ApiClient.baseUrl;
+    final wsScheme = base.startsWith('https://') ? 'wss://' : 'ws://';
+    final host = base.replaceFirst(RegExp(r'^https?://'), '');
+    return '$wsScheme$host/ws';
+  }
 
   WebSocketChannel? _channel;
   StreamController<Map<String, dynamic>>? _controller;
@@ -27,11 +34,10 @@ class WebSocketClient {
     _controller = StreamController<Map<String, dynamic>>.broadcast();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token') ?? '';
+      final token = await SecureStorageService().readToken() ?? '';
 
       _channel = WebSocketChannel.connect(
-        Uri.parse('$_wsBaseUrl/notifications/?token=$token'),
+        Uri.parse('${_wsBaseUrl()}/notifications/?token=$token'),
       );
 
       _channel!.stream.listen(

@@ -15,12 +15,9 @@ class EmployeeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    /// ✅ USE MODEL (SAME AS DESKTOP)
-    final Color statusColor = employee.statusColor;
-    final String statusText = employee.statusText;
-
-    final bool isWorking = employee.liveStatus == LiveStatus.working;
-    final bool isOnBreak = employee.liveStatus == LiveStatus.breakTime;
+    const Color terracotta = Color(0xFFB35A38);
+    const Color darkSlate = Color(0xFF0F172A);
+    const Color midCream = Color(0xFFEBDDCF);
 
     final String displayName = employee.name.isNotEmpty
         ? employee.name
@@ -28,132 +25,116 @@ class EmployeeTile extends StatelessWidget {
         ? employee.fullName
         : "Employee #${employee.id}");
 
-    /// 🔍 DEBUG
-    print("👤 $displayName → ${employee.liveStatus}");
+    final Color statusBg = employee.liveStatus == LiveStatus.working
+        ? const Color(0xFFDCFCE7)
+        : const Color(0xFFFEE2E2);
+    final Color statusText = employee.liveStatus == LiveStatus.working
+        ? const Color(0xFF166534)
+        : const Color(0xFF991B1B);
 
-    return Material(
-      color: Colors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF0F172A).withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: midCream,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: darkSlate.withOpacity(0.15), width: 1.5),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Avatar(employee: employee, radius: 26),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: employee.liveStatus == LiveStatus.working
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFFF59E0B),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: midCream, width: 2),
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                /// AVATAR + STATUS DOT
-                Stack(
-                  children: [
-                    Avatar(employee: employee),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: statusColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(width: 16),
-
-                /// DETAILS
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        displayName,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0F172A),
+                      Expanded(
+                        child: Text(
+                          displayName,
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: darkSlate,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        "${employee.designation ?? 'Staff'} • ${employee.department ?? 'General'}",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: const Color(0xFF64748B),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      /// ✅ TIME + STATUS FIXED
-                      Row(
-                        children: [
-                          Icon(
-                            isWorking
-                                ? Icons.login_rounded
-                                : Icons.history_rounded,
-                            size: 14,
-                            color: isWorking
-                                ? const Color(0xFF10B981)
-                                : const Color(0xFF94A3B8),
+                        child: Text(
+                          employee.liveStatus.name.toUpperCase(),
+                          style: GoogleFonts.manrope(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            color: statusText,
                           ),
-                          const SizedBox(width: 6),
-
-                          Text(
-                            employee.liveStatus == LiveStatus.working
-                                ? "In: ${employee.checkIn}"
-                                : (employee.checkOut == '-'
-                                ? "Active"
-                                : "Last Seen: ${employee.checkOut}"),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF334155),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-
-                /// STATUS CHIP
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    statusText.toUpperCase(),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: statusColor,
+                  const SizedBox(height: 2),
+                  Text(
+                    "${employee.designation ?? 'Staff'} • ${employee.department ?? 'General'}",
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      color: darkSlate.withOpacity(0.6),
+                      fontWeight: FontWeight.w600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.login_rounded,
+                        size: 14,
+                        color: terracotta,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "In: ${employee.checkIn ?? '--:--'}",
+                        style: GoogleFonts.manrope(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: darkSlate,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

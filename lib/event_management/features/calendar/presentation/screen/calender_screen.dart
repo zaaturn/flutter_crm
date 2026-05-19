@@ -13,7 +13,9 @@ import 'package:my_app/event_management/features/events/presentation/screens/eve
 import 'package:my_app/event_management/features/events/presentation/widgets/quick_add_sheet.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/notification_screen.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
+import 'package:my_app/event_management/shared/themes/event_adaptive_theme.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
+import 'package:my_app/services/api_client.dart' as app_api;
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -63,13 +65,19 @@ class _CalendarScreenState extends State<CalendarScreen>
     ));
   }
 
+  Future<void> _refreshTokenIfNeeded() async {
+    try {
+      await app_api.ApiClient().refreshSession();
+    } catch (_) {}
+  }
+
   void _shiftMonth(int delta) {
     final m = context.read<CalendarBloc>().state.focusedMonth;
     final next = DateTime(m.year, m.month + delta, 1);
     context.read<CalendarBloc>().add(MonthChanged(next));
   }
 
-  bool _isWide(BuildContext context) => MediaQuery.sizeOf(context).width >= 900;
+  bool _isWide(BuildContext context) => AdaptiveLayout.isWide(context);
 
   void _openNotifications(BuildContext context) {
     try {
@@ -116,7 +124,7 @@ class _CalendarScreenState extends State<CalendarScreen>
   Widget build(BuildContext context) {
     final wide = _isWide(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: EventAdaptiveTheme.bg(context),
       body: BlocListener<CalendarBloc, CalendarState>(
         listenWhen: (prev, curr) =>
             prev.focusedMonth.month != curr.focusedMonth.month ||
@@ -137,7 +145,14 @@ class _CalendarScreenState extends State<CalendarScreen>
                     _buildMonthToolbar(ctx, calState, wide),
                     const _HairlineDivider(),
                     Expanded(
-                      child: _buildBody(ctx, calState, events),
+                      child: RefreshIndicator(
+                        color: EventAdaptiveTheme.primary(ctx),
+                        onRefresh: () async {
+                          await _refreshTokenIfNeeded();
+                          _loadEventsForMonth(calState.focusedMonth);
+                        },
+                        child: _buildBody(ctx, calState, events),
+                      ),
                     ),
                   ],
                 );
@@ -151,55 +166,67 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 
   Widget _buildPageHeader(BuildContext context, bool wide) {
+    final compact = MediaQuery.sizeOf(context).width < 420;
     return Padding(
       padding: EdgeInsets.fromLTRB(wide ? 28 : 16, wide ? 20 : 16, wide ? 28 : 16, 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Calendar',
-            style: TextStyle(
-              color: const Color(0xFF111827),
-              fontSize: wide ? 28 : 24,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const Spacer(),
-          Material(
-            color: const Color(0xFFF3F4F6),
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              onTap: () => _openNotifications(context),
-              borderRadius: BorderRadius.circular(10),
-              child: const SizedBox(
-                width: 40,
-                height: 40,
-                child: Icon(
-                  Icons.notifications_outlined,
-                  color: Color(0xFF374151),
-                  size: 22,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Calendar',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: EventAdaptiveTheme.text(context),
+                    fontSize: wide ? 28 : 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: _openNewEvent,
-            icon: const Icon(Icons.add, size: 18, color: Color(0xFF111827)),
-            label: const Text(
-              'New event',
-              style: TextStyle(
-                color: Color(0xFF111827),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF111827),
-              side: const BorderSide(color: Color(0xFFD1D5DB), width: 1),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
+              Material(
+                color: EventAdaptiveTheme.header(context),
                 borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: () => _openNotifications(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: const SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      Icons.notifications_outlined,
+                      color: Color(0xFF374151),
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              onPressed: _openNewEvent,
+              icon: Icon(Icons.add, size: 18, color: EventAdaptiveTheme.text(context)),
+              label: Text(
+                compact ? 'New' : 'New event',
+                style: TextStyle(
+                  color: EventAdaptiveTheme.text(context),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: EventAdaptiveTheme.text(context),
+                side: BorderSide(color: EventAdaptiveTheme.border(context), width: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -246,6 +273,9 @@ class _CalendarScreenState extends State<CalendarScreen>
             context.read<CalendarBloc>().add(MonthChanged(now));
             _loadMonthEvents();
           },
+          style: TextButton.styleFrom(
+            foregroundColor: EventAdaptiveTheme.primary(context),
+          ),
           child: const Text('Today'),
         ),
         IconButton(
@@ -281,11 +311,12 @@ class _CalendarScreenState extends State<CalendarScreen>
   }
 
   Widget _buildViewToggle(BuildContext context, CalendarState state) {
+    final primary = EventAdaptiveTheme.primary(context);
     return Container(
       height: 40,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -293,7 +324,7 @@ class _CalendarScreenState extends State<CalendarScreen>
           final isActive = state.view == view;
           return Expanded(
             child: Material(
-              color: isActive ? AppTheme.primaryBlue : Colors.transparent,
+              color: isActive ? primary : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               child: InkWell(
                 onTap: () =>
@@ -364,6 +395,7 @@ class _CalendarScreenState extends State<CalendarScreen>
 
   Widget _buildFAB() {
     return FloatingActionButton.extended(
+      heroTag: 'calendar_new_event_fab',
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const EventCreateScreen()),
       ),
@@ -595,7 +627,7 @@ class _SearchResultTile extends StatelessWidget {
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: solidColor.withOpacity(0.1),
+              color: solidColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(

@@ -86,7 +86,10 @@ class EventReminderModel extends EventReminder {
     );
   }
 
-  Map<String, dynamic> toJson() => {'minutes_before': minutesBefore};
+  Map<String, dynamic> toJson() => {
+        if (id != 0) 'id': id,
+        'minutes_before': minutesBefore,
+      };
 }
 
 class EventModel extends Event {

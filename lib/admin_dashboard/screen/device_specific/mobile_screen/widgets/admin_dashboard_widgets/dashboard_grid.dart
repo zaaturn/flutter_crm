@@ -1,133 +1,220 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/screen/project_and_task_options_screen.dart';
-
 import 'dashboard_card.dart';
 import 'dashboard_item.dart';
-
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/mobile_employee_section.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/employee_card_mobile.dart';
+import 'package:my_app/leave_management/screens/mobile_screen/screen/leave_manager_mobile_screen.dart';
+import 'package:my_app/dashboards/presentations/screens/mobile_screen/screen/share_dashboard_mobile_screen.dart';
+import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
+import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
+import 'package:my_app/client tracker/features/clients/screen/mobile_screen/screen/client_tracker_mobile_shell.dart';
+import 'package:my_app/billing/navigation/billing_flow_controller.dart';
+import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_mobile.dart';
+import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/auth/manage_users_navigation.dart';
 
 class DashboardGrid extends StatelessWidget {
   final List<Employee> employees;
+  final bool isSuperuser;
 
-  const DashboardGrid({super.key, required this.employees});
+  const DashboardGrid({
+    super.key,
+    required this.employees,
+    this.isSuperuser = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // SaaS Design Note: We use the 'employees' passed from state
-    // to calculate working/absent counts in the Directory.
+    const List<Color> palette = [
+      Color(0xFFAACC96),
+      Color(0xFF25533F),
+      Color(0xFFF4BEAE),
+      Color(0xFF52A5CE),
+      Color(0xFFFF7BAC),
+      Color(0xFF876029),
+      Color(0xFF6D1F42),
+      Color(0xFFD3B6D3),
+      Color(0xFFEFCE7B),
+      Color(0xFFB8CEE8),
+      Color(0xFFEF6F3C),
+      Color(0xFFAFAB23),
+    ];
 
-    final items = [
-      const DashboardItem(
+    Color getContrast(Color bg) =>
+        ThemeData.estimateBrightnessForColor(bg) == Brightness.dark
+            ? Colors.white
+            : Colors.black87;
+
+    int colorIdx = 0;
+
+    final List<DashboardItem> items = [
+      DashboardItem(
         icon: Icons.dashboard_rounded,
         label: 'Dashboard',
-        bgColor: Color(0xFFEFF3FF),
-        iconColor: Color(0xFF3B82F6),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
       ),
-
+      if (isSuperuser)
+        DashboardItem(
+          icon: Icons.manage_accounts_rounded,
+          label: 'Manage users',
+          bgColor: palette[colorIdx++],
+          iconColor: getContrast(palette[colorIdx - 1]),
+          onTap: () => openManageUsersIfAllowed(context),
+        ),
       DashboardItem(
         icon: Icons.badge_rounded,
         label: 'Employees',
-        bgColor: const Color(0xFFF0FDF4), // Fixed minor color hex typo
-        iconColor: const Color(0xFF10B981),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
         onTap: () {
+          const Color lightCream = Color(0xFFFAF9F6);
+          const Color darkSlate = Color(0xFF0F172A);
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => Scaffold(
-                backgroundColor: const Color(0xFFF8FAFC), // Modern SaaS Bg
-                appBar: AppBar(
-                  title: const Text(
-                    "Employee Directory",
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+              builder: (_) => Theme(
+                data: Theme.of(context).copyWith(
+                  appBarTheme: const AppBarTheme(
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    surfaceTintColor: Colors.transparent,
                   ),
-                  elevation: 0,
-                  centerTitle: true,
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFF0F172A),
                 ),
-                // IMPORTANT: MobileEmployeeSection handles the status filtering internally.
-                // It needs the full 'employees' list from your state.
-                body: MobileEmployeeSection(
-                  employees: employees,
-                  onEmployeeTap: (employee) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => EmployeeCardMobile(
-                          employee: employee,
-                        ),
+                child: Scaffold(
+                  backgroundColor: lightCream,
+                  appBar: AppBar(
+                    backgroundColor: lightCream,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    surfaceTintColor: Colors.transparent,
+                    iconTheme: const IconThemeData(color: darkSlate),
+                    title: Text(
+                      "Employee Directory",
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 20,
+                        color: darkSlate,
                       ),
-                    );
-                  },
+                    ),
+                    centerTitle: true,
+                  ),
+                  body: Container(
+                    color: lightCream,
+                    child: MobileEmployeeSection(
+                      employees: employees,
+                      onEmployeeTap: (employee) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EmployeeCardMobile(employee: employee),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
             ),
           );
         },
       ),
-
       DashboardItem(
         icon: Icons.assignment_rounded,
         label: 'Projects & Tasks',
-        bgColor: const Color(0xFFEEF2FF),
-        iconColor: const Color(0xFF6366F1),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
         onTap: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const ProjectAndTaskOptionsScreen()),
+            MaterialPageRoute(
+                builder: (_) => const ProjectAndTaskOptionsScreen()),
           );
         },
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.share_rounded,
         label: 'Share',
-        bgColor: Color(0xFFFFF1F2),
-        iconColor: Color(0xFFF43F5E),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ShareDashboardMobileScreen()),
+          );
+        },
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.handshake_rounded,
         label: 'Clients',
-        bgColor: Color(0xFFFFFBEB),
-        iconColor: Color(0xFFF59E0B),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider(
+                create: (_) => ClientBloc(ClientRepository()),
+                child: const ClientTrackerMobileShell(),
+              ),
+            ),
+          );
+        },
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.inventory_2_rounded,
         label: 'Assets & Resources',
-        bgColor: Color(0xFFF0FDFA),
-        iconColor: Color(0xFF14B8A6),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.event_busy_rounded,
         label: 'Leave Management',
-        bgColor: Color(0xFFFFF7ED),
-        iconColor: Color(0xFFF97316),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LeaveManagerMobileScreen()),
+          );
+        },
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.receipt_long_rounded,
         label: 'Billing & Invoices',
-        bgColor: Color(0xFFF5F3FF),
-        iconColor: Color(0xFF8B5CF6),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () => BillingFlowController.start(context),
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.payments_rounded,
         label: 'Payroll',
-        bgColor: Color(0xFFECFEFF),
-        iconColor: Color(0xFF06B6D4),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () => PayrollFlowController.openWithPermissionCheck(context),
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.groups_3_rounded,
         label: 'Leads',
-        bgColor: Color(0xFFF7FEE7),
-        iconColor: Color(0xFF84CC16),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
       ),
-      const DashboardItem(
+      DashboardItem(
         icon: Icons.event_available_rounded,
         label: 'Events',
-        bgColor: Color(0xFFFDF4FF),
-        iconColor: Color(0xFFD946EF),
+        bgColor: palette[colorIdx++],
+        iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CalendarScreenMobile()),
+          );
+        },
       ),
     ];
 
@@ -138,7 +225,7 @@ class DashboardGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 14,
         mainAxisSpacing: 14,
-        mainAxisExtent: 150,
+        mainAxisExtent: 140,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {

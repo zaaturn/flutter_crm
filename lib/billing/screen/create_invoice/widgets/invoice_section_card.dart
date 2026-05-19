@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../../theme/billing_theme.dart';
+import '../../../theme/billing_adaptive_theme.dart';
 
 class InvoiceSectionCard extends StatelessWidget {
   final IconData icon;
@@ -17,8 +16,23 @@ class InvoiceSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = BillingAdaptiveTheme.isMobile(context);
+
     return Container(
-      decoration: BillingTheme.cardDecoration(),
+      decoration: isMobile
+          ? BoxDecoration(
+        color: const Color(0xFFFFFDFB), // Solid Paper White
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFB14D1E).withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      )
+          : BillingAdaptiveTheme.cardDecoration(context),
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,31 +40,36 @@ class InvoiceSectionCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: BillingTheme.purpleLight,
+                  color: isMobile ? const Color(0xFFF5E6DA) : BillingAdaptiveTheme.primaryLight(context),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: BillingTheme.border),
+                  border: Border.all(
+                    color: isMobile ? const Color(0xFFB14D1E).withOpacity(0.1) : BillingAdaptiveTheme.border(context),
+                  ),
                 ),
-                child: Icon(icon, color: BillingTheme.purple, size: 18),
+                child: Icon(
+                  icon,
+                  color: isMobile ? const Color(0xFFB14D1E) : BillingAdaptiveTheme.primary(context),
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
-                  color: BillingTheme.textPrimary,
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: isMobile ? const Color(0xFF1A1C1E) : BillingAdaptiveTheme.text(context),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           child,
         ],
       ),
     );
   }
 }
-

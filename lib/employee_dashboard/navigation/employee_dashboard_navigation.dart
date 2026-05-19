@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
 import 'package:my_app/main.dart' show navigatorKey;
 
 // SCREEN IMPORTS
@@ -11,7 +12,7 @@ import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 
-// ================= MOBILE SCREENS =================
+// ================= mobile SCREENS =================
 import 'package:my_app/leave_management/screens/employee_leave_dashboard.dart';
 import 'package:my_app/leave_management/screens/apply_leave_screen.dart';
 import 'package:my_app/leave_management/screens/employee_leave_status_screen.dart';
@@ -30,7 +31,7 @@ import 'package:my_app/dashboards/presentations/screens/feed_screen_mobile.dart'
 class EmployeeDashboardNavigator {
 
   static bool _isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 900;
+    return AdaptiveLayout.isDesktopLikePlatform();
   }
 
   // ================= FIXED TAB NAVIGATION HELPER =================
@@ -112,9 +113,9 @@ class EmployeeDashboardNavigator {
   }
 
   // ================= EVENTS =================
-  static void events(BuildContext context) {
+  static Future<void> events(BuildContext context) {
     _safeCloseDrawer(context);
-    Navigator.pushNamed(context, '/calendar');
+    return Navigator.pushNamed(context, '/calendar');
   }
 
   // ================= FEED / SHARED POSTS =================

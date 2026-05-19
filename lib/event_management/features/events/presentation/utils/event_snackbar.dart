@@ -9,10 +9,18 @@ void popRouteThenShowSnackBar(
   BuildContext routeContext,
   SnackBar snackBar,
 ) {
-  final nav = Navigator.of(routeContext);
   if (!routeContext.mounted) return;
-  nav.pop();
+
+  // Important: defer the pop until after the current frame.
+  // Popping while the keyboard/focus/inherited widgets are mid-update can trigger:
+  // `_dependents.isEmpty` / `attached` / "dirty widget wrong build scope".
   WidgetsBinding.instance.addPostFrameCallback((_) {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (!routeContext.mounted) return;
+    final nav = Navigator.of(routeContext);
+    if (nav.canPop()) nav.pop();
+
     rootScaffoldMessengerKey.currentState?.showSnackBar(snackBar);
   });
 }

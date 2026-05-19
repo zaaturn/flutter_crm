@@ -121,7 +121,7 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => AdaptiveLayout(
             mobile: const CalendarScreenMobile(),
-            tablet: const CalendarScreenMobile(),
+            tablet: const CalendarScreenDesktop(),
             webDesktop: const CalendarScreenDesktop(),
           ),
         );
@@ -150,7 +150,7 @@ class AppRouter {
 }
 
 // =====================
-// MOBILE SPLASH ENTRY (OUTSIDE CLASS)
+// mobile SPLASH ENTRY (OUTSIDE CLASS)
 // =====================
 class MobileSplashEntry extends StatelessWidget {
   const MobileSplashEntry({super.key});

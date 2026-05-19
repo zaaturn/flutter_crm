@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'admin_dashboard_event.dart';
 import 'admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 
 import '../model/employee.dart';
 import '../model/task.dart';
@@ -37,10 +39,14 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
       final List<Task> tasks = await repository.fetchTasks();
       final List<DashboardEvent> events = await repository.fetchEvents();
 
+      final raw = await SecureStorageService().readAuthSessionJson();
+      final session = AuthSession.fromStorageString(raw);
+
       emit(state.copyWith(
         isLoading: false,
         username: profile.username,
         role: profile.role,
+        isSuperuser: session?.isSuperuser ?? false,
         liveEmployees: liveEmployees,
         tasks: tasks,
         events: events,

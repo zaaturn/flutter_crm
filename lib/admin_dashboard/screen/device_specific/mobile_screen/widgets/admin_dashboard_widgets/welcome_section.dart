@@ -15,7 +15,7 @@ class WelcomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SaaS Design Tokens
+
     const primaryIndigo = Color(0xFF6366F1);
     const slateDark = Color(0xFF0F172A);
     const slateMuted = Color(0xFF64748B);

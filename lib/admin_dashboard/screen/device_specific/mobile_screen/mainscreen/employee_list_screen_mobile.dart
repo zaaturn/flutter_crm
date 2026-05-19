@@ -8,11 +8,11 @@ import 'package:my_app/admin_dashboard/bloc/employee_list_state.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_card_shimmer.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_states.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/employee_detail_screen_desktop.dart';
+import 'employee_detail_mobile_screen.dart';
 import '../widgets/saas_employee_tile.dart';
 
 class EmployeeListScreenMobile extends StatefulWidget {
-  final VoidCallback? onBack; // Add this callback
+  final VoidCallback? onBack;
 
   const EmployeeListScreenMobile({super.key, this.onBack});
 
@@ -31,7 +31,7 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
     context.read<EmployeeListBloc>().add(const FetchEmployees());
 
     _scrollController.addListener(() {
-      if (_scrollController.hasClients && 
+      if (_scrollController.hasClients &&
           _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
         final state = context.read<EmployeeListBloc>().state;
         if (state.status != EmployeeListStatus.loadingMore && state.hasMore) {
@@ -62,7 +62,7 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
       MaterialPageRoute(
         builder: (_) => BlocProvider.value(
           value: context.read<EmployeeListBloc>(),
-          child: ModernEmployeeDetailScreen(employee: employee),
+          child: EmployeeDetailMobileScreen(employee: employee),
         ),
       ),
     );
@@ -70,15 +70,22 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
 
   @override
   Widget build(BuildContext context) {
+    const Color lightCream = Color(0xFFFAF9F6);
+    const Color darkSlate = Color(0xFF0F172A);
+    const Color terracotta = Color(0xFFB35A38);
+    const Color fieldFill = Color(0xFFEADBC8);
+    const Color textMuted = Color(0xFF8D6E63);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: lightCream,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: lightCream,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: darkSlate, size: 20),
           onPressed: () {
-            // 💡 If we can't pop (meaning it's a tab), trigger the onBack callback
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
@@ -87,11 +94,12 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
           },
         ),
         title: Text(
-          "Current Staff",
-          style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xFF0F172A),
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
+          "Staff",
+          style: GoogleFonts.manrope(
+            color: darkSlate,
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            letterSpacing: -0.8,
           ),
         ),
         centerTitle: false,
@@ -101,20 +109,39 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
           return Column(
             children: [
               Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                 child: TextField(
                   controller: _searchController,
                   onChanged: _onSearchChanged,
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w800,
+                    color: darkSlate,
+                    fontSize: 15,
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Search employees...',
-                    prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF94A3B8)),
+                    hintStyle: GoogleFonts.manrope(
+                      color: textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 24,
+                      color: terracotta,
+                    ),
                     filled: true,
-                    fillColor: const Color(0xFFF1F5F9),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
+                    fillColor: fieldFill,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide(
+                        color: terracotta.withValues(alpha: 0.28),
+                        width: 1.5,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: const BorderSide(color: terracotta, width: 2.0),
                     ),
                   ),
                 ),
@@ -144,13 +171,15 @@ class _EmployeeListScreenMobileState extends State<EmployeeListScreenMobile> {
     final employees = state.employees;
 
     return RefreshIndicator(
+      color: const Color(0xFFB35A38),
+      backgroundColor: Colors.white,
       onRefresh: () async {
         context.read<EmployeeListBloc>().add(const FetchEmployees());
       },
       child: ListView.builder(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: 8, bottom: 100),
+        padding: const EdgeInsets.only(top: 6, bottom: 18),
         itemCount: employees.length + (state.hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index >= employees.length) {

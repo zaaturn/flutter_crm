@@ -10,8 +10,13 @@ import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen.dart'
 
 class LoginMobile extends StatefulWidget {
   final String role;
+  final bool showHeaderImages;
 
-  const LoginMobile({super.key, required this.role});
+  const LoginMobile({
+    super.key,
+    required this.role,
+    this.showHeaderImages = true,
+  });
 
   @override
   State<LoginMobile> createState() => _LoginMobileState();
@@ -38,36 +43,89 @@ class _LoginMobileState extends State<LoginMobile> {
     final isEmployee = widget.role == "Employee";
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 50),
-          child: Column(
-            children: [
-              const Icon(
-                Icons.lock_outline,
-                size: 80,
-                color: Colors.blueAccent,
+      backgroundColor: const Color(0xFFFAF3E0),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.showHeaderImages) ...[
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/images/daxarrow.png',
+                                width: 34,
+                                height: 34,
+                                fit: BoxFit.contain,
+                              ),
+                              const SizedBox(width: 10),
+                              Image.asset(
+                                'assets/images/logo.png',
+                                width: 38,
+                                height: 38,
+                                fit: BoxFit.contain,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        const Text(
+                          'DAX ARROW',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF3E2C1C),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 3,
+                          ),
+                        ),
+                        Text(
+                          'VISUALIZE EVERYTHING',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: const Color(0xFFB85C1E).withOpacity(0.72),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    isEmployee ? "Employee Login" : "Admin Login",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF3E2C1C),
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "Welcome back",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xFF7A5C3E).withOpacity(0.9),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildLoginCard(),
+                ],
               ),
-              const SizedBox(height: 20),
-
-              Text(
-                isEmployee ? "Employee Login" : "Admin Login",
-                style: const TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              const Text(
-                "Welcome back 👋",
-                style: TextStyle(color: Colors.grey),
-              ),
-
-              const SizedBox(height: 40),
-              _buildLoginCard(),
-            ],
+            ),
           ),
         ),
       ),
@@ -79,14 +137,14 @@ class _LoginMobileState extends State<LoginMobile> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 30),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
+        color: const Color(0xFFF6E7D2),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0x33B85C1E)),
+        boxShadow: [
           BoxShadow(
-            color: Colors.black12,
-            blurRadius: 12,
-            spreadRadius: 2,
-            offset: Offset(0, 4),
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -122,17 +180,17 @@ class _LoginMobileState extends State<LoginMobile> {
       controller: controller,
       obscureText: obscure,
       decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        prefixIcon: Icon(icon, color: const Color(0xFFB85C1E)),
         labelText: label,
         filled: true,
-        fillColor: Colors.grey.shade100,
+        fillColor: const Color(0xFFF2DFC2),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: Color(0x33B85C1E), width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.blueAccent),
+          borderSide: const BorderSide(color: Color(0xFFB85C1E), width: 1.6),
         ),
       ),
     );
@@ -145,7 +203,10 @@ class _LoginMobileState extends State<LoginMobile> {
       child: ElevatedButton(
         onPressed: loading ? null : _handleLogin,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: const Color(0xFFB85C1E),
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFB85C1E),
+          disabledForegroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

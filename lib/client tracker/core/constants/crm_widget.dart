@@ -108,6 +108,13 @@ class CrmButton extends StatefulWidget {
   final bool loading;
   final double? width;
 
+  /// When set (e.g. Leave Management indigo on narrow mobile), overrides
+  /// [AppColors.primary] for primary/outline styles. Omit on desktop CRM.
+  final Color? brandPrimary;
+  final Color? brandOnPrimary;
+  final Color? brandPrimaryHover;
+  final Color? brandOutlineHoverBg;
+
   const CrmButton(
       this.label, {
         super.key,
@@ -116,6 +123,10 @@ class CrmButton extends StatefulWidget {
         this.icon,
         this.loading = false,
         this.width,
+        this.brandPrimary,
+        this.brandOnPrimary,
+        this.brandPrimaryHover,
+        this.brandOutlineHoverBg,
       });
 
   @override
@@ -127,15 +138,27 @@ class _CrmButtonState extends State<CrmButton> {
 
   @override
   Widget build(BuildContext context) {
+    final Color accent = widget.brandPrimary ?? AppColors.primary;
+    final Color onAccent = widget.brandOnPrimary ?? Colors.white;
+    final Color accentHover = widget.brandPrimaryHover ??
+        (widget.brandPrimary != null
+            ? Color.alphaBlend(
+                const Color(0x26000000),
+                accent,
+              )
+            : AppColors.primaryDark);
+    final Color outlineHoverBg =
+        widget.brandOutlineHoverBg ?? AppColors.primaryLight;
+
     final (Color bg, Color fg, Color borderC) = switch (widget.style) {
-      BtnStyle.primary => (AppColors.primary, Colors.white, AppColors.primary),
-      BtnStyle.outline => (Colors.transparent, AppColors.primary, AppColors.primary),
+      BtnStyle.primary => (accent, onAccent, accent),
+      BtnStyle.outline => (Colors.transparent, accent, accent),
       BtnStyle.ghost => (Colors.transparent, AppColors.textMuted, AppColors.border),
     };
 
     final hoveredBg = switch (widget.style) {
-      BtnStyle.primary => AppColors.primaryDark,
-      BtnStyle.outline => AppColors.primaryLight,
+      BtnStyle.primary => accentHover,
+      BtnStyle.outline => outlineHoverBg,
       BtnStyle.ghost => AppColors.bg,
     };
 
@@ -156,7 +179,7 @@ class _CrmButtonState extends State<CrmButton> {
             boxShadow: widget.style == BtnStyle.primary
                 ? [
               BoxShadow(
-                  color: AppColors.primary.withOpacity(.25),
+                  color: accent.withOpacity(.25),
                   blurRadius: 8,
                   offset: const Offset(0, 2))
             ]

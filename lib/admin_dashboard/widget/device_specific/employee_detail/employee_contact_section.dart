@@ -31,7 +31,7 @@ class EmployeeContactSection extends StatelessWidget {
         InfoRow(
           icon: Icons.alternate_email,
           label: 'Username',
-          value: '@${employee.name}',
+          value: employee.profileUsernameHandle,
         ),
         if (employee.address != null && employee.address!.isNotEmpty) ...[
           const CustomDivider(),

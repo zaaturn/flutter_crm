@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -13,76 +14,98 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 💎 SAAS-LEVEL NAVIGATION LABELS
+    const Color pastelBlue = Color(0xFFC1DBE8);
+    const Color activeColor = Color(0xFF0F172A); // Dark Slate for readability
+    const Color inactiveColor = Color(0xFF64748B);
+
     final items = [
-      _BottomNavItem(icon: Icons.grid_view_rounded, label: 'HOME'),
-      _BottomNavItem(icon: Icons.badge_rounded, label: 'DIRECTORY'),
-      _BottomNavItem(icon: Icons.chat_bubble_rounded, label: 'CHAT'),
-      _BottomNavItem(icon: Icons.settings_rounded, label: 'SETTINGS'),
+      _BottomNavItem(
+        icon: Icons.grid_view_rounded,
+        activeIcon: Icons.grid_view_rounded,
+        label: 'DASH',
+      ),
+      _BottomNavItem(
+        icon: Icons.people_outline_rounded,
+        activeIcon: Icons.people_rounded,
+        label: 'STAFF',
+      ),
+      _BottomNavItem(
+        icon: Icons.chat_bubble_outline_rounded,
+        activeIcon: Icons.chat_bubble_rounded,
+        label: 'CHAT',
+      ),
+      _BottomNavItem(
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: 'PROFILE',
+      ),
     ];
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
-        ),
+        color: pastelBlue,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0C0F10).withOpacity(0.06),
-            blurRadius: 24,
-            offset: const Offset(0, -12),
-            spreadRadius: -6,
+            color: activeColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(items.length, (index) {
-                  final item = items[index];
-                  final isSelected = selectedIndex == index;
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: List.generate(items.length, (index) {
+              final item = items[index];
+              final isSelected = selectedIndex == index;
 
-                  return GestureDetector(
-                    onTap: () => onTap(index),
-                    behavior: HitTestBehavior.opaque,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          item.icon,
-                          size: 24,
-                          color: isSelected
-                              ? const Color(0xFF4456BA)
-                              : const Color(0xFF94A3B8),
+              return InkWell(
+                onTap: () {
+                  if (index == 2) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Feature launching soon'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  onTap(index);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white.withOpacity(0.4) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isSelected ? item.activeIcon : item.icon,
+                        size: 24,
+                        color: isSelected ? activeColor : inactiveColor,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        item.label,
+                        style: GoogleFonts.manrope(
+                          fontSize: 11,
+                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                          color: isSelected ? activeColor : inactiveColor,
+                          letterSpacing: 0.5,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected
-                                ? const Color(0xFF4456BA)
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-            ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ),
         ),
       ),
@@ -92,6 +115,11 @@ class BottomNav extends StatelessWidget {
 
 class _BottomNavItem {
   final IconData icon;
+  final IconData activeIcon;
   final String label;
-  const _BottomNavItem({required this.icon, required this.label});
+  const _BottomNavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label
+  });
 }

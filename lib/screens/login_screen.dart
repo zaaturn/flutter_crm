@@ -19,6 +19,6 @@ class LoginPage extends StatelessWidget {
       return LoginTablet(role: role);
     }
 
-    return LoginMobile(role: role);
+    return LoginMobile(role: role, showHeaderImages: false);
   }
 }

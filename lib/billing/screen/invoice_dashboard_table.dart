@@ -571,7 +571,6 @@ class InvoiceDashboardTable extends StatelessWidget {
     final s = raw.trim().toUpperCase();
     if (s.isEmpty) return 'PENDING';
     if (s == 'PAID') return 'PAID';
-    // Treat everything else as pending for this UX.
     return 'PENDING';
   }
 

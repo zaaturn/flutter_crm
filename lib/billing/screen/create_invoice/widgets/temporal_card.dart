@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../theme/billing_theme.dart';
+import '../../../theme/billing_adaptive_theme.dart';
 
 class TemporalCard extends StatelessWidget {
   final DateTime invoiceDate;
@@ -40,12 +41,19 @@ class TemporalCard extends StatelessWidget {
   }
 
   Widget _dateField(
-    BuildContext context, {
-    required String label,
-    required DateTime value,
-    required ValueChanged<DateTime> onPick,
-  }) {
-    final fmt = DateFormat('MM/dd/yyyy');
+      BuildContext context, {
+        required String label,
+        required DateTime value,
+        required ValueChanged<DateTime> onPick,
+      }) {
+    final fmt = DateFormat('dd MMM yyyy'); // Cleaner format for mobile
+    final bool isMobile = BillingAdaptiveTheme.isMobile(context);
+
+    // Zaaturn Mobile Constants
+    const Color inkText = Color(0xFF1A1C1E);
+    const Color accentOrange = Color(0xFFB14D1E);
+    const Color clayFill = Color(0xFFF5E6DA);
+
     return InkWell(
       onTap: () async {
         final picked = await showDatePicker(
@@ -54,17 +62,19 @@ class TemporalCard extends StatelessWidget {
           firstDate: DateTime(2020, 1, 1),
           lastDate: DateTime(2100, 12, 31),
           builder: (ctx, child) =>
-              Theme(data: BillingTheme.datePickerTheme(ctx), child: child!),
+              Theme(data: BillingAdaptiveTheme.datePickerTheme(ctx), child: child!),
         );
         if (picked != null) onPick(picked);
       },
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: BillingTheme.scaffoldBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: BillingTheme.border),
+          color: isMobile ? clayFill : BillingTheme.scaffoldBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isMobile ? Colors.black.withOpacity(0.05) : BillingTheme.border,
+          ),
         ),
         child: Row(
           children: [
@@ -72,24 +82,37 @@ class TemporalCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label.toUpperCase(), style: BillingTheme.overline()),
+                  Text(
+                      label.toUpperCase(),
+                      style: isMobile
+                          ? GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                        color: accentOrange,
+                      )
+                          : BillingTheme.overline()
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     fmt.format(value),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: BillingTheme.textPrimary,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isMobile ? inkText : BillingTheme.textPrimary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.calendar_month_rounded, color: BillingTheme.textMuted),
+            Icon(
+              Icons.calendar_today_rounded,
+              color: isMobile ? accentOrange : BillingTheme.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
     );
   }
 }
-
