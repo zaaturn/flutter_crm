@@ -6,7 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_detail_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_create_screen_mobile.dart';
 
 class EventCalendarMobileScreen extends StatefulWidget {

@@ -7,7 +7,7 @@ import 'package:my_app/event_management/features/calendar/presentation/screen/ca
 import 'package:my_app/event_management/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/screens/mobile/event_dashboard_mobile_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/events_list_screen.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_list_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_list_screen_mobile.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_create_screen_mobile.dart';
 
 class ZaaturnUI {

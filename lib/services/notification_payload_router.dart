@@ -13,7 +13,7 @@ import 'package:my_app/employee_dashboard/widget/employee_task_tracker_screen_mo
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_detail_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
