@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/MOBILE/event_detail_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 
 class ZaaturnUI {
   static const Color background = Color(0xFFFAF3E0); // Light Cream

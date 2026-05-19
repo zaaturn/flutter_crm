@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/MOBILE/event_detail_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/event_management/features/calendar/presentation/screen/mobile_screen/event_calendar_mobile_screen.dart';
 
 class ZaaturnUI {

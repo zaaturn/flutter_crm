@@ -7,7 +7,7 @@ import 'package:my_app/event_management/features/calendar/presentation/bloc/cale
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
-import 'package:my_app/event_management/features/events/presentation/screens/mobile/screen/mobile/event_detail_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import '../../domain/entities/event.dart';
 
