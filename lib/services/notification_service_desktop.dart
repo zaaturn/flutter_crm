@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:js' as js;
-import 'dart:js_util' as js_util;
+import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -66,12 +66,16 @@ class NotificationService {
 
   Future<void> _waitForServiceWorkerReady() async {
     try {
-      final navigator = js.context['navigator'];
-      if (navigator == null) return;
-      final sw = js_util.getProperty<Object?>(navigator, 'serviceWorker');
-      if (sw == null) return;
-      final ready = js_util.callMethod<Object>(sw, 'ready', const []);
-      await js_util.promiseToFuture<void>(ready);
+      if (!globalContext.hasProperty('navigator'.toJS).toDart) return;
+      final navigator = globalContext.getProperty('navigator'.toJS) as JSObject;
+      
+      if (!navigator.hasProperty('serviceWorker'.toJS).toDart) return;
+      final sw = navigator.getProperty('serviceWorker'.toJS) as JSObject;
+      
+      if (!sw.hasProperty('ready'.toJS).toDart) return;
+      final ready = sw.getProperty('ready'.toJS) as JSPromise;
+      
+      await ready.toDart;
     } catch (_) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
