@@ -88,14 +88,20 @@ class _SurveyFeedSectionState extends State<SurveyFeedSection> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Surveys',
-                style: GoogleFonts.manrope(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                  color: textMain,
-                  letterSpacing: -0.5,
-                ),
+              Row(
+                children: [
+                  Icon(Icons.quiz_outlined, size: 22, color: accent),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Surveys',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                      color: textMain,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               ...cards,

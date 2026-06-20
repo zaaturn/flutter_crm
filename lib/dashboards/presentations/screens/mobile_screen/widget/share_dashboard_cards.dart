@@ -31,7 +31,7 @@ class ShareDashboardCards extends StatelessWidget {
           _HeroCard(
             title: 'Surveys',
             subtitle: 'Create polls and collect employee feedback.',
-            icon: Icons.poll_rounded,
+            icon: Icons.quiz_rounded,
             onTap: onCreateSurvey!,
             baseColor: const Color(0xFFD3B6D3),
           ),
