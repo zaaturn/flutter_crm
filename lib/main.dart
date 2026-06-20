@@ -422,6 +422,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         fontFamily: 'PlusJakartaSans',
         fontFamilyFallback: const [
+          'MaterialIcons',
           'NotoSansSymbols2',
           'NotoSans',
           'DMMono',

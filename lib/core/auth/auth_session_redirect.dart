@@ -14,6 +14,17 @@ class AuthSessionRedirect {
   static bool _redirectInProgress = false;
 
   static const String loginRoute = '/employeeLogin';
+
+  static const Set<String> _publicRoutes = {
+    loginRoute,
+    '/',
+    '/dashboardChooser',
+  };
+
+  static bool _isPublicRoute(String? route) {
+    if (route == null || route.isEmpty) return true;
+    return _publicRoutes.contains(route);
+  }
   static const String defaultMessage =
       'Session expired. Please login again.';
 
@@ -88,13 +99,13 @@ class AuthSessionRedirect {
       if (nav == null) return;
 
       final currentRoute = ModalRoute.of(nav.context)?.settings.name;
+      if (_isPublicRoute(currentRoute)) return;
+
       final msg = message ?? defaultMessage;
 
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(msg)),
       );
-
-      if (currentRoute == loginRoute) return;
 
       nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
     });
@@ -106,6 +117,10 @@ class AuthSessionRedirect {
     String? message,
   }) {
     if (!isAuthFailure(error, statusCode: statusCode)) return;
+
+    final resolved = (message ?? messageFrom(error) ?? defaultMessage).toLowerCase();
+    if (resolved.contains('no auth token')) return;
+
     unawaited(
       forceLogin(message: message ?? messageFrom(error) ?? defaultMessage),
     );

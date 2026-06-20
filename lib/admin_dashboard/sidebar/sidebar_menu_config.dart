@@ -40,7 +40,7 @@ class SidebarMenuItem {
 const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Analytics",
-    icon: Icons.insert_chart,
+    icon: Icons.assessment,
     action: SidebarAction.analytics,
   ),
 
@@ -115,7 +115,7 @@ const sidebarMenuConfig = [
 
   SidebarMenuItem(
     title: "Reports",
-    icon: Icons.insert_chart,
+    icon: Icons.assessment,
     action: SidebarAction.reports,
   ),
 ];

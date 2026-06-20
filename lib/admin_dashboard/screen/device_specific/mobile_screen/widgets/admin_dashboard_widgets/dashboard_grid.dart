@@ -222,7 +222,7 @@ class DashboardGrid extends StatelessWidget {
         },
       ),
       DashboardItem(
-        icon: Icons.insert_chart,
+        icon: Icons.assessment,
         label: 'Analytics',
         bgColor: const Color(0xFFEADBC8),
         iconColor: const Color(0xFFC05E41),

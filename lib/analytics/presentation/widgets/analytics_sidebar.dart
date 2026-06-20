@@ -6,6 +6,7 @@ import '../../bloc/analytics_bloc.dart';
 import '../../bloc/analytics_event.dart';
 import '../../bloc/analytics_state.dart';
 import '../../theme/analytics_theme.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
 
 class AnalyticsSidebar extends StatelessWidget {
   final VoidCallback onBack;
@@ -127,7 +128,7 @@ class _NavItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                Icon(
+                AppMaterialIcon(
                   icon,
                   size: 20,
                   color: selected

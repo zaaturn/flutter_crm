@@ -70,7 +70,7 @@ class ApiClient {
     if (_isAuthenticated) {
       _scheduleAccessExpiryCheck(token!);
     } else if (token != null && token.isNotEmpty && JwtUtils.isExpired(token)) {
-      unawaited(ensureSessionValid(redirectOnFailure: true));
+      unawaited(ensureSessionValid(redirectOnFailure: false));
     }
   }
 
@@ -103,7 +103,12 @@ class ApiClient {
         _scheduleAccessExpiryCheck(access);
         return true;
       }
-      if (redirectOnFailure) await _handleSessionExpired();
+      if (redirectOnFailure &&
+          access != null &&
+          access.isNotEmpty &&
+          JwtUtils.isExpired(access)) {
+        await _handleSessionExpired();
+      }
       return false;
     }
 
@@ -136,7 +141,7 @@ class ApiClient {
         // Ignore: background refresh should never crash the app.
       }
     });
-    unawaited(ensureSessionValid(redirectOnFailure: true));
+    unawaited(ensureSessionValid(redirectOnFailure: false));
   }
 
   /// Single-flight token refresh shared by interceptors, timers, and app resume.
@@ -220,14 +225,19 @@ class ApiClient {
                 }
               }
               if (token == null || token.isEmpty) {
-                await _handleSessionExpired();
-                final authError = refresh != null && refresh.isNotEmpty
-                    ? "Session expired. Please login again."
-                    : "No auth token";
+                if (refresh != null && refresh.isNotEmpty) {
+                  await _handleSessionExpired();
+                  return handler.reject(
+                    DioException(
+                      requestOptions: options,
+                      error: "Session expired. Please login again.",
+                    ),
+                  );
+                }
                 return handler.reject(
                   DioException(
                     requestOptions: options,
-                    error: authError,
+                    error: "No auth token",
                   ),
                 );
               }
@@ -351,6 +361,13 @@ class ApiClient {
 
   /// Clears auth state and sends the user to login when session is no longer valid.
   Future<void> _handleSessionExpired() async {
+    final refresh = await _storage.readRefreshToken();
+    final access = await _storage.readToken();
+    final hadSession = _isAuthenticated ||
+        (refresh != null && refresh.isNotEmpty) ||
+        (access != null && access.isNotEmpty);
+    if (!hadSession) return;
+
     _isAuthenticated = false;
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = null;
@@ -425,10 +442,15 @@ class ApiClient {
         e.type == DioExceptionType.receiveTimeout) {
       return ApiException(408, "Request timeout.");
     }
-    AuthSessionRedirect.onAuthFailure(
-      error: e.error ?? e.response?.data,
+    if (AuthSessionRedirect.isAuthFailure(
+      e.error ?? e.response?.data,
       statusCode: e.response?.statusCode,
-    );
+    )) {
+      AuthSessionRedirect.onAuthFailure(
+        error: e.error ?? e.response?.data,
+        statusCode: e.response?.statusCode,
+      );
+    }
     return ApiException(
         e.response?.statusCode ?? 500, e.response?.data ?? e.error);
   }

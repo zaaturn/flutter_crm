@@ -5,6 +5,7 @@ import 'package:my_app/admin_dashboard/sidebar/device_specific/sidebar_handler_d
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
 import 'workspace_switcher_desktop.dart';
 
 class DesktopSidebar extends StatefulWidget {
@@ -186,7 +187,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           ),
           child: Row(
             children: [
-              Icon(Icons.manage_accounts_outlined, size: 20, color: isSelected ? _purple : _textMuted),
+              AppMaterialIcon(Icons.manage_accounts_outlined, size: 20, color: isSelected ? _purple : _textMuted),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(
@@ -222,7 +223,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         ),
         child: Row(
           children: [
-            Icon(item.icon, size: 20, color: isSelected ? _purple : _textMuted),
+            AppMaterialIcon(item.icon, size: 20, color: isSelected ? _purple : _textMuted),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -351,7 +352,7 @@ class _ExpandableMenuTileState extends State<_ExpandableMenuTile> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                Icon(widget.item.icon, size: 20, color: hasSelectedChild ? purple : const Color(0xFF334155)),
+                AppMaterialIcon(widget.item.icon, size: 20, color: hasSelectedChild ? purple : const Color(0xFF334155)),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
@@ -386,7 +387,7 @@ class _ExpandableMenuTileState extends State<_ExpandableMenuTile> {
                     ),
                     child: Row(
                       children: [
-                        Icon(child.icon, size: 18, color: isSelected ? purple : const Color(0xFF334155)),
+                        AppMaterialIcon(child.icon, size: 18, color: isSelected ? purple : const Color(0xFF334155)),
                         const SizedBox(width: 14),
                         Expanded(child: Text(child.title, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700, color: isSelected ? const Color(0xFF4C1D95) : const Color(0xFF0F172A)))),
                       ],
