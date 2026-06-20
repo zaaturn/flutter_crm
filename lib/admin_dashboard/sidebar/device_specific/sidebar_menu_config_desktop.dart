@@ -56,7 +56,7 @@ class SidebarMenuItem {
 const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Analytics",
-    icon: Icons.analytics_outlined,
+    icon: Icons.insights_outlined,
     action: SidebarAction.analytics,
     moduleKey: 'analytics',
     tooltip: "Analytics overview",
