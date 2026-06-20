@@ -85,7 +85,7 @@ class SurveyListScreen extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                Icon(Icons.quiz_outlined, size: 48, color: SurveyTheme.textMuted.withValues(alpha: 0.5)),
+                Icon(Icons.assignment_outlined, size: 48, color: SurveyTheme.textMuted.withValues(alpha: 0.5)),
                 const SizedBox(height: 12),
                 Text(
                   'No surveys in this view',

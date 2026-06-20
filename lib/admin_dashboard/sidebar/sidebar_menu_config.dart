@@ -40,7 +40,7 @@ class SidebarMenuItem {
 const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Analytics",
-    icon: Icons.insights_outlined,
+    icon: Icons.insert_chart_outlined,
     action: SidebarAction.analytics,
   ),
 
@@ -71,7 +71,7 @@ const sidebarMenuConfig = [
   // ================= MANAGEMENT =================
   SidebarMenuItem(
     title: "Meetings",
-    icon: Icons.video_camera_front_outlined,
+    icon: Icons.share_outlined,
     action: SidebarAction.meetings,
   ),
 
@@ -115,7 +115,7 @@ const sidebarMenuConfig = [
 
   SidebarMenuItem(
     title: "Reports",
-    icon: Icons.insights_outlined,
+    icon: Icons.insert_chart_outlined,
     action: SidebarAction.reports,
   ),
 ];

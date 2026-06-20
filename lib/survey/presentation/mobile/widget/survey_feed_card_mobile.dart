@@ -36,7 +36,7 @@ class SurveyFeedCardMobile extends StatelessWidget {
                   color: SurveyMobileTheme.fieldFill,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.quiz_rounded, color: SurveyMobileTheme.primary),
+                child: const Icon(Icons.assignment_outlined, color: SurveyMobileTheme.primary),
               ),
               const SizedBox(width: 10),
               Expanded(

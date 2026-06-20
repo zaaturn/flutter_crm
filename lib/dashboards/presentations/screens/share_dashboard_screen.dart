@@ -66,7 +66,7 @@ class ShareDashboardScreen extends StatelessWidget {
                 _Card(
                   title: 'Surveys',
                   subtitle: 'Create polls & view employee responses',
-                  icon: Icons.quiz_outlined,
+                  icon: Icons.assignment_outlined,
                   onTap: onOpenSurveys!,
                 ),
             ],

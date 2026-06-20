@@ -56,7 +56,7 @@ class SidebarMenuItem {
 const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Analytics",
-    icon: Icons.insights_outlined,
+    icon: Icons.insert_chart_outlined,
     action: SidebarAction.analytics,
     moduleKey: 'analytics',
     tooltip: "Analytics overview",
@@ -96,7 +96,7 @@ const sidebarMenuConfig = [
   // ================= MANAGEMENT =================
   SidebarMenuItem(
     title: "Share",
-    icon: Icons.video_camera_front_outlined,
+    icon: Icons.share_outlined,
     action: SidebarAction.share,
     moduleKey: 'share',
   ),

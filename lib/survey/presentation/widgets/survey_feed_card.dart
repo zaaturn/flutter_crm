@@ -77,7 +77,7 @@ class SurveyFeedCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        taken ? Icons.check_rounded : Icons.quiz_outlined,
+                        taken ? Icons.check_rounded : Icons.assignment_outlined,
                         size: 20,
                         color: taken ? success : accent,
                       ),

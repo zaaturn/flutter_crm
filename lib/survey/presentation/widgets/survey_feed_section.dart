@@ -90,7 +90,7 @@ class _SurveyFeedSectionState extends State<SurveyFeedSection> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.quiz_outlined, size: 22, color: accent),
+                  Icon(Icons.assignment_outlined, size: 22, color: accent),
                   const SizedBox(width: 8),
                   Text(
                     'Surveys',
