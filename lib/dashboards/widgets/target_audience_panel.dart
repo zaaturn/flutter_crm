@@ -11,16 +11,18 @@ import 'audience_item_list.dart';
 
 class TargetAudiencePanel extends StatelessWidget {
   final String panelSubtitle;
+  final bool expandWidth;
 
   const TargetAudiencePanel({
     super.key,
     this.panelSubtitle = "Choose who should see this item",
+    this.expandWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 320,
+      width: expandWidth ? double.infinity : 320,
       padding: const EdgeInsets.fromLTRB(0, 16, 16, 16),
       color: Colors.transparent,
       child: Container(

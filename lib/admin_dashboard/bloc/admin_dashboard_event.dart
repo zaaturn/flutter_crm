@@ -1,5 +1,7 @@
 // lib/admin_dashboard/bloc/admin_dashboard_event.dart
 
+import 'package:my_app/tasks/models/crm_task.dart';
+
 abstract class AdminDashboardEvent {
   const AdminDashboardEvent();
 }
@@ -14,6 +16,12 @@ class AdminDashboardRefreshed extends AdminDashboardEvent {
 
 class AdminTasksRefreshed extends AdminDashboardEvent {
   const AdminTasksRefreshed();
+}
+
+class AdminTaskPatched extends AdminDashboardEvent {
+  final CrmTask task;
+
+  const AdminTaskPatched(this.task);
 }
 
 class RegisterAdminNotificationDevice extends AdminDashboardEvent {

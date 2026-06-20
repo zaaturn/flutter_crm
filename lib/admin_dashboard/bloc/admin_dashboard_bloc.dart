@@ -10,6 +10,7 @@ import 'package:my_app/services/secure_storage_service.dart';
 import '../model/employee.dart';
 import '../model/task.dart';
 import '../model/events.dart';
+import 'package:my_app/tasks/task_dashboard_mapper.dart';
 
 class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> {
   final AdminRepository repository;
@@ -19,6 +20,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
     on<AdminDashboardStarted>(_onStarted);
     on<AdminDashboardRefreshed>(_onRefreshed);
     on<AdminTasksRefreshed>(_onTasksRefreshed);
+    on<AdminTaskPatched>(_onTaskPatched);
     on<RegisterAdminNotificationDevice>(_onRegisterNotificationDevice);
 
     // ── NEW HANDLER ──────────────────────────────────────────────────────────
@@ -35,7 +37,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
     emit(state.copyWith(isLoading: true, error: null));
     try {
       final profile = await repository.fetchProfile();
-      final List<Employee> liveEmployees = await repository.fetchLiveEmployees();
+      final attendance = await repository.fetchLiveAttendance();
       final List<Task> tasks = await repository.fetchTasks();
       final List<DashboardEvent> events = await repository.fetchEvents();
 
@@ -47,7 +49,8 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
         username: profile.username,
         role: profile.role,
         isSuperuser: session?.isSuperuser ?? false,
-        liveEmployees: liveEmployees,
+        liveEmployees: attendance.todayLoggedIn,
+        totalEmployeeCount: attendance.totalEmployees,
         tasks: tasks,
         events: events,
       ));
@@ -86,8 +89,12 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
       Emitter<AdminDashboardState> emit,
       ) async {
     try {
-      final List<Employee> liveEmployees = await repository.fetchLiveEmployees();
-      emit(state.copyWith(liveEmployees: liveEmployees, error: null));
+      final attendance = await repository.fetchLiveAttendance();
+      emit(state.copyWith(
+        liveEmployees: attendance.todayLoggedIn,
+        totalEmployeeCount: attendance.totalEmployees,
+        error: null,
+      ));
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
     }
@@ -106,6 +113,17 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
     } catch (e) {
       emit(state.copyWith(error: e.toString()));
     }
+  }
+
+  Future<void> _onTaskPatched(
+      AdminTaskPatched event,
+      Emitter<AdminDashboardState> emit,
+      ) async {
+    final patched = event.task.toDashboardTask();
+    final updated = state.tasks
+        .map((t) => t.id == patched.id ? patched : t)
+        .toList();
+    emit(state.copyWith(tasks: updated, error: null));
   }
 
   /* ---------------------------------------------------------

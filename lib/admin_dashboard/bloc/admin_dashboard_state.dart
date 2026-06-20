@@ -10,6 +10,7 @@ class AdminDashboardState {
   /// From stored [AuthSession] at dashboard load (same source as desktop sidebar).
   final bool isSuperuser;
   final List<Employee> liveEmployees;
+  final int totalEmployeeCount;
   final List<Task> tasks;
   final List<DashboardEvent> events;
   final String? error;
@@ -22,6 +23,7 @@ class AdminDashboardState {
     this.role,
     this.isSuperuser = false,
     this.liveEmployees = const [],
+    this.totalEmployeeCount = 0,
     this.tasks = const [],
     this.events = const [],
     this.error,
@@ -35,6 +37,7 @@ class AdminDashboardState {
     String? role,
     bool? isSuperuser,
     List<Employee>? liveEmployees,
+    int? totalEmployeeCount,
     List<Task>? tasks,
     List<DashboardEvent>? events,
     String? error,
@@ -47,6 +50,7 @@ class AdminDashboardState {
       role: role ?? this.role,
       isSuperuser: isSuperuser ?? this.isSuperuser,
       liveEmployees: liveEmployees ?? this.liveEmployees,
+      totalEmployeeCount: totalEmployeeCount ?? this.totalEmployeeCount,
       tasks: tasks ?? this.tasks,
       events: events ?? this.events,
       error: error,

@@ -44,6 +44,12 @@ import 'package:my_app/event_management/features/notification/presentation/bloc/
 import 'package:my_app/event_management/core/network/websocket_client.dart';
 import 'package:my_app/event_management/features/notification/data/model/notification_model.dart';
 import 'package:my_app/event_management/features/events/data/models/event_model.dart';
+import 'package:my_app/services/notification_payload_router.dart';
+
+// Survey
+import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
+import 'package:my_app/survey/bloc/survey_employee_event.dart';
+import 'package:my_app/survey/repository/survey_repository.dart';
 
 // Dashboards Feature
 import 'dashboards/data/datasource/post_remote_datasource.dart';
@@ -62,6 +68,7 @@ import 'core/router/app_router.dart';
 import 'core/scaffold_messenger_scope.dart';
 import 'core/web_splash_remove.dart'
     if (dart.library.html) 'core/web_splash_remove_web.dart';
+import 'core/auth/auth_session_redirect.dart';
 import 'services/api_client.dart';
 
 // Client
@@ -92,6 +99,7 @@ Future<void> main() async {
   }
 
   // Shared API Client
+  AuthSessionRedirect.bindNavigator(() => navigatorKey);
   final apiClient = ApiClient();
 
   final eventRemote = EventRemoteDataSourceImpl(apiClient.dio);
@@ -178,6 +186,11 @@ Future<void> main() async {
               userRepository: context.read<UserRepository>(),
             ),
           ),
+          BlocProvider<SurveyEmployeeBloc>(
+            create: (_) => SurveyEmployeeBloc(
+              repository: SurveyRepository(),
+            )..add(const SurveyEmployeeLoadActive()),
+          ),
         ],
         child: const _RealtimeWsBootstrap(
           child: _NotificationAppResumeRefresh(
@@ -250,9 +263,13 @@ class _RealtimeWsBootstrapState extends State<_RealtimeWsBootstrap> {
   @override
   void initState() {
     super.initState();
-    // Fire-and-forget; client reconnects on drop.
-    unawaited(_ws.connect());
-    _sub = _ws.stream.listen(_onMessage, onError: (_) {});
+    // Optional realtime channel — failures are handled inside WebSocketClient.
+    unawaited(_ws.connect().catchError((_) {}));
+    _sub = _ws.stream.listen(
+      _onMessage,
+      onError: (_) {},
+      cancelOnError: false,
+    );
   }
 
   @override
@@ -281,6 +298,17 @@ class _RealtimeWsBootstrapState extends State<_RealtimeWsBootstrap> {
         final notif = NotificationModel.fromWebSocket(data);
         ctx.read<NotificationBloc>().add(NotificationReceived(notif));
       } catch (_) {}
+    }
+
+    // Task / leave notification routing from WebSocket payloads.
+    final notifType = type.isNotEmpty ? type : (data['notif_type']?.toString() ?? '');
+    if (notifType == 'task_updated' ||
+        notifType == 'task_due_reminder' ||
+        notifType == 'leave_status' ||
+        data.containsKey('task_id') ||
+        data.containsKey('leave_id')) {
+      NotificationPayloadRouter.handleWithContext(ctx, data);
+      return;
     }
 
     // Event sync: support a few common payload shapes.
@@ -333,6 +361,7 @@ class _NotificationAppResumeRefreshState
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      unawaited(ApiClient().ensureSessionValid(redirectOnFailure: true));
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ctx = navigatorKey.currentContext;
         if (ctx == null || !ctx.mounted) return;

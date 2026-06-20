@@ -32,14 +32,22 @@ class Task {
     );
   }
 
-  Task copyWith({String? status, bool? isApproved}) {
+  Task copyWith({
+    String? title,
+    String? description,
+    String? priority,
+    String? dueDate,
+    String? assignedToName,
+    String? status,
+    bool? isApproved,
+  }) {
     return Task(
       id: id,
-      title: title,
-      description: description,
-      priority: priority,
-      dueDate: dueDate,
-      assignedToName: assignedToName,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      priority: priority ?? this.priority,
+      dueDate: dueDate ?? this.dueDate,
+      assignedToName: assignedToName ?? this.assignedToName,
       status: status ?? this.status,
       isApproved: isApproved ?? this.isApproved,
     );

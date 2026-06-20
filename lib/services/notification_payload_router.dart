@@ -21,10 +21,16 @@ import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
 import 'package:my_app/leave_management/services/leave_api_services.dart';
 import 'package:my_app/leave_management/screens/employee_leave_status_screen.dart';
 
+import 'package:my_app/tasks/presentation/task_detail_screen.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/track_task_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/track_task_screen_mobile.dart';
 import 'package:my_app/leave_management/screens/device_specific/admin_leave_approve_panel.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
+import 'package:my_app/survey/bloc/survey_employee_event.dart';
+import 'package:my_app/survey/models/survey_models.dart';
+import 'package:my_app/survey/navigation/survey_flow_controller.dart';
+import 'package:my_app/survey/presentation/widgets/survey_submission.dart';
 
 /// Normalizes FCM / local notification payload and navigates (task, event, leave).
 abstract final class NotificationPayloadRouter {
@@ -64,7 +70,13 @@ abstract final class NotificationPayloadRouter {
     if (type == null) return false;
     return type == 'task_assigned' ||
         type == 'task_completed' ||
-        type == 'task_approved';
+        type == 'task_approved' ||
+        type == 'task_updated' ||
+        type == 'task_due_reminder';
+  }
+
+  static bool _isTaskDetailType(String? type) {
+    return type == 'task_updated' || type == 'task_due_reminder';
   }
 
   static bool _isPayrollPaidType(String? type) {
@@ -108,10 +120,47 @@ abstract final class NotificationPayloadRouter {
     final taskIdStr = _str(data, 'task_id');
     final eventId = _str(data, 'event_id');
     final postIdStr = _str(data, 'post_id');
+    final surveyIdStr = _str(data, 'survey_id') ??
+        _str(data, 'surveyId') ??
+        _str(data, 'survey_pk');
 
     final role = await SecureStorageService().readRole();
     if (!context.mounted) return;
     final isAdmin = (role ?? '').toLowerCase() == 'admin';
+
+    final isSurveyLaunch = type == 'survey_launched' ||
+        type == 'survey_launch' ||
+        type == 'survey';
+    if (isSurveyLaunch || surveyIdStr != null) {
+      var surveyId = int.tryParse(surveyIdStr ?? '');
+      if (surveyId == null) {
+        final nested = data['survey'];
+        if (nested is Map) {
+          surveyId = int.tryParse('${nested['id'] ?? nested['survey_id']}');
+        }
+      }
+      if (surveyId != null && surveyId > 0) {
+        final title = _str(data, 'survey_title') ?? _str(data, 'title');
+        final done = await SurveyFlowController.openTakeSurvey(context, surveyId);
+        if (context.mounted) {
+          try {
+            final bloc = context.read<SurveyEmployeeBloc>();
+            if (done == true) {
+              bloc.add(const SurveyEmployeeLoadActive());
+              showSurveySuccessSnack(title: title);
+            } else {
+              bloc.add(const SurveyEmployeeLoadActive());
+            }
+          } catch (_) {}
+        }
+        return;
+      }
+      if (isSurveyLaunch) {
+        try {
+          context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
+        } catch (_) {}
+      }
+    }
 
     final postId = int.tryParse(postIdStr ?? '');
     if (postId != null) {
@@ -120,6 +169,10 @@ abstract final class NotificationPayloadRouter {
     }
 
     if (leaveId != null) {
+      final leaveStatus = _str(data, 'status')?.toLowerCase();
+      if (type == 'leave_status' && leaveStatus != 'approved') {
+        return;
+      }
       if (isAdmin) {
         _openLeaveAdmin(context, focusLeaveId: leaveId);
       } else {
@@ -138,8 +191,16 @@ abstract final class NotificationPayloadRouter {
       return;
     }
 
+    final taskId = int.tryParse(taskIdStr ?? '');
+    if (taskId != null && _isTaskDetailType(type)) {
+      final dueHint = type == 'task_due_reminder'
+          ? (_str(data, 'due_date') ?? _str(data, 'body'))
+          : null;
+      _openTaskDetail(context, taskId, dueDateReminder: dueHint);
+      return;
+    }
+
     if (_isTaskType(type)) {
-      final taskId = int.tryParse(taskIdStr ?? '');
       if (taskId != null) {
         if (isAdmin) {
           _openTasksAdmin(context);
@@ -206,6 +267,21 @@ abstract final class NotificationPayloadRouter {
           child: wide
               ? EmployeeTaskTrackerScreen(focusTaskId: focusTaskId)
               : EmployeeTaskTrackerScreenMobile(focusTaskId: focusTaskId),
+        ),
+      ),
+    );
+  }
+
+  static void _openTaskDetail(
+    BuildContext context,
+    int taskId, {
+    String? dueDateReminder,
+  }) {
+    Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => TaskDetailScreen(
+          taskId: taskId,
+          dueDateReminder: dueDateReminder,
         ),
       ),
     );

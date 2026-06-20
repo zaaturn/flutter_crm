@@ -7,16 +7,19 @@ import 'package:my_app/services/notification_payload_router.dart';
 
 import '../../bloc/notification_bloc.dart';
 
-class _ZaaturnNotifDesktopUI {
-  static const Color bg = Color(0xFFFAF3E0);
-  static const Color terracotta = Color(0xFFC05E41);
-  static const Color card = Color(0xFFEADBC8);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
+class _DesktopNotifUI {
+  static const Color bg = Color(0xFFF8F9FB);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color purple = Color(0xFF7C3AED);
+  static const Color purpleLight = Color(0xFFF5F3FF);
+  static const Color purpleBorder = Color(0xFFEDE9FE);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textMuted = Color(0xFF64748B);
+  static const Color labelMuted = Color(0xFF94A3B8);
   static const Color danger = Color(0xFFEF4444);
 }
 
-/// Desktop notifications — warm Zaaturn theme, timestamps in IST.
+/// Desktop / web notifications — white surface + purple accent, IST timestamps.
 class NotificationScreenDesktop extends StatefulWidget {
   const NotificationScreenDesktop({super.key});
 
@@ -49,7 +52,7 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _ZaaturnNotifDesktopUI.bg,
+      backgroundColor: _DesktopNotifUI.bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -65,8 +68,7 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: _ZaaturnNotifDesktopUI.textMuted
-                          .withValues(alpha: 0.9),
+                      color: _DesktopNotifUI.labelMuted,
                     ),
                   ),
                 ),
@@ -79,7 +81,7 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
                       if (state.isLoading && state.notifications.isEmpty) {
                         return const Center(
                           child: CircularProgressIndicator(
-                            color: _ZaaturnNotifDesktopUI.terracotta,
+                            color: _DesktopNotifUI.purple,
                             strokeWidth: 2.4,
                           ),
                         );
@@ -91,8 +93,8 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
                       final grouped = _groupNotifications(state.notifications);
 
                       return RefreshIndicator(
-                        color: _ZaaturnNotifDesktopUI.terracotta,
-                        backgroundColor: _ZaaturnNotifDesktopUI.bg,
+                        color: _DesktopNotifUI.purple,
+                        backgroundColor: _DesktopNotifUI.surface,
                         onRefresh: () async {
                           ctx
                               .read<NotificationBloc>()
@@ -123,9 +125,8 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
                                     style: GoogleFonts.manrope(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w900,
-                                      color: _ZaaturnNotifDesktopUI.textMuted
-                                          .withValues(alpha: 0.85),
-                                      letterSpacing: 1.1,
+                                      color: _DesktopNotifUI.labelMuted,
+                                      letterSpacing: 1.2,
                                     ),
                                   ),
                                 ),
@@ -152,41 +153,48 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+    return Container(
+      color: _DesktopNotifUI.surface,
+      padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(
               Icons.arrow_back_rounded,
-              color: _ZaaturnNotifDesktopUI.textDark,
+              color: _DesktopNotifUI.textDark,
             ),
             tooltip: 'Back',
           ),
           Text(
             'Notifications',
             style: GoogleFonts.manrope(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: _ZaaturnNotifDesktopUI.textDark,
+              color: _DesktopNotifUI.textDark,
+              letterSpacing: -0.4,
             ),
           ),
           const Spacer(),
           BlocBuilder<NotificationBloc, NotificationState>(
             builder: (ctx, state) {
               if (state.unreadCount == 0) return const SizedBox.shrink();
-              return FilledButton.tonal(
-                style: FilledButton.styleFrom(
-                  backgroundColor:
-                      _ZaaturnNotifDesktopUI.terracotta.withValues(alpha: 0.12),
-                  foregroundColor: _ZaaturnNotifDesktopUI.terracotta,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                ),
+              return TextButton(
                 onPressed: () => ctx
                     .read<NotificationBloc>()
                     .add(NotificationMarkAllRead()),
+                style: TextButton.styleFrom(
+                  foregroundColor: _DesktopNotifUI.purple,
+                  backgroundColor: _DesktopNotifUI.purpleLight,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: const BorderSide(color: _DesktopNotifUI.purpleBorder),
+                  ),
+                ),
                 child: Text(
                   'Mark all read',
                   style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
@@ -209,6 +217,7 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
         if (notif.taskId?.isNotEmpty ?? false) 'task_id': notif.taskId,
         if (notif.leaveId?.isNotEmpty ?? false) 'leave_id': notif.leaveId,
         if (notif.postId?.isNotEmpty ?? false) 'post_id': notif.postId,
+        if (notif.surveyId?.isNotEmpty ?? false) 'survey_id': notif.surveyId,
       });
     }
   }
@@ -222,13 +231,14 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
             width: 88,
             height: 88,
             decoration: BoxDecoration(
-              color: _ZaaturnNotifDesktopUI.card,
+              color: _DesktopNotifUI.purpleLight,
               borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: _DesktopNotifUI.purpleBorder),
             ),
             child: const Icon(
               Icons.notifications_none_rounded,
               size: 44,
-              color: _ZaaturnNotifDesktopUI.terracotta,
+              color: _DesktopNotifUI.purple,
             ),
           ),
           const SizedBox(height: 16),
@@ -237,14 +247,14 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
             style: GoogleFonts.manrope(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: _ZaaturnNotifDesktopUI.textDark,
+              color: _DesktopNotifUI.textDark,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             'No new notifications right now.',
             style: GoogleFonts.inter(
-              color: _ZaaturnNotifDesktopUI.textMuted,
+              color: _DesktopNotifUI.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -260,7 +270,7 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
         children: [
           const Icon(
             Icons.error_outline_rounded,
-            color: _ZaaturnNotifDesktopUI.danger,
+            color: _DesktopNotifUI.danger,
             size: 40,
           ),
           const SizedBox(height: 12),
@@ -268,14 +278,14 @@ class _NotificationScreenDesktopState extends State<NotificationScreenDesktop> {
             error,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              color: _ZaaturnNotifDesktopUI.textMuted,
+              color: _DesktopNotifUI.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 14),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: _ZaaturnNotifDesktopUI.terracotta,
+              backgroundColor: _DesktopNotifUI.purple,
               foregroundColor: Colors.white,
             ),
             onPressed: () => ctx
@@ -306,17 +316,24 @@ class _NotifCardDesktop extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: _ZaaturnNotifDesktopUI.card,
-        borderRadius: BorderRadius.circular(18),
+        color: _DesktopNotifUI.surface,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isRead
-              ? _ZaaturnNotifDesktopUI.terracotta.withValues(alpha: 0.08)
-              : _ZaaturnNotifDesktopUI.terracotta.withValues(alpha: 0.22),
+              ? const Color(0xFFF1F5F9)
+              : _DesktopNotifUI.purple.withValues(alpha: 0.18),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: canClick ? onTap : null,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -326,19 +343,30 @@ class _NotifCardDesktop extends StatelessWidget {
               const SizedBox(width: 14),
               Expanded(
                 child: Opacity(
-                  opacity: isRead ? 0.75 : 1,
+                  opacity: isRead ? 0.78 : 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
+                          if (!isRead)
+                            Container(
+                              width: 7,
+                              height: 7,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: const BoxDecoration(
+                                color: _DesktopNotifUI.purple,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                           Expanded(
                             child: Text(
                               notification.title,
                               style: GoogleFonts.manrope(
                                 fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                                color: _ZaaturnNotifDesktopUI.textDark,
+                                fontWeight:
+                                    isRead ? FontWeight.w700 : FontWeight.w900,
+                                color: _DesktopNotifUI.textDark,
                               ),
                             ),
                           ),
@@ -346,8 +374,8 @@ class _NotifCardDesktop extends StatelessWidget {
                             IndianTime.formatRelative(notification.createdAt),
                             style: GoogleFonts.manrope(
                               fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              color: _ZaaturnNotifDesktopUI.textMuted,
+                              fontWeight: FontWeight.w700,
+                              color: _DesktopNotifUI.labelMuted,
                             ),
                           ),
                         ],
@@ -360,8 +388,8 @@ class _NotifCardDesktop extends StatelessWidget {
                         style: GoogleFonts.inter(
                           height: 1.35,
                           fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: _ZaaturnNotifDesktopUI.textMuted,
+                          fontWeight: FontWeight.w500,
+                          color: _DesktopNotifUI.textMuted,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -370,28 +398,13 @@ class _NotifCardDesktop extends StatelessWidget {
                         style: GoogleFonts.manrope(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: _ZaaturnNotifDesktopUI.textMuted
-                              .withValues(alpha: 0.85),
+                          color: _DesktopNotifUI.labelMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              if (!isRead)
-                Container(
-                  width: 10,
-                  height: 10,
-                  margin: const EdgeInsets.only(top: 4, left: 8),
-                  decoration: BoxDecoration(
-                    color: _ZaaturnNotifDesktopUI.danger,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: _ZaaturnNotifDesktopUI.bg,
-                      width: 2,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -401,29 +414,35 @@ class _NotifCardDesktop extends StatelessWidget {
 
   Widget _buildTypeIcon() {
     IconData icon;
+    Color color;
+
     switch (notification.type) {
       case 'task_assigned':
       case 'task_completed':
         icon = Icons.assignment_rounded;
+        color = const Color(0xFF3B82F6);
         break;
       case 'event_created':
         icon = Icons.calendar_today_rounded;
+        color = const Color(0xFF10B981);
         break;
       case 'reminder':
         icon = Icons.alarm_rounded;
+        color = const Color(0xFFF59E0B);
         break;
       default:
-        icon = Icons.notifications_active_rounded;
+        icon = Icons.notifications_none_rounded;
+        color = _DesktopNotifUI.purple;
     }
 
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.65),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: Icon(icon, color: _ZaaturnNotifDesktopUI.terracotta, size: 22),
+      child: Icon(icon, color: color, size: 22),
     );
   }
 }

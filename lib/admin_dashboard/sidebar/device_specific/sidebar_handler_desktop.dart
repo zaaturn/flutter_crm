@@ -14,6 +14,7 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
+import 'package:my_app/analytics/navigation/analytics_flow_controller.dart';
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
 
@@ -73,7 +74,10 @@ class SidebarHandler {
           final session = AuthSession.fromStorageString(raw);
           final allowed = key == 'payroll'
               ? (session?.canAccessPayrollAdmin ?? false)
-              : (session?.moduleAllowed(key) ?? true);
+              : key == 'analytics'
+                  ? (session?.isSuperuser == true ||
+                      session?.adminModules['analytics'] == true)
+                  : (session?.moduleAllowed(key) ?? true);
           if (!allowed) {
             _showLimitedAccess(parentContext);
             return;
@@ -84,7 +88,8 @@ class SidebarHandler {
       if (!parentContext.mounted) return;
 
       switch (action) {
-        case SidebarAction.dashboard:
+        case SidebarAction.analytics:
+          AnalyticsFlowController.openWithPermissionCheck(parentContext);
           break;
 
         case SidebarAction.employees:
@@ -100,14 +105,19 @@ class SidebarHandler {
           break;
 
         case SidebarAction.trackTasks:
+          AdminDashboardBloc? dashboardBloc;
+          try {
+            dashboardBloc = parentContext.read<AdminDashboardBloc>();
+          } catch (_) {}
+
           _push(
             parentContext,
-            BlocProvider(
-              create: (_) => AdminDashboardBloc(
-                repository: AdminRepository(),
-              )..add(const AdminDashboardStarted()),
-              child: const TaskTrackerScreenDesktop(),
-            ),
+            dashboardBloc != null
+                ? BlocProvider.value(
+                    value: dashboardBloc,
+                    child: const TaskTrackerScreenDesktop(),
+                  )
+                : const TaskTrackerScreenDesktop(),
           );
           break;
 

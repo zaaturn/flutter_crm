@@ -4,11 +4,13 @@ import 'package:my_app/admin_dashboard/model/employee.dart';
 
 class DesktopEmployeeSection extends StatefulWidget {
   final List<Employee> employees;
+  final int totalEmployeeCount;
   final Function(Employee)? onEmployeeTap;
 
   const DesktopEmployeeSection({
     super.key,
     required this.employees,
+    this.totalEmployeeCount = 0,
     this.onEmployeeTap,
   });
 
@@ -39,6 +41,15 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
     final workingCount = widget.employees
         .where((e) => e.liveStatus == LiveStatus.working)
         .length;
+    final breakCount = widget.employees
+        .where((e) => e.liveStatus == LiveStatus.breakTime)
+        .length;
+    final loggedOutCount = widget.employees
+        .where((e) => e.liveStatus == LiveStatus.loggedOut)
+        .length;
+    final totalStaff = widget.totalEmployeeCount > 0
+        ? widget.totalEmployeeCount
+        : widget.employees.length;
 
     return Container(
       decoration: BoxDecoration(
@@ -60,7 +71,14 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(workingCount, isDark),
+          _buildHeader(
+            totalStaff: totalStaff,
+            loggedInToday: widget.employees.length,
+            workingCount: workingCount,
+            breakCount: breakCount,
+            loggedOutCount: loggedOutCount,
+            isDark: isDark,
+          ),
           const Divider(height: 1, color: _borderPurple),
           if (widget.employees.isEmpty)
             _buildEmptyState()
@@ -71,10 +89,18 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
     );
   }
 
-  Widget _buildHeader(int workingCount, bool isDark) {
+  Widget _buildHeader({
+    required int totalStaff,
+    required int loggedInToday,
+    required int workingCount,
+    required int breakCount,
+    required int loggedOutCount,
+    required bool isDark,
+  }) {
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -89,25 +115,61 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
             ),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Text(
+            'Live Attendance',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : _textPrimary,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const Spacer(),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
-                "Live Attendance",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : _textPrimary,
-                  letterSpacing: -0.5,
-                ),
+              _StatBox(
+                label: 'Total',
+                count: totalStaff,
+                bg: _purpleLight,
+                border: _borderPurple,
+                labelColor: _brandPurple,
+                countColor: _textPrimary,
               ),
-              Text(
-                "$workingCount working • ${widget.employees.length} total staff",
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  color: _textMuted,
-                  fontWeight: FontWeight.w600,
-                ),
+              _StatBox(
+                label: 'Logged In',
+                count: loggedInToday,
+                bg: const Color(0xFFEEF2FF),
+                border: const Color(0xFFC7D2FE),
+                labelColor: const Color(0xFF4338CA),
+                countColor: _textPrimary,
+              ),
+              _StatBox(
+                label: 'Working',
+                count: workingCount,
+                bg: const Color(0xFFECFDF5),
+                border: const Color(0xFFA7F3D0),
+                labelColor: const Color(0xFF047857),
+                countColor: const Color(0xFF065F46),
+              ),
+              _StatBox(
+                label: 'Break',
+                count: breakCount,
+                bg: const Color(0xFFFFFBEB),
+                border: const Color(0xFFFDE68A),
+                labelColor: const Color(0xFFB45309),
+                countColor: const Color(0xFF92400E),
+              ),
+              _StatBox(
+                label: 'Out',
+                count: loggedOutCount,
+                bg: const Color(0xFFFEF2F2),
+                border: const Color(0xFFFECACA),
+                labelColor: const Color(0xFFB91C1C),
+                countColor: const Color(0xFF991B1B),
               ),
             ],
           ),
@@ -194,7 +256,7 @@ class _EmployeeTile extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        employee.name,
+                        employee.displayName,
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800,
                           fontSize: 15,
@@ -338,6 +400,60 @@ class _CompactTimeRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  const _StatBox({
+    required this.label,
+    required this.count,
+    required this.bg,
+    required this.border,
+    required this.labelColor,
+    required this.countColor,
+  });
+
+  final String label;
+  final int count;
+  final Color bg;
+  final Color border;
+  final Color labelColor;
+  final Color countColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: labelColor,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$count',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: countColor,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

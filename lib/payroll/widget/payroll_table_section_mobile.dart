@@ -78,8 +78,65 @@ class _PayrollEmployeeCardState extends State<_PayrollEmployeeCard> {
   bool _notifySalaryCredited = false;
   bool _paidSelectionPending = false;
   bool? _pendingPaid;
+  String? _notifyKey;
+  int? _lastYear;
+  int? _lastMonth;
 
   bool? _effectivePaid() => _paidSelectionPending ? _pendingPaid : widget.row.paid;
+
+  String _buildNotifyKey({
+    required String userId,
+    required int year,
+    required int month,
+    required int employeeId,
+  }) {
+    return 'payroll_notify_salary_credited:$userId:$year-${month.toString().padLeft(2, '0')}:$employeeId';
+  }
+
+  Future<void> _loadPersistedNotifyPref() async {
+    final storage = SecureStorageService();
+    final uid = await storage.readUserId();
+    if (!mounted) return;
+    if (uid == null || uid.trim().isEmpty) return;
+
+    final st = context.read<PayrollDashboardBloc>().state;
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    _lastMonth = month;
+    _lastYear = year;
+
+    final key = _buildNotifyKey(
+      userId: uid,
+      year: year,
+      month: month,
+      employeeId: widget.row.employeeId,
+    );
+    _notifyKey = key;
+
+    final v = await storage.readBool(key);
+    if (!mounted || v == null) return;
+    setState(() => _notifySalaryCredited = v);
+  }
+
+  Future<void> _persistNotifyPref(bool v) async {
+    final storage = SecureStorageService();
+    final uid = await storage.readUserId();
+    if (uid == null || uid.trim().isEmpty) return;
+    if (!mounted) return;
+
+    final st = context.read<PayrollDashboardBloc>().state;
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    final key = _notifyKey ??
+        _buildNotifyKey(
+          userId: uid,
+          year: year,
+          month: month,
+          employeeId: widget.row.employeeId,
+        );
+    _notifyKey = key;
+    await storage.writeBool(key, v);
+  }
 
   @override
   void initState() {
@@ -91,15 +148,40 @@ class _PayrollEmployeeCardState extends State<_PayrollEmployeeCard> {
     _loadPersistedNotifyPref();
   }
 
-  Future<void> _loadPersistedNotifyPref() async {
-    final storage = SecureStorageService();
-    final uid = await storage.readUserId();
-    if (!mounted || uid == null) return;
+  @override
+  void didUpdateWidget(covariant _PayrollEmployeeCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.row.amountRaw != widget.row.amountRaw &&
+        widget.row.amountRaw != _amountCtrl.text) {
+      _amountCtrl.text = widget.row.amountRaw;
+    }
+    if (oldWidget.row.employeeId != widget.row.employeeId ||
+        oldWidget.row.recordId != widget.row.recordId) {
+      _notifyKey = null;
+      _paidSelectionPending = false;
+      _pendingPaid = null;
+      _loadPersistedNotifyPref();
+    }
     final st = context.read<PayrollDashboardBloc>().state;
-    final key = 'payroll_notify_salary_credited:$uid:${st.year}-${st.monthIndex.toString().padLeft(2, '0')}:${widget.row.employeeId}';
-    final v = await storage.readBool(key);
-    if (!mounted || v == null) return;
-    setState(() => _notifySalaryCredited = v);
+    final month = st.monthIndex.clamp(1, 12);
+    final year = st.year;
+    if (_lastMonth != null &&
+        _lastYear != null &&
+        (month != _lastMonth || year != _lastYear)) {
+      _notifyKey = null;
+      _loadPersistedNotifyPref();
+    }
+    if (_paidSelectionPending && widget.row.paid == _pendingPaid) {
+      _paidSelectionPending = false;
+      _pendingPaid = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _amountFocus.dispose();
+    super.dispose();
   }
 
   void _push() {
@@ -224,6 +306,7 @@ class _PayrollEmployeeCardState extends State<_PayrollEmployeeCard> {
                     activeColor: ZaaturnMobileTheme.accentOrange,
                     onChanged: (v) {
                       setState(() => _notifySalaryCredited = v);
+                      _persistNotifyPref(v);
                       _push();
                     },
                   ),

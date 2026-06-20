@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
+import 'package:my_app/core/auth/jwt_utils.dart';
 import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class StartupGate extends StatefulWidget {
@@ -26,6 +28,20 @@ class _StartupGateState extends State<StartupGate> {
 
   static const _storageTimeout = Duration(seconds: 12);
 
+  Future<void> _redirectToLogin() async {
+    try {
+      await AuthService().logout();
+    } catch (_) {
+      await SecureStorageService().clearAll();
+      ApiClient().forceUnauthenticated();
+    }
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/employeeLogin',
+      (route) => false,
+    );
+  }
+
   Future<void> _checkAuth() async {
     final storage = SecureStorageService();
 
@@ -43,13 +59,34 @@ class _StartupGateState extends State<StartupGate> {
       activeDashboardRaw = null;
     }
 
+    final accessExpired =
+        token != null && token.isNotEmpty && JwtUtils.isExpired(token);
+
+    if (token == null || token.isEmpty || accessExpired) {
+      final refresh = await storage.readRefreshToken().timeout(_storageTimeout);
+      if (refresh != null && refresh.isNotEmpty) {
+        try {
+          final ok = await ApiClient().ensureSessionValid(redirectOnFailure: true);
+          if (ok) {
+            ApiClient().forceAuthenticated();
+            token = await storage.readToken().timeout(_storageTimeout);
+          } else {
+            token = null;
+          }
+        } catch (_) {
+          token = null;
+        }
+      } else if (accessExpired) {
+        token = null;
+      }
+    } else {
+      ApiClient().forceAuthenticated();
+    }
+
     if (!mounted) return;
 
     if (token == null || token.isEmpty) {
-      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-        '/employeeLogin',
-        (route) => false,
-      );
+      await _redirectToLogin();
       return;
     }
 

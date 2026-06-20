@@ -48,6 +48,15 @@ class Employee {
 
   String get fullName => '$firstName $lastName'.trim();
 
+  /// Name for lists/cards: prefers [name], then [fullName], then [username].
+  String get displayName {
+    final n = name.trim();
+    if (n.isNotEmpty) return n;
+    if (fullName.isNotEmpty) return fullName;
+    final u = username?.trim();
+    if (u != null && u.isNotEmpty) return u;
+    return 'Employee #$id';
+  }
 
   /// Shown on profile; uses [username] as returned by API (no trim — preserves intentional spacing).
   String get profileUsernameHandle {
@@ -139,7 +148,12 @@ class Employee {
   String get initials {
     final f = firstName.isNotEmpty ? firstName[0] : '';
     final l = lastName.isNotEmpty ? lastName[0] : '';
-    return '$f$l'.toUpperCase();
+    final fromNames = '$f$l'.toUpperCase();
+    if (fromNames.isNotEmpty) return fromNames;
+    final dn = displayName.trim();
+    if (dn.length >= 2) return dn.substring(0, 2).toUpperCase();
+    if (dn.isNotEmpty) return dn[0].toUpperCase();
+    return '?';
   }
 
   bool get isOnline => liveStatus != LiveStatus.loggedOut;

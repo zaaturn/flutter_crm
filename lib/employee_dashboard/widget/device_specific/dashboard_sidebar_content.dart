@@ -1,205 +1,101 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:my_app/admin_dashboard/sidebar/device_specific/workspace_switcher_desktop.dart';
 import 'package:my_app/auth/auth_navigation.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 
-// THEME CONSTANTS
-class WorkspaceTheme {
-  static const Color primaryPurple = Color(0xFF6F34DC);
-  static const Color cardSurface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE8E9F1);
-  static const Color textMain = Color(0xFF1E1E24);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color activeBg = Color(0x0D6F34DC);
-}
+import 'dashboard_sidebar_theme.dart';
 
 class DashboardSidebarContent {
   DashboardSidebarContent._();
 
-  static Widget header({required VoidCallback onOpenWorkspaceMenu}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 56, 16, 20),
-      child: GestureDetector(
-        onTap: onOpenWorkspaceMenu,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.black,
-                  width: 2.0,
-                ),
-              ),
-              padding: const EdgeInsets.all(4),
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.bolt_rounded,
-                  color: Colors.black,
-                  size: 20,
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Text(
-              'DAXARROW',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w900,
-                fontSize: 18,
-                letterSpacing: 1.0,
-                color: WorkspaceTheme.textMain,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  static Widget sectionLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-      child: Text(
-        label.toUpperCase(),
-        style: GoogleFonts.plusJakartaSans(
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 1.2,
-          color: WorkspaceTheme.textMuted,
-        ),
-      ),
-    );
-  }
-
-  static Widget navTile({
-    required String label,
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? WorkspaceTheme.activeBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: active ? WorkspaceTheme.primaryPurple : WorkspaceTheme.textMuted,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? WorkspaceTheme.primaryPurple : WorkspaceTheme.textMain,
-                  ),
-                ),
-              ),
-              if (active)
-                Container(
-                  width: 5,
-                  height: 5,
-                  decoration: const BoxDecoration(
-                    color: WorkspaceTheme.primaryPurple,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // MODIFIED: Added context and triggered showLogoutDialog in onPressed
-  static Widget userCard({
+  static Widget userFooter({
     required BuildContext context,
+    required BuildContext parentContext,
     required String name,
     required String initials,
+    required bool canSwitchWorkspace,
     required VoidCallback onLogoutTap,
   }) {
     return Container(
       padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: DashboardSidebarTheme.purpleLight,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: WorkspaceTheme.borderSubtle),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        border: Border.all(color: DashboardSidebarTheme.border, width: 1.5),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: WorkspaceTheme.primaryPurple,
-            child: Text(
-              initials,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+          if (canSwitchWorkspace)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton.icon(
+                onPressed: () => WorkspaceSwitcherSheet.show(context, parentContext),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: DashboardSidebarTheme.purple,
+                  side: const BorderSide(color: DashboardSidebarTheme.purple, width: 1.2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                label: Text(
+                  'Switch workspace',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: WorkspaceTheme.textMain,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  'Active Now',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF10B981),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: DashboardSidebarTheme.purple,
+                child: Text(
+                  initials,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
                   ),
                 ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => showLogoutDialog(
-              context: context,
-              onConfirmLogout: onLogoutTap,
-            ),
-            icon: const Icon(Icons.logout_rounded, size: 18, color: WorkspaceTheme.danger),
-            visualDensity: VisualDensity.compact,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: DashboardSidebarTheme.userName(),
+                    ),
+                    Text('Active Now', style: DashboardSidebarTheme.userMeta()),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => showLogoutDialog(
+                  context: context,
+                  onConfirmLogout: onLogoutTap,
+                ),
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: DashboardSidebarTheme.red.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.power_settings_new_rounded,
+                    size: 18,
+                    color: DashboardSidebarTheme.red,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -230,21 +126,18 @@ class DashboardSidebarContent {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.error_outline_rounded, color: WorkspaceTheme.danger, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Sign Out',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: WorkspaceTheme.textMain,
-                    ),
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    color: DashboardSidebarTheme.red,
+                    size: 48,
                   ),
+                  const SizedBox(height: 16),
+                  Text('Sign Out', style: DashboardSidebarTheme.dialogTitle()),
                   const SizedBox(height: 8),
                   Text(
                     'Are you sure you want to exit your workspace?',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: WorkspaceTheme.textMuted, fontSize: 14),
+                    style: DashboardSidebarTheme.dialogBody(),
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -252,7 +145,13 @@ class DashboardSidebarContent {
                       Expanded(
                         child: TextButton(
                           onPressed: () => Navigator.pop(ctx),
-                          child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: WorkspaceTheme.textMuted)),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w600,
+                              color: DashboardSidebarTheme.textMuted,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -263,12 +162,17 @@ class DashboardSidebarContent {
                             onConfirmLogout();
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: WorkspaceTheme.danger,
+                            backgroundColor: DashboardSidebarTheme.red,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                          child: Text('Exit', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                          child: Text(
+                            'Exit',
+                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                          ),
                         ),
                       ),
                     ],
@@ -304,10 +208,19 @@ class DashboardSidebarContent {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
-                    color: WorkspaceTheme.borderSubtle,
-                    borderRadius: BorderRadius.circular(2),
+                    color: DashboardSidebarTheme.textMuted.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+                Text(
+                  'Choose Workspace',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: DashboardSidebarTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _workspaceRow(
                   sheetCtx: sheetCtx,
                   icon: Icons.person_outline_rounded,
@@ -348,7 +261,7 @@ class DashboardSidebarContent {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: WorkspaceTheme.borderSubtle),
+          border: Border.all(color: DashboardSidebarTheme.border),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
@@ -356,35 +269,22 @@ class DashboardSidebarContent {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: WorkspaceTheme.activeBg,
+                color: DashboardSidebarTheme.purpleLight,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: WorkspaceTheme.primaryPurple, size: 22),
+              child: Icon(icon, color: DashboardSidebarTheme.purple, size: 22),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: WorkspaceTheme.textMain,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: WorkspaceTheme.textMuted,
-                    ),
-                  ),
+                  Text(title, style: DashboardSidebarTheme.sheetRowTitle()),
+                  Text(subtitle, style: DashboardSidebarTheme.sheetRowSubtitle()),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: WorkspaceTheme.textMuted),
+            const Icon(Icons.chevron_right_rounded, color: DashboardSidebarTheme.textMuted),
           ],
         ),
       ),

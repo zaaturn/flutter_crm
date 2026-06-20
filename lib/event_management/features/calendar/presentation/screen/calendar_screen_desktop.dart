@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/event_management/features/calendar/presentation/screen/calender_screen.dart';
+import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
 
-/// Full EventFlow area: sidebar + Dashboard / Calendar / Notifications.
+/// Full Event Management area: Dashboard / Calendar / Events (same as admin).
 class CalendarScreenDesktop extends StatelessWidget {
   const CalendarScreenDesktop({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const CalendarScreen();
+    return const EventManagementShell();
   }
 }

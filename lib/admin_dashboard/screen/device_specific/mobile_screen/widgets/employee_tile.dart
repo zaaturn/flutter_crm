@@ -19,18 +19,23 @@ class EmployeeTile extends StatelessWidget {
     const Color darkSlate = Color(0xFF0F172A);
     const Color midCream = Color(0xFFEBDDCF);
 
-    final String displayName = employee.name.isNotEmpty
-        ? employee.name
-        : (employee.fullName.isNotEmpty
-        ? employee.fullName
-        : "Employee #${employee.id}");
+    final String displayName = employee.displayName;
 
-    final Color statusBg = employee.liveStatus == LiveStatus.working
-        ? const Color(0xFFDCFCE7)
-        : const Color(0xFFFEE2E2);
-    final Color statusText = employee.liveStatus == LiveStatus.working
-        ? const Color(0xFF166534)
-        : const Color(0xFF991B1B);
+    final Color statusBg = switch (employee.liveStatus) {
+      LiveStatus.working => const Color(0xFFDCFCE7),
+      LiveStatus.breakTime => const Color(0xFFFEF3C7),
+      LiveStatus.loggedOut => const Color(0xFFFEE2E2),
+    };
+    final Color statusTextColor = switch (employee.liveStatus) {
+      LiveStatus.working => const Color(0xFF166534),
+      LiveStatus.breakTime => const Color(0xFF92400E),
+      LiveStatus.loggedOut => const Color(0xFF991B1B),
+    };
+    final Color dotColor = switch (employee.liveStatus) {
+      LiveStatus.working => const Color(0xFF10B981),
+      LiveStatus.breakTime => const Color(0xFFF59E0B),
+      LiveStatus.loggedOut => const Color(0xFFEF4444),
+    };
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -54,9 +59,7 @@ class EmployeeTile extends StatelessWidget {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: employee.liveStatus == LiveStatus.working
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFF59E0B),
+                      color: dotColor,
                       shape: BoxShape.circle,
                       border: Border.all(color: midCream, width: 2),
                     ),
@@ -91,11 +94,11 @@ class EmployeeTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          employee.liveStatus.name.toUpperCase(),
+                          employee.statusText.toUpperCase(),
                           style: GoogleFonts.manrope(
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
-                            color: statusText,
+                            color: statusTextColor,
                           ),
                         ),
                       ),
@@ -122,7 +125,7 @@ class EmployeeTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        "In: ${employee.checkIn ?? '--:--'}",
+                        "In: ${employee.checkIn == '-' ? '--:--' : employee.checkIn}",
                         style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,

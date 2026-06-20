@@ -19,6 +19,8 @@ class AppNotification extends Equatable {
   final String? postId;
   final String? postCategory;
   final String? postTitle;
+  final String? surveyId;
+  final String? surveyTitle;
 
   const AppNotification({
     required this.id,
@@ -39,12 +41,15 @@ class AppNotification extends Equatable {
     this.postId,
     this.postCategory,
     this.postTitle,
+    this.surveyId,
+    this.surveyTitle,
   });
 
   bool get hasEvent => eventId != null && eventId!.isNotEmpty;
   bool get hasTask => taskId != null && taskId!.isNotEmpty;
   bool get hasLeave => leaveId != null && leaveId!.isNotEmpty;
   bool get hasPost => postId != null && postId!.isNotEmpty;
+  bool get hasSurvey => surveyId != null && surveyId!.isNotEmpty;
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     DateTime _parseCreatedAt(dynamic raw) {
@@ -76,6 +81,8 @@ class AppNotification extends Equatable {
       postId: json['post_id']?.toString(),
       postCategory: json['post_category'],
       postTitle: json['post_title'],
+      surveyId: json['survey_id']?.toString(),
+      surveyTitle: json['survey_title']?.toString(),
     );
   }
 
@@ -98,6 +105,8 @@ class AppNotification extends Equatable {
     String? postId,
     String? postCategory,
     String? postTitle,
+    String? surveyId,
+    String? surveyTitle,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -118,6 +127,8 @@ class AppNotification extends Equatable {
       postId: postId ?? this.postId,
       postCategory: postCategory ?? this.postCategory,
       postTitle: postTitle ?? this.postTitle,
+      surveyId: surveyId ?? this.surveyId,
+      surveyTitle: surveyTitle ?? this.surveyTitle,
     );
   }
 

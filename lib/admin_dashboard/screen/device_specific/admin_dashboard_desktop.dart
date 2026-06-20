@@ -94,6 +94,7 @@ class _AdminDashboardDesktopViewState
                           const SizedBox(height: 32),
                           DesktopEmployeeSection(
                             employees: state.liveEmployees,
+                            totalEmployeeCount: state.totalEmployeeCount,
                           ),
                         ],
                       ),

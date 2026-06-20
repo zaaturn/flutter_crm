@@ -63,47 +63,94 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
         final isOnBreak = a?.onBreak ?? false;
         final isLoading = state.loading;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 24,
-                offset: const Offset(0, 6),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: maxWidth < 520 ? 16 : 28,
+                vertical: 22,
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWide(context, a, isCheckedIn, isOnBreak, isLoading),
-              if (a != null && a.checkInTime != null) ...[
-                const SizedBox(height: 20),
-                _hLine(),
-                const SizedBox(height: 16),
-                _buildTimeLog(a),
-              ],
-              if (state.error != null) ...[
-                const SizedBox(height: 12),
-                _errorBanner(state.error!),
-              ],
-            ],
-          ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMainSection(
+                    context,
+                    maxWidth,
+                    a,
+                    isCheckedIn,
+                    isOnBreak,
+                    isLoading,
+                  ),
+                  if (a != null && a.checkInTime != null) ...[
+                    const SizedBox(height: 20),
+                    _hLine(),
+                    const SizedBox(height: 16),
+                    _buildTimeLog(a, maxWidth),
+                  ],
+                  if (state.error != null) ...[
+                    const SizedBox(height: 12),
+                    _errorBanner(state.error!),
+                  ],
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildWide(BuildContext context, AttendanceModel? a,
-      bool isCheckedIn, bool isOnBreak, bool loading) {
+  Widget _buildMainSection(
+    BuildContext context,
+    double maxWidth,
+    AttendanceModel? a,
+    bool isCheckedIn,
+    bool isOnBreak,
+    bool loading,
+  ) {
+    if (maxWidth < 640) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _timerBlock(isCheckedIn, isOnBreak)),
+              const SizedBox(width: 12),
+              _statusBadge(isCheckedIn, isOnBreak),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _totalWorked(a),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              if (isCheckedIn) _breakBtn(context, isOnBreak, loading),
+              _checkInOutBtn(context, isCheckedIn, loading),
+            ],
+          ),
+        ],
+      );
+    }
 
-    final width = MediaQuery.of(context).size.width;
-
-    if (width < 1300) {
+    if (maxWidth < 980) {
       return Wrap(
         spacing: 24,
         runSpacing: 16,
@@ -112,30 +159,37 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
           _timerBlock(isCheckedIn, isOnBreak),
           _totalWorked(a),
           _statusBadge(isCheckedIn, isOnBreak),
-          if (isCheckedIn)
-            _breakBtn(context, isOnBreak, loading),
+          if (isCheckedIn) _breakBtn(context, isOnBreak, loading),
           _checkInOutBtn(context, isCheckedIn, loading),
         ],
       );
     }
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _timerBlock(isCheckedIn, isOnBreak),
-        const SizedBox(width: 32),
+        Flexible(flex: 3, child: _timerBlock(isCheckedIn, isOnBreak)),
+        const SizedBox(width: 24),
         _vLine(),
-        const SizedBox(width: 32),
-        _totalWorked(a),
-        const SizedBox(width: 32),
+        const SizedBox(width: 24),
+        Flexible(flex: 2, child: _totalWorked(a)),
+        const SizedBox(width: 24),
         _vLine(),
-        const SizedBox(width: 32),
-        _statusBadge(isCheckedIn, isOnBreak),
-        const Spacer(),
-        if (isCheckedIn) ...[
-          _breakBtn(context, isOnBreak, loading),
-          const SizedBox(width: 12),
-        ],
-        _checkInOutBtn(context, isCheckedIn, loading),
+        const SizedBox(width: 24),
+        Flexible(flex: 2, child: _statusBadge(isCheckedIn, isOnBreak)),
+        const SizedBox(width: 16),
+        Flexible(
+          flex: 3,
+          child: Wrap(
+            alignment: WrapAlignment.end,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              if (isCheckedIn) _breakBtn(context, isOnBreak, loading),
+              _checkInOutBtn(context, isCheckedIn, loading),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -304,40 +358,50 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
         ),
       );
 
-  Widget _buildTimeLog(AttendanceModel a) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      _label("TODAY'S LOG"),
-      const SizedBox(height: 12),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Container(
-          padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  Widget _buildTimeLog(AttendanceModel a, double maxWidth) {
+    final cells = [
+      _logCell('Check In', _fmtTime(a.checkInTime), _green),
+      _logCell('Check Out', _fmtTime(a.checkOutTime), _red),
+      _logCell('Working (Net)', _fmtDur(a.netWork), _blue),
+      _logCell('Break', _fmtDur(a.totalBreak), _amber),
+      _logCell(
+        'Status',
+        a.onBreak ? 'On Break' : a.isCheckedIn ? 'Active' : 'Done',
+        a.onBreak ? _amber : a.isCheckedIn ? _green : _textMuted,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label("TODAY'S LOG"),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: _surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _border),
           ),
-          child: Row(children: [
-            _logCell('Check In', _fmtTime(a.checkInTime), _green),
-            _logDivider(),
-            _logCell('Check Out', _fmtTime(a.checkOutTime), _red),
-            _logDivider(),
-            _logCell('Working (Net)', _fmtDur(a.netWork), _blue),
-            _logDivider(),
-            _logCell('Break', _fmtDur(a.totalBreak), _amber),
-            _logDivider(),
-            _logCell(
-              'Status',
-              a.onBreak ? 'On Break' : a.isCheckedIn ? 'Active' : 'Done',
-              a.onBreak ? _amber : a.isCheckedIn ? _green : _textMuted,
-            ),
-          ]),
+          child: maxWidth < 720
+              ? Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: cells,
+                )
+              : Row(
+                  children: [
+                    for (var i = 0; i < cells.length; i++) ...[
+                      if (i > 0) _logDivider(),
+                      Expanded(child: cells[i]),
+                    ],
+                  ],
+                ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
   Widget _errorBanner(String error) => Container(
     padding:
@@ -393,24 +457,24 @@ class _DashboardWorkStatusCardState extends State<DashboardWorkStatusCard> {
       margin: const EdgeInsets.symmetric(horizontal: 12));
 
   Widget _logCell(String label, String value, Color accent) =>
-      SizedBox(
-        width: 140,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 10,
-                    color: _textMuted,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5)),
-            const SizedBox(height: 3),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: accent)),
-          ],
-        ),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: _textMuted,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5)),
+          const SizedBox(height: 3),
+          Text(value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: accent)),
+        ],
       );
 }

@@ -12,6 +12,8 @@ import 'package:my_app/dashboards/presentations/screens/mobile_screen/screen/sha
 import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
 import 'package:my_app/client tracker/features/clients/repository/client_repository.dart';
 import 'package:my_app/client tracker/features/clients/screen/mobile_screen/screen/client_tracker_mobile_shell.dart';
+import 'package:my_app/analytics/navigation/analytics_flow_controller.dart';
+import 'package:my_app/survey/navigation/survey_flow_controller.dart';
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_mobile.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
@@ -19,11 +21,13 @@ import 'package:my_app/auth/manage_users_navigation.dart';
 
 class DashboardGrid extends StatelessWidget {
   final List<Employee> employees;
+  final int totalEmployeeCount;
   final bool isSuperuser;
 
   const DashboardGrid({
     super.key,
     required this.employees,
+    required this.totalEmployeeCount,
     this.isSuperuser = false,
   });
 
@@ -107,6 +111,7 @@ class DashboardGrid extends StatelessWidget {
                   body: Container(
                     color: lightCream,
                     child: MobileEmployeeSection(
+                      totalEmployeeCount: totalEmployeeCount,
                       employees: employees,
                       onEmployeeTap: (employee) {
                         Navigator.push(
@@ -215,6 +220,13 @@ class DashboardGrid extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const CalendarScreenMobile()),
           );
         },
+      ),
+      DashboardItem(
+        icon: Icons.analytics_outlined,
+        label: 'Analytics',
+        bgColor: const Color(0xFFEADBC8),
+        iconColor: const Color(0xFFC05E41),
+        onTap: () => AnalyticsFlowController.openWithPermissionCheck(context),
       ),
     ];
 

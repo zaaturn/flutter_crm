@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
@@ -7,6 +8,8 @@ import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widg
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/admin_top_bar_mobile.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/dashboard_grid.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/mobile_employee_section.dart';
+import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/employee_card_mobile.dart';
 import 'package:my_app/screens/device_specific/profile_screen_mobile.dart';
 
 import 'employee_list_screen_mobile.dart';
@@ -20,6 +23,22 @@ class DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<DashboardView> {
   int _selectedIndex = 0;
+  Timer? _liveStatusTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _liveStatusTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!mounted) return;
+      context.read<AdminDashboardBloc>().add(const AdminDashboardRefreshed());
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveStatusTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +73,7 @@ class _DashboardViewState extends State<DashboardView> {
       );
     }
 
-    final List<Employee> displayList = state.liveEmployees.where((e) {
-      return e.firstName.trim().isNotEmpty ||
-          e.lastName.trim().isNotEmpty ||
-          e.name.trim().isNotEmpty;
-    }).toList();
+    final List<Employee> displayList = state.liveEmployees;
 
     return SafeArea(
       child: Column(
@@ -79,10 +94,24 @@ class _DashboardViewState extends State<DashboardView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     DashboardGrid(
                       employees: displayList,
+                      totalEmployeeCount: state.totalEmployeeCount,
                       isSuperuser: state.isSuperuser,
+                    ),
+                    const SizedBox(height: 24),
+                    MobileEmployeeSection(
+                      embedded: true,
+                      totalEmployeeCount: state.totalEmployeeCount,
+                      employees: displayList,
+                      onEmployeeTap: (employee) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EmployeeCardMobile(employee: employee),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

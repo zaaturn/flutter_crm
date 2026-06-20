@@ -1,9 +1,22 @@
 import 'package:dio/dio.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 class ErrorHandler {
   static String format(Object err) {
+    if (AuthSessionRedirect.isAuthFailure(
+      err is DioException ? (err.error ?? err.response?.data) : err,
+      statusCode: err is DioException ? err.response?.statusCode : null,
+    )) {
+      AuthSessionRedirect.onAuthFailure(error: err);
+    }
 
     if (err is DioException) {
+      final message = err.error?.toString() ?? '';
+      if (message.contains('Session expired') ||
+          message.contains('No auth token')) {
+        return "Session expired. Please login again.";
+      }
+
       final response = err.response;
 
       if (response != null) {

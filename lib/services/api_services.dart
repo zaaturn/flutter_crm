@@ -6,6 +6,7 @@ import 'package:cross_file/cross_file.dart';
 
 import 'api_client.dart';
 import 'secure_storage_service.dart';
+import 'package:my_app/tasks/task_status_utils.dart';
 
 /* ================================
  * ATTENDANCE SERVICE
@@ -79,8 +80,12 @@ class TaskService {
   Future<void> updateTaskStatus(int taskId, String status) async {
     await _api.post(
       "$_base/tasks/$taskId/status/",
-      body: {"status": status},
+      body: {"status": normalizeTaskStatusForApi(status)},
     );
+  }
+
+  Future<Map<String, dynamic>> getTask(int taskId) async {
+    return await _api.get("$_base/tasks/$taskId/");
   }
 }
 

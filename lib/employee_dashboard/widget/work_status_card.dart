@@ -272,22 +272,12 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
           ],
         ),
         const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.surfaceContainerHigh),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final logItems = [
               _buildLogDetail("In", _fmtTime(a?.checkInTime)),
-              _vDivider(),
               _buildLogDetail("Out", _fmtTime(a?.checkOutTime)),
-              _vDivider(),
               _buildLogDetail("Worked", _fmtDur(a?.netWork ?? Duration.zero)),
-              _vDivider(),
               Column(
                 children: [
                   Text("STATUS", style: AppTextStyles.label(fontSize: 9, fontWeight: FontWeight.bold)),
@@ -302,8 +292,32 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
                   ),
                 ],
               ),
-            ],
-          ),
+            ];
+
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.surfaceContainerHigh),
+              ),
+              child: constraints.maxWidth < 420
+                  ? Wrap(
+                      spacing: 20,
+                      runSpacing: 16,
+                      children: logItems,
+                    )
+                  : Row(
+                      children: [
+                        for (var i = 0; i < logItems.length; i++) ...[
+                          if (i > 0) _vDivider(),
+                          Expanded(child: logItems[i]),
+                        ],
+                      ],
+                    ),
+            );
+          },
         ),
       ],
     );
@@ -313,10 +327,16 @@ class _SessionOverviewSectionState extends State<SessionOverviewSection> {
 
   Widget _buildLogDetail(String label, String value) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(label.toUpperCase(), style: AppTextStyles.label(fontSize: 9, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        Text(value, style: AppTextStyles.body(fontSize: 13, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.body(fontSize: 13, fontWeight: FontWeight.bold),
+        ),
       ],
     );
   }

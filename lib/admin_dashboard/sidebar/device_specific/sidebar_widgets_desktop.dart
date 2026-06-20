@@ -28,7 +28,7 @@ class DesktopSidebar extends StatefulWidget {
 }
 
 class _DesktopSidebarState extends State<DesktopSidebar> {
-  SidebarAction? _selectedAction = SidebarAction.dashboard;
+  SidebarAction? _selectedAction = SidebarAction.analytics;
 
   Map<String, bool> _adminModules = {};
   bool _isSuperuser = false;
@@ -78,6 +78,9 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     if (moduleKey == 'payroll') {
       return _isSuperuser ||
           (_roleIsAdmin && _adminModules['payroll'] == true);
+    }
+    if (moduleKey == 'analytics') {
+      return _adminModules['analytics'] == true;
     }
     return _adminModules[moduleKey] ?? true;
   }

@@ -27,6 +27,7 @@ import 'package:my_app/leave_management/screens/device_specific/public_holiday_d
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 import 'package:my_app/employee_dashboard/screen/employee_feed_screen_desktop.dart';
 import 'package:my_app/dashboards/presentations/screens/feed_screen_mobile.dart';
+import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
 
 class EmployeeDashboardNavigator {
 
@@ -115,7 +116,10 @@ class EmployeeDashboardNavigator {
   // ================= EVENTS =================
   static Future<void> events(BuildContext context) {
     _safeCloseDrawer(context);
-    return Navigator.pushNamed(context, '/calendar');
+    return Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EventManagementShell()),
+    );
   }
 
   // ================= FEED / SHARED POSTS =================

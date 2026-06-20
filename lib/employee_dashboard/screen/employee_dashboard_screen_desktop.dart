@@ -25,6 +25,8 @@ import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
+import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
 
 class EmployeeDashboardDesktop extends StatefulWidget {
   const EmployeeDashboardDesktop({super.key});
@@ -100,6 +102,7 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
             Row(
               children: [
                 DashboardSidebar(
+                  parentContext: context,
                   onLogout: _logout,
                   onNavigateLeave: () {
                     Navigator.push(
@@ -123,87 +126,95 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                       Expanded(
                         child: BlocBuilder<EmployeeBloc, EmployeeState>(
                           builder: (context, state) {
-                            if (state.loading) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-
-                            return RefreshIndicator(
-                              onRefresh: () async {
-                                _employeeBloc.add(LoadDashboard());
-                                try {
-                                  context.read<DashboardBloc>().add(DashboardRefreshRequested());
-                                } catch (_) {}
-                                try {
-                                  context.read<NotificationBloc>().add(NotificationLoadRequested());
-                                } catch (_) {}
-                              },
-                              child: SingleChildScrollView(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(24),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // LEFT COLUMN: Content (Flex 7)
-                                    Expanded(
-                                      flex: 7,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          const DashboardGreeting(),
-                                          const SizedBox(height: 24),
-                                          DashboardWorkStatusCard(),
-                                          const SizedBox(height: 24),
-                                          DashboardTasksSection(
-                                            tasks: state.tasks,
-                                            onUpdateStatus: (taskId, status) {
-                                              _employeeBloc.add(
-                                                UpdateTaskStatus(
-                                                  taskId: taskId,
-                                                  status: status,
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // ================= CENTER CONTENT =================
+                                Expanded(
+                                  child: state.loading
+                                      ? const Center(
+                                          child: CircularProgressIndicator(),
+                                        )
+                                      : RefreshIndicator(
+                                          onRefresh: () async {
+                                            _employeeBloc.add(LoadDashboard());
+                                            try {
+                                              context
+                                                  .read<DashboardBloc>()
+                                                  .add(DashboardRefreshRequested());
+                                            } catch (_) {}
+                                            try {
+                                              context
+                                                  .read<NotificationBloc>()
+                                                  .add(NotificationLoadRequested());
+                                            } catch (_) {}
+                                          },
+                                          child: SingleChildScrollView(
+                                            physics:
+                                                const AlwaysScrollableScrollPhysics(),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 40,
+                                              vertical: 32,
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const DashboardGreeting(),
+                                                const SizedBox(height: 24),
+                                                DashboardWorkStatusCard(),
+                                                const SizedBox(height: 24),
+                                                DashboardTasksSection(
+                                                  tasks: state.tasks,
+                                                  onUpdateStatus:
+                                                      (taskId, status) {
+                                                    _employeeBloc.add(
+                                                      UpdateTaskStatus(
+                                                        taskId: taskId,
+                                                        status: status,
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
-                                              );
-                                            },
+                                                const SizedBox(height: 24),
+                                                const SurveyFeedSection(
+                                                    compact: true),
+                                                const SizedBox(height: 24),
+                                                const SharedPostsSection(),
+                                                const SizedBox(height: 24),
+                                                const MainDashboardEventsPanel(),
+                                                const SizedBox(height: 24),
+                                              ],
+                                            ),
                                           ),
-                                          const SizedBox(height: 24),
-                                          const SharedPostsSection(),
-                                          const SizedBox(height: 24),
-                                        ],
+                                        ),
+                                ),
+
+                                // ================= RIGHT PANEL (CALENDAR) =================
+                                Container(
+                                  width: 380,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border(
+                                      left: BorderSide(
+                                        color: Colors.grey.shade100,
                                       ),
                                     ),
-
-                                    const SizedBox(width: 24),
-
-                                    // RIGHT COLUMN: Calendar
-                                    Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        height: 850,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(16),
-                                          border: Border.all(
-                                            color: const Color(0xFFF5F3FF),
-                                            width: 1.2,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.03),
-                                              blurRadius: 20,
-                                              offset: const Offset(0, 10),
-                                            ),
-                                          ],
-                                        ),
-                                        child: const ClipRRect(
-                                          borderRadius: BorderRadius.all(Radius.circular(16)),
+                                  ),
+                                  child: const Padding(
+                                    padding: EdgeInsets.fromLTRB(12, 20, 12, 0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
                                           child: DashboardCalendar(),
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             );
                           },
                         ),

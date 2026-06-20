@@ -4,12 +4,14 @@ class ShareDashboardScreen extends StatelessWidget {
   final VoidCallback onOpenShared;
   final VoidCallback onOpenCulture;
   final VoidCallback onOpenAnnouncements;
+  final VoidCallback? onOpenSurveys;
 
   const ShareDashboardScreen({
     super.key,
     required this.onOpenShared,
     required this.onOpenCulture,
     required this.onOpenAnnouncements,
+    this.onOpenSurveys,
   });
 
   @override
@@ -60,6 +62,13 @@ class ShareDashboardScreen extends StatelessWidget {
                 icon: Icons.campaign_outlined,
                 onTap: onOpenAnnouncements,
               ),
+              if (onOpenSurveys != null)
+                _Card(
+                  title: 'Surveys',
+                  subtitle: 'Create polls & view employee responses',
+                  icon: Icons.poll_outlined,
+                  onTap: onOpenSurveys!,
+                ),
             ],
           ),
         ],

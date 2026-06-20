@@ -8,7 +8,9 @@ import 'employee_dashboard_state.dart';
 import '../model/attendance_model.dart';
 import '../repository/employee_dashboard_repository.dart';
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
+import 'package:my_app/tasks/task_status_utils.dart';
 
 class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   final EmployeeRepository repo;
@@ -167,7 +169,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ) async {
     final userId = await _storage.readUserId();
     if (userId == null || userId.isEmpty) {
-      emit(state.copyWith(error: "Session expired. Please login again."));
+      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.');
       return;
     }
 
@@ -206,7 +208,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ) async {
     final userId = await _storage.readUserId();
     if (userId == null || userId.isEmpty) {
-      emit(state.copyWith(error: "Session expired. Please login again."));
+      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.');
       return;
     }
 
@@ -304,9 +306,11 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) return;
 
+    final apiStatus = normalizeTaskStatusForApi(event.status);
+
     final optimisticTasks = state.tasks.map((task) {
       if (task.id == event.taskId) {
-        return task.copyWith(status: event.status);
+        return task.copyWith(status: apiStatus);
       }
       return task;
     }).toList();
@@ -314,7 +318,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     emit(state.copyWith(tasks: optimisticTasks, error: null));
 
     try {
-      await repo.updateTaskStatus(event.taskId, event.status);
+      await repo.updateTaskStatus(event.taskId, apiStatus);
     } catch (err) {
       final token = await _storage.readToken();
       if (token == null || token.isEmpty) return;

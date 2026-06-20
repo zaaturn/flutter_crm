@@ -4,12 +4,14 @@ import '../model/employee.dart';
 
 class EmployeeSection extends StatefulWidget {
   final List<Employee> employees;
+  final int totalEmployeeCount;
   final VoidCallback? onViewAll;
   final Function(Employee)? onEmployeeTap;
 
   const EmployeeSection({
     super.key,
     required this.employees,
+    this.totalEmployeeCount = 0,
     this.onViewAll,
     this.onEmployeeTap,
   });
@@ -105,6 +107,15 @@ class _EmployeeSectionState extends State<EmployeeSection> {
     );
   }
 
+  String get _subtitle {
+    final total = widget.totalEmployeeCount;
+    final loggedIn = widget.employees.length;
+    if (total > 0) {
+      return '$total total · $loggedIn logged in today';
+    }
+    return '$loggedIn logged in today';
+  }
+
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
@@ -135,7 +146,7 @@ class _EmployeeSectionState extends State<EmployeeSection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Employees",
+                        "Live Attendance",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -144,7 +155,7 @@ class _EmployeeSectionState extends State<EmployeeSection> {
                         ),
                       ),
                       Text(
-                        "${widget.employees.length} active",
+                        _subtitle,
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF6B7280),
@@ -388,7 +399,7 @@ class _EmployeeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final card = Semantics(
       button: true,
-      label: 'Employee: ${employee.name}, ${employee.designation}, ${employee.statusText}',
+      label: 'Employee: ${employee.displayName}, ${employee.designation}, ${employee.statusText}',
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFFF9FAFB),
@@ -466,7 +477,7 @@ class _EmployeeInfo extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                employee.name,
+                employee.displayName,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -655,7 +666,7 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Avatar for ${employee.name}',
+      label: 'Avatar for ${employee.displayName}',
       child: Stack(
         children: [
           Container(

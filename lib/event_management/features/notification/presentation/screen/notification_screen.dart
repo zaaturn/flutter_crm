@@ -157,6 +157,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         if (notif.taskId?.isNotEmpty ?? false) 'task_id': notif.taskId,
         if (notif.leaveId?.isNotEmpty ?? false) 'leave_id': notif.leaveId,
         if (notif.postId?.isNotEmpty ?? false) 'post_id': notif.postId,
+        if (notif.surveyId?.isNotEmpty ?? false) 'survey_id': notif.surveyId,
       });
     } else {
 

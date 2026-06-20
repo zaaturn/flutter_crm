@@ -6,6 +6,8 @@ import 'package:my_app/dashboards/widgets/target_audience_panel.dart';
 import 'package:my_app/dashboards/presentations/screens/culture_board_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/shared_item_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/announcement_screen.dart';
+import 'package:my_app/survey/navigation/survey_flow_controller.dart';
+import 'package:my_app/dashboards/presentations/widgets/share_survey_access_gate.dart';
 import 'package:my_app/dashboards/presentations/screens/share_dashboard_screen.dart';
 
 
@@ -109,12 +111,17 @@ class _ContentManagementPageState
   Widget _buildBody() {
     switch (_active) {
       case NavSection.dashboard:
-        return ShareDashboardScreen(
-          onOpenShared: () => setState(() => _active = NavSection.sharedItems),
-          onOpenCulture: () =>
-              setState(() => _active = NavSection.cultureBoards),
-          onOpenAnnouncements: () =>
-              setState(() => _active = NavSection.announcements),
+        return ShareSurveyAccessGate(
+          builder: (allowed) => ShareDashboardScreen(
+            onOpenShared: () => setState(() => _active = NavSection.sharedItems),
+            onOpenCulture: () =>
+                setState(() => _active = NavSection.cultureBoards),
+            onOpenAnnouncements: () =>
+                setState(() => _active = NavSection.announcements),
+            onOpenSurveys: allowed
+                ? () => SurveyFlowController.openCreateSurvey(context)
+                : null,
+          ),
         );
       case NavSection.sharedItems:
         return const SharedItemsScreen();

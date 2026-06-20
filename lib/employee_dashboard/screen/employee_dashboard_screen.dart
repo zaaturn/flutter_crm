@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
+import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
+import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import '../bloc/employee_dashboard_bloc.dart';
 import '../bloc/employee_dashboard_event.dart';
 import '../bloc/employee_dashboard_state.dart';
@@ -10,7 +12,6 @@ import '../widget/top_bar.dart';
 import '../widget/work_status_card.dart';
 import '../widget/assigned_tasks_section.dart';
 import '../widget/bottom_nav.dart';
-import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_greeting.dart';
 
 class EmployeeDashboardScreen extends StatefulWidget {
@@ -116,6 +117,8 @@ class _DashboardBody extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 32),
+                const SurveyFeedSection(compact: true),
+                const SizedBox(height: 24),
                 const SharedPostsSection(),
                 const SizedBox(height: 32),
                 const MainDashboardEventsPanel(),

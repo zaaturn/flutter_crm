@@ -7,18 +7,24 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/task_card_desktop.dart';
+import 'package:my_app/tasks/task_dashboard_navigation.dart';
 
 class TaskTrackerScreenDesktop extends StatelessWidget {
   const TaskTrackerScreenDesktop({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AdminDashboardBloc(
-        repository: AdminRepository(),
-      )..add(const AdminDashboardStarted()),
-      child: const _TaskTrackerView(),
-    );
+    try {
+      context.read<AdminDashboardBloc>();
+      return const _TaskTrackerView();
+    } catch (_) {
+      return BlocProvider(
+        create: (_) => AdminDashboardBloc(
+          repository: AdminRepository(),
+        )..add(const AdminDashboardStarted()),
+        child: const _TaskTrackerView(),
+      );
+    }
   }
 }
 
@@ -68,6 +74,18 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+  }
+
+  void _openTaskDetail(BuildContext context, int taskId) {
+    openTaskDetailForDashboard(
+      context,
+      taskId: taskId,
+      onUpdated: (updated) => applyTaskEditToDashboard(context, updated),
+    );
+  }
+
+  void _openTaskEdit(BuildContext context, int taskId) {
+    openTaskEditForDashboard(context, taskId);
   }
 
   @override
@@ -190,8 +208,8 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
         final task = filteredTasks[index];
         return ModrenLevelTaskRow(
           task: task,
-          onTap: () {},
-          onEdit: () {},
+          onTap: () => _openTaskDetail(context, task.id),
+          onEdit: () => _openTaskEdit(context, task.id),
           onDelete: () {},
           onApprove: () => _confirmApproval(context, task),
         );

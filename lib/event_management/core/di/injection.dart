@@ -24,7 +24,7 @@ import 'package:my_app/event_management/features/notification/presentation/bloc/
 final sl = GetIt.instance;
 
 Future<void> configureEventManagementDependencies({Dio? dio}) async {
-  final d = dio ?? ApiClient.create();
+  final d = dio ?? EventApiClient.create();
 
   if (!sl.isRegistered<Dio>(instanceName: 'events')) {
     sl.registerLazySingleton<Dio>(() => d, instanceName: 'events');

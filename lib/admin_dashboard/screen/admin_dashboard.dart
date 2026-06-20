@@ -325,7 +325,12 @@ class _AdminDashboardViewState extends State<_AdminDashboardView> {
 
             // ── Existing data sections ──
             // Employees live status
-            _AnimatedCard(child: EmployeeSection(employees: state.liveEmployees)),
+            _AnimatedCard(
+              child: EmployeeSection(
+                employees: state.liveEmployees,
+                totalEmployeeCount: state.totalEmployeeCount,
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Tasks

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/tasks/task_status_utils.dart';
 import 'shared_widgets.dart';
 
-class TaskListView extends StatefulWidget {
+class TaskListView extends StatelessWidget {
   const TaskListView({
     super.key,
     required this.tasks,
@@ -17,47 +18,6 @@ class TaskListView extends StatefulWidget {
   final Color Function(String) statusColor;
   final Color Function(String) priorityColor;
   final String Function(String) statusLabel;
-
-  @override
-  State<TaskListView> createState() => _TaskListViewState();
-}
-
-class _TaskListViewState extends State<TaskListView> {
-  late List<TaskModel> localTasks;
-
-  @override
-  void initState() {
-    super.initState();
-    localTasks = List.from(widget.tasks);
-  }
-
-  @override
-  void didUpdateWidget(TaskListView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.tasks != widget.tasks) {
-      localTasks = List.from(widget.tasks);
-    }
-  }
-
-  void _showDeleteConfirmation(int id, String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Task?'),
-        content: Text('This will remove "$title" from your view.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              setState(() => localTasks.removeWhere((t) => t.id == id));
-              Navigator.pop(context);
-            },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,20 +42,18 @@ class _TaskListViewState extends State<TaskListView> {
                 Expanded(flex: 2, child: HeaderCell('PRIORITY')),
                 Expanded(flex: 2, child: HeaderCell('STATUS')),
                 Expanded(flex: 1, child: HeaderCell('ASSIGNEE')),
-                SizedBox(width: 48),
               ],
             ),
           ),
           Expanded(
             child: ListView.separated(
-              itemCount: localTasks.length,
+              itemCount: tasks.length,
               separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
               itemBuilder: (_, i) => _ListRow(
-                task: localTasks[i],
-                statusColor: widget.statusColor,
-                priorityColor: widget.priorityColor,
-                onStatusChange: widget.onStatusChange,
-                onDelete: () => _showDeleteConfirmation(localTasks[i].id, localTasks[i].title),
+                task: tasks[i],
+                statusColor: statusColor,
+                priorityColor: priorityColor,
+                onStatusChange: onStatusChange,
               ),
             ),
           ),
@@ -111,28 +69,16 @@ class _ListRow extends StatelessWidget {
     required this.statusColor,
     required this.priorityColor,
     required this.onStatusChange,
-    required this.onDelete,
   });
 
   final TaskModel task;
   final Color Function(String) statusColor;
   final Color Function(String) priorityColor;
   final void Function(int, String) onStatusChange;
-  final VoidCallback onDelete;
-
-  // Helper to ensure the dropdown value matches the items exactly
-  String _getSafeStatus(String currentStatus) {
-    const validStatuses = ['Pending', 'In Progress', 'Completed'];
-    // Try to find a match regardless of case
-    return validStatuses.firstWhere(
-          (s) => s.toLowerCase() == currentStatus.toLowerCase(),
-      orElse: () => 'Pending', // Fallback to avoid red screen
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
-    final safeStatus = _getSafeStatus(task.status);
+    final safeStatus = taskStatusDisplayLabel(task.status);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -159,14 +105,22 @@ class _ListRow extends StatelessWidget {
                     children: [
                       Text(
                         task.title,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         task.description,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.5),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          height: 1.5,
+                        ),
                         softWrap: true,
-                        maxLines: null, // Shows full content
+                        maxLines: null,
                       ),
                     ],
                   ),
@@ -188,7 +142,11 @@ class _ListRow extends StatelessWidget {
                   ),
                   child: Text(
                     task.priority,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: priorityColor(task.priority)),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: priorityColor(task.priority),
+                    ),
                   ),
                 ),
               ),
@@ -206,15 +164,23 @@ class _ListRow extends StatelessWidget {
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
-                  value: safeStatus, // Uses the cleaned safe value
+                  value: safeStatus,
                   isDense: true,
-                  style: TextStyle(color: statusColor(task.status), fontSize: 12, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: statusColor(task.status),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                   items: const [
                     DropdownMenuItem(value: 'Pending', child: Text('Pending')),
                     DropdownMenuItem(value: 'In Progress', child: Text('In Progress')),
                     DropdownMenuItem(value: 'Completed', child: Text('Completed')),
                   ],
-                  onChanged: (v) => v != null ? onStatusChange(task.id, v) : null,
+                  onChanged: (v) {
+                    if (v != null) {
+                      onStatusChange(task.id, normalizeTaskStatusForApi(v));
+                    }
+                  },
                 ),
               ),
             ),
@@ -226,14 +192,12 @@ class _ListRow extends StatelessWidget {
               child: CircleAvatar(
                 radius: 14,
                 backgroundColor: statusColor(task.status).withOpacity(0.1),
-                child: Text(task.title.isNotEmpty ? task.title[0] : '?',
-                    style: TextStyle(fontSize: 12, color: statusColor(task.status))),
+                child: Text(
+                  task.title.isNotEmpty ? task.title[0] : '?',
+                  style: TextStyle(fontSize: 12, color: statusColor(task.status)),
+                ),
               ),
             ),
-          ),
-          IconButton(
-            onPressed: onDelete,
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
           ),
         ],
       ),

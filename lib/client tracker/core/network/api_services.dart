@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../constants/app_constant.dart';
+import 'package:my_app/core/auth/jwt_utils.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class ApiClient {
@@ -89,7 +91,11 @@ class ApiClient {
             headers = await _getHeaders();
             res = await _executeRequest(method, uri, headers, body);
           } else {
-            await _storage.clearTokens();
+            await _storage.clearAll();
+            AuthSessionRedirect.onAuthFailure(
+              error: "Session expired. Please login again.",
+              statusCode: 401,
+            );
             throw ApiException(401, "Session expired. Please login again.");
           }
         } else {
@@ -105,7 +111,11 @@ class ApiClient {
             headers = await _getHeaders();
             res = await _executeRequest(method, uri, headers, body);
           } else {
-            await _storage.clearTokens();
+            await _storage.clearAll();
+            AuthSessionRedirect.onAuthFailure(
+              error: "Session expired. Please login again.",
+              statusCode: 401,
+            );
             throw ApiException(401, "Session expired. Please login again.");
           }
         }
@@ -134,7 +144,10 @@ class ApiClient {
 
   Future<Map<String, String>> _getHeaders() async {
 
-    final token = await _storage.readToken();
+    var token = await _storage.readToken();
+    if (token != null && token.isNotEmpty && JwtUtils.isExpired(token)) {
+      token = await _refreshToken();
+    }
 
     return {
       'Content-Type': 'application/json',
@@ -155,6 +168,7 @@ class ApiClient {
       final refresh = await _storage.readRefreshToken();
 
       if (refresh == null || refresh.isEmpty) return null;
+      if (JwtUtils.isExpired(refresh)) return null;
 
       final res = await http.post(
         Uri.parse("$_base/api/accounts/crm/token/refresh/"),
@@ -231,6 +245,13 @@ class ApiClient {
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return body;
+    }
+
+    if (res.statusCode == 401) {
+      AuthSessionRedirect.onAuthFailure(
+        error: _friendlyError(401),
+        statusCode: 401,
+      );
     }
 
     throw ApiException(

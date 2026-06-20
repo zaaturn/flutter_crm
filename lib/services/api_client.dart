@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'secure_storage_service.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
+import 'package:my_app/core/auth/jwt_utils.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/core/scaffold_messenger_scope.dart';
 
@@ -32,6 +34,7 @@ class ApiClient {
   bool _isRefreshing = false;
   Future<String?>? _refreshingFuture;
   Timer? _autoRefreshTimer;
+  Timer? _accessExpiryTimer;
 
   // --- GLOBAL LOADER ---
   static final ValueNotifier<bool> loader = ValueNotifier<bool>(false);
@@ -45,7 +48,17 @@ class ApiClient {
   bool get isAuthenticated => _isAuthenticated;
 
   /// Allows non-Dio login/logout flows to keep auth state in sync.
-  void forceAuthenticated() => _isAuthenticated = true;
+  void forceAuthenticated() {
+    _isAuthenticated = true;
+    _startAutoRefresh();
+    unawaited(() async {
+      final token = await _storage.readToken();
+      if (token != null && token.isNotEmpty) {
+        _scheduleAccessExpiryCheck(token);
+      }
+    }());
+  }
+
   void forceUnauthenticated() => _isAuthenticated = false;
 
   /// Shared [Dio] for feature modules (e.g. event management) that use `/api/...` paths.
@@ -53,21 +66,97 @@ class ApiClient {
 
   Future<void> _checkInitialAuth() async {
     final token = await _storage.readToken();
-    _isAuthenticated = token != null && token.isNotEmpty;
+    _isAuthenticated = token != null && token.isNotEmpty && !JwtUtils.isExpired(token);
+    if (_isAuthenticated) {
+      _scheduleAccessExpiryCheck(token!);
+    } else if (token != null && token.isNotEmpty && JwtUtils.isExpired(token)) {
+      unawaited(ensureSessionValid(redirectOnFailure: true));
+    }
+  }
+
+  void _scheduleAccessExpiryCheck(String accessToken) {
+    _accessExpiryTimer?.cancel();
+    final exp = JwtUtils.expiry(accessToken);
+    if (exp == null) return;
+
+    final delay = exp.difference(DateTime.now());
+    if (delay.isNegative) {
+      unawaited(ensureSessionValid(redirectOnFailure: true));
+      return;
+    }
+
+    _accessExpiryTimer = Timer(delay + const Duration(seconds: 1), () {
+      unawaited(ensureSessionValid(redirectOnFailure: true));
+    });
+  }
+
+  /// Validates access/refresh JWT expiry and refreshes or redirects to login.
+  Future<bool> ensureSessionValid({bool redirectOnFailure = false}) async {
+    final access = await _storage.readToken();
+    final refresh = await _storage.readRefreshToken();
+
+    if (refresh == null || refresh.isEmpty) {
+      if (access != null &&
+          access.isNotEmpty &&
+          !JwtUtils.isExpired(access)) {
+        _isAuthenticated = true;
+        _scheduleAccessExpiryCheck(access);
+        return true;
+      }
+      if (redirectOnFailure) await _handleSessionExpired();
+      return false;
+    }
+
+    if (JwtUtils.isExpired(refresh)) {
+      if (redirectOnFailure) await _handleSessionExpired();
+      return false;
+    }
+
+    final accessExpired =
+        access != null && access.isNotEmpty && JwtUtils.isExpired(access);
+    if (access != null && access.isNotEmpty && !accessExpired) {
+      _isAuthenticated = true;
+      _scheduleAccessExpiryCheck(access);
+      return true;
+    }
+
+    return refreshSession(redirectOnFailure: redirectOnFailure);
   }
 
   void _startAutoRefresh() {
     _autoRefreshTimer?.cancel();
     // Refresh in the background so users don't randomly hit an expired access token.
     // The 401-interceptor remains as a safety net.
-    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 8), (_) async {
+    _autoRefreshTimer = Timer.periodic(const Duration(minutes: 4), (_) async {
       try {
         final refresh = await _storage.readRefreshToken();
         if (refresh == null || refresh.isEmpty) return;
-        await refreshSession();
+        await refreshSession(redirectOnFailure: true);
       } catch (_) {
         // Ignore: background refresh should never crash the app.
       }
+    });
+    unawaited(ensureSessionValid(redirectOnFailure: true));
+  }
+
+  /// Single-flight token refresh shared by interceptors, timers, and app resume.
+  Future<String?> _refreshAccessToken({bool showLoading = false}) {
+    final inFlight = _refreshingFuture;
+    if (inFlight != null) return inFlight;
+
+    _isRefreshing = true;
+    _refreshingFuture = () async {
+      if (showLoading) ApiClient.showLoader();
+      try {
+        return await _performTokenRefresh();
+      } finally {
+        if (showLoading) ApiClient.hideLoader();
+      }
+    }();
+
+    return _refreshingFuture!.whenComplete(() {
+      _isRefreshing = false;
+      _refreshingFuture = null;
     });
   }
 
@@ -108,20 +197,45 @@ class ApiClient {
             final isAuthFree = options.path.contains('login') ||
                 options.path.contains('refresh');
 
-            final token = await _storage.readToken();
+            var token = await _storage.readToken();
+
+            if (!isAuthFree &&
+                token != null &&
+                token.isNotEmpty &&
+                JwtUtils.isExpired(token)) {
+              try {
+                token = await _refreshAccessToken();
+              } catch (_) {
+                token = null;
+              }
+            }
 
             if ((token == null || token.isEmpty) && !isAuthFree) {
-              _isAuthenticated = false;
-              return handler.reject(
-                DioException(
-                  requestOptions: options,
-                  error: "No auth token",
-                ),
-              );
+              final refresh = await _storage.readRefreshToken();
+              if (refresh != null && refresh.isNotEmpty) {
+                try {
+                  token = await _refreshAccessToken();
+                } catch (_) {
+                  // Transient network error — fall through to reject below.
+                }
+              }
+              if (token == null || token.isEmpty) {
+                await _handleSessionExpired();
+                final authError = refresh != null && refresh.isNotEmpty
+                    ? "Session expired. Please login again."
+                    : "No auth token";
+                return handler.reject(
+                  DioException(
+                    requestOptions: options,
+                    error: authError,
+                  ),
+                );
+              }
             }
 
             if (token != null && token.isNotEmpty) {
               _isAuthenticated = true;
+              _scheduleAccessExpiryCheck(token);
               options.headers["Authorization"] = "Bearer $token";
             }
 
@@ -141,29 +255,11 @@ class ApiClient {
               error.requestOptions.path.contains('refresh');
 
           if (statusCode == 401 && !isAuthFree) {
-            // If a refresh is already running, await it and retry once.
-            if (_refreshingFuture != null) {
-              final token = await _refreshingFuture!;
-              if (token != null && token.isNotEmpty) {
-                final opts = error.requestOptions;
-                opts.headers["Authorization"] = "Bearer $token";
-                try {
-                  final response = await _dio.fetch(opts);
-                  return handler.resolve(response);
-                } catch (_) {
-                  return handler.reject(error);
-                }
-              }
-              // If refresh failed, fall through to session-expired handling below.
-            }
-
-            _isRefreshing = true;
-            ApiClient.showLoader();
             try {
-              _refreshingFuture = _performTokenRefresh();
-              final newToken = await _refreshingFuture!;
+              final newToken =
+                  await _refreshAccessToken(showLoading: true);
 
-              if (newToken != null) {
+              if (newToken != null && newToken.isNotEmpty) {
                 _isAuthenticated = true;
                 final opts = error.requestOptions;
                 opts.headers["Authorization"] = "Bearer $newToken";
@@ -173,20 +269,22 @@ class ApiClient {
                 } catch (_) {
                   return handler.reject(error);
                 }
-              } else {
-                _isAuthenticated = false;
-                await _storage.clearTokens();
-                return handler.reject(
-                  DioException(
-                    requestOptions: error.requestOptions,
-                    error: "Session expired. Please login again.",
-                  ),
-                );
               }
-            } finally {
-              ApiClient.hideLoader();
-              _isRefreshing = false;
-              _refreshingFuture = null;
+
+              _isAuthenticated = false;
+              await _handleSessionExpired();
+              return handler.reject(
+                DioException(
+                  requestOptions: error.requestOptions,
+                  error: "Session expired. Please login again.",
+                ),
+              );
+            } catch (e) {
+              if (e is DioException &&
+                  (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
+                await _handleSessionExpired();
+              }
+              return handler.reject(error);
             }
           }
           if (statusCode == 403) {
@@ -208,11 +306,22 @@ class ApiClient {
   }
 
   Future<String?> _performTokenRefresh() async {
-    try {
-      final refreshToken = await _storage.readRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) return null;
+    final refreshToken = await _storage.readRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+    if (JwtUtils.isExpired(refreshToken)) return null;
 
-      final refreshDio = Dio();
+    final refreshDio = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 20),
+        receiveTimeout: const Duration(seconds: 20),
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      ),
+    );
+
+    try {
       final response = await refreshDio.post(
         "$baseAccounts/token/refresh/",
         data: {"refresh": refreshToken},
@@ -221,30 +330,71 @@ class ApiClient {
       final data = response.data;
       if (data == null || data["access"] == null) return null;
 
-      final newAccess = data["access"];
+      final newAccess = data["access"].toString();
       await _storage.saveToken(newAccess);
       if (data["refresh"] != null) {
-        await _storage.saveRefreshToken(data["refresh"]);
+        await _storage.saveRefreshToken(data["refresh"].toString());
       }
 
       _isAuthenticated = true;
+      _scheduleAccessExpiryCheck(newAccess);
       await ProfileRemoteSync.syncFromServer();
       return newAccess;
-    } catch (e) {
-      return null;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      if (code == 401 || code == 403) {
+        return null;
+      }
+      rethrow;
     }
+  }
+
+  /// Clears auth state and sends the user to login when session is no longer valid.
+  Future<void> _handleSessionExpired() async {
+    _isAuthenticated = false;
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
+    _accessExpiryTimer?.cancel();
+    _accessExpiryTimer = null;
+    try {
+      await _storage.clearAll();
+    } catch (_) {}
+    forceUnauthenticated();
+    AuthSessionRedirect.onAuthFailure(
+      error: 'Session expired. Please login again.',
+      statusCode: 401,
+    );
   }
 
   /// Explicitly refreshes the access token using the stored refresh token.
   /// Returns true if refresh succeeded (and access token updated).
-  Future<bool> refreshSession() async {
-    if (_isRefreshing) return false;
-    _isRefreshing = true;
+  Future<bool> refreshSession({bool redirectOnFailure = false}) async {
     try {
-      final newToken = await _performTokenRefresh();
-      return newToken != null && newToken.isNotEmpty;
-    } finally {
-      _isRefreshing = false;
+      final refresh = await _storage.readRefreshToken();
+      if (refresh == null || refresh.isEmpty) {
+        if (redirectOnFailure) await _handleSessionExpired();
+        return false;
+      }
+      if (JwtUtils.isExpired(refresh)) {
+        if (redirectOnFailure) await _handleSessionExpired();
+        return false;
+      }
+      final newToken = await _refreshAccessToken();
+      final ok = newToken != null && newToken.isNotEmpty;
+      if (!ok && redirectOnFailure) {
+        await _handleSessionExpired();
+      } else if (ok && newToken != null) {
+        _scheduleAccessExpiryCheck(newToken);
+      }
+      return ok;
+    } catch (e) {
+      if (redirectOnFailure && e is DioException) {
+        final code = e.response?.statusCode;
+        if (code == 401 || code == 403) {
+          await _handleSessionExpired();
+        }
+      }
+      return false;
     }
   }
 
@@ -254,6 +404,8 @@ class ApiClient {
     _masterCancelToken = CancelToken();
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = null;
+    _accessExpiryTimer?.cancel();
+    _accessExpiryTimer = null;
     await _storage.clearTokens();
     _isAuthenticated = false;
   }
@@ -273,6 +425,10 @@ class ApiClient {
         e.type == DioExceptionType.receiveTimeout) {
       return ApiException(408, "Request timeout.");
     }
+    AuthSessionRedirect.onAuthFailure(
+      error: e.error ?? e.response?.data,
+      statusCode: e.response?.statusCode,
+    );
     return ApiException(
         e.response?.statusCode ?? 500, e.response?.data ?? e.error);
   }

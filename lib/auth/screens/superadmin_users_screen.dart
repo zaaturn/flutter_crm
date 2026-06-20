@@ -367,7 +367,7 @@ class _UserAccessFormState extends State<_UserAccessForm> {
     if (avail is List) {
       _moduleKeys = avail.map((e) => e.toString()).toList();
     } else {
-      _moduleKeys = ['employees', 'tasks', 'billing', 'clients', 'payroll', 'leads', 'leave', 'events', 'share', 'assets'];
+      _moduleKeys = ['employees', 'tasks', 'billing', 'clients', 'payroll', 'leads', 'leave', 'events', 'share', 'assets', 'analytics', 'surveys'];
     }
 
     for (final k in _moduleKeys) {

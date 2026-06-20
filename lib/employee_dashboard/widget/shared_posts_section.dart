@@ -9,6 +9,7 @@ import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/employee_dashboard/widget/employee_feed_chrome.dart';
 
 class SharedPostsSection extends StatefulWidget {

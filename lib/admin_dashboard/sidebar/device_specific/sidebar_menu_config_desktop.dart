@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum SidebarAction {
-  dashboard,
+  analytics,
   employees,
 
   // Projects & Tasks
@@ -55,10 +55,11 @@ class SidebarMenuItem {
 
 const sidebarMenuConfig = [
   SidebarMenuItem(
-    title: "Dashboard",
-    icon: Icons.dashboard_outlined,
-    action: SidebarAction.dashboard,
-    tooltip: "Admin overview",
+    title: "Analytics",
+    icon: Icons.analytics_outlined,
+    action: SidebarAction.analytics,
+    moduleKey: 'analytics',
+    tooltip: "Analytics overview",
   ),
 
   SidebarMenuItem(
@@ -161,7 +162,6 @@ const sidebarMenuConfig = [
 /// Backend `admin_modules` key for this action, or `null` if not gated.
 String? moduleKeyForSidebarAction(SidebarAction action) {
   switch (action) {
-    case SidebarAction.dashboard:
     case SidebarAction.logout:
     case SidebarAction.superadminUsers:
       return null;
@@ -186,5 +186,7 @@ String? moduleKeyForSidebarAction(SidebarAction action) {
       return 'leads';
     case SidebarAction.events:
       return 'events';
+    case SidebarAction.analytics:
+      return 'analytics';
   }
 }

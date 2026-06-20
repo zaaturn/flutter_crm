@@ -136,17 +136,19 @@ class _AudiencePickerSheetState extends State<_AudiencePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final sheetHeight = MediaQuery.sizeOf(context).height * 0.88;
     return SafeArea(
       top: false,
-      child: Container(
-        margin: const EdgeInsets.only(top: 80),
-        decoration: const BoxDecoration(
-          color: Color(0xFFFEF7F1),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        ),
-        child: Column(
-          children: [
-            Container(
+      child: SizedBox(
+        height: sheetHeight,
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFFFEF7F1),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
               decoration: BoxDecoration(
                 border: Border(bottom: BorderSide(color: Colors.black.withOpacity(0.05))),
@@ -234,6 +236,7 @@ class _AudiencePickerSheetState extends State<_AudiencePickerSheet> {
           ],
         ),
       ),
+    ),
     );
   }
 }

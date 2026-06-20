@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
+import 'package:my_app/tasks/task_dashboard_navigation.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/mainscreen_taskcard.dart';
 
 class DesktopTaskSectionModern extends StatefulWidget {
@@ -42,7 +43,9 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
   @override
   void didUpdateWidget(covariant DesktopTaskSectionModern oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _localTasks = List.from(widget.tasks);
+    if (oldWidget.tasks != widget.tasks) {
+      _localTasks = List.from(widget.tasks);
+    }
   }
 
   List<Task> get _filteredTasks {
@@ -229,6 +232,7 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
               task: task,
               isDark: isDark,
               onTap: widget.onTaskTap,
+              onEdit: () => openTaskEditForDashboard(context, task.id),
               onDelete: (taskToArchive) {
                 if (task.status.trim().toLowerCase() == 'completed') {
                   _showArchiveConfirmation(context, taskToArchive);

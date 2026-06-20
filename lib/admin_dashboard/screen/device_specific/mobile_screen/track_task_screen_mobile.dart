@@ -7,6 +7,7 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
+import 'package:my_app/tasks/task_dashboard_navigation.dart';
 
 class SaasTheme {
   static const terracotta = Color(0xFFB35A38);
@@ -28,12 +29,17 @@ class TaskTrackerScreenMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => AdminDashboardBloc(
-        repository: AdminRepository(),
-      )..add(const AdminDashboardStarted()),
-      child: const _TaskTrackerView(),
-    );
+    try {
+      context.read<AdminDashboardBloc>();
+      return const _TaskTrackerView();
+    } catch (_) {
+      return BlocProvider(
+        create: (_) => AdminDashboardBloc(
+          repository: AdminRepository(),
+        )..add(const AdminDashboardStarted()),
+        child: const _TaskTrackerView(),
+      );
+    }
   }
 }
 
@@ -82,6 +88,18 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
         ],
       ),
     );
+  }
+
+  void _openTaskDetail(BuildContext context, int taskId) {
+    openTaskDetailForDashboard(
+      context,
+      taskId: taskId,
+      onUpdated: (updated) => applyTaskEditToDashboard(context, updated),
+    );
+  }
+
+  void _openTaskEdit(BuildContext context, int taskId) {
+    openTaskEditForDashboard(context, taskId);
   }
 
   @override
@@ -145,6 +163,8 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
                           itemCount: filteredTasks.length,
                           itemBuilder: (context, index) => _TaskListItem(
                             task: filteredTasks[index],
+                            onTap: () => _openTaskDetail(context, filteredTasks[index].id),
+                            onEdit: () => _openTaskEdit(context, filteredTasks[index].id),
                             onArchive: () => _confirmArchive(context, filteredTasks[index]),
                           ),
                         ),
@@ -194,9 +214,16 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
 
 class _TaskListItem extends StatelessWidget {
   final Task task;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onArchive;
 
-  const _TaskListItem({required this.task, required this.onArchive});
+  const _TaskListItem({
+    required this.task,
+    required this.onTap,
+    required this.onEdit,
+    required this.onArchive,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -242,6 +269,26 @@ class _TaskListItem extends StatelessWidget {
                   Text(
                     task.description,
                     style: GoogleFonts.manrope(color: SaasTheme.darkSlate, height: 1.6, fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onTap,
+                          icon: const Icon(Icons.visibility_outlined, size: 18),
+                          label: Text('View', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: onEdit,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: Text('Edit', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ],
                   ),
                   if (completed) ...[
                     const SizedBox(height: 20),

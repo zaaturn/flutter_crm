@@ -11,6 +11,9 @@ import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
+import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
+import 'package:my_app/survey/bloc/survey_employee_event.dart';
+import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 class FeedScreenMobile extends StatefulWidget {
@@ -40,6 +43,7 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<PostBloc>().add(FetchPosts(category: _category));
+      context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
     });
   }
 
@@ -77,6 +81,7 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
       body: RefreshIndicator(
         onRefresh: () async {
           context.read<PostBloc>().add(FetchPosts(category: _category));
+          context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -91,6 +96,8 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
               },
             ),
             const SizedBox(height: 16),
+            const SurveyFeedSection(),
+            const SizedBox(height: 8),
             BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
                 if (state is PostLoading || state is PostInitial) {

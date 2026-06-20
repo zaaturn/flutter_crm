@@ -1,3 +1,5 @@
+import 'package:my_app/tasks/task_status_utils.dart';
+
 class TaskModel {
   final int id;
   final String title;
@@ -22,7 +24,7 @@ class TaskModel {
       id: json['id'] ?? 0,
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
-      status: json['status']?.toString() ?? 'PENDING',
+      status: normalizeTaskStatusForApi(json['status']?.toString() ?? 'PENDING'),
       priority: json['priority']?.toString() ?? 'LOW',
       attachment: json['attachment'],
       dueDate: json['due_date']?.toString(),

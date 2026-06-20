@@ -6,6 +6,7 @@ class ModernTaskCard extends StatelessWidget {
   final Task task;
   final bool isDark;
   final Function(Task)? onTap;
+  final VoidCallback? onEdit;
   final Function(Task)? onDelete;
 
   const ModernTaskCard({
@@ -13,6 +14,7 @@ class ModernTaskCard extends StatelessWidget {
     required this.task,
     required this.isDark,
     this.onTap,
+    this.onEdit,
     this.onDelete,
   });
 
@@ -67,7 +69,18 @@ class ModernTaskCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  if (onEdit != null) ...[
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: onEdit,
+                      child: Icon(
+                        Icons.edit_note_rounded,
+                        size: 20,
+                        color: _brandPurple.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 4),
                   GestureDetector(
                     onTap: () => onDelete?.call(task),
                     child: Icon(Icons.archive_outlined,

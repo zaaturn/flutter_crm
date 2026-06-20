@@ -1,6 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 
+import '../model/live_attendance_snapshot.dart';
+import '../model/pagenated_response.dart';
 import '../model/employee.dart';
 import '../model/project.dart';
 import '../model/events.dart';
@@ -56,15 +58,157 @@ class AdminRepository {
     }
   }
 
-  Future<List<Employee>> fetchLiveEmployees() async {
+  Future<LiveAttendanceSnapshot> fetchLiveAttendance() async {
     try {
       final raw = await _api.getList("${_crmBase}live-status/");
-      return raw
-          .map((e) => Employee.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      final rosterById = <int, Employee>{};
+      var totalEmployees = 0;
+
+      try {
+        var page = 1;
+        var hasMore = true;
+        while (hasMore) {
+          final res = await _api.get(
+            "${_accountsBase}employeeslist/",
+            queryParameters: {
+              'page': page,
+              'page_size': 100,
+              'ordering': 'first_name',
+            },
+          );
+          final parsed = PaginatedResponse.fromJson(res);
+          if (page == 1) totalEmployees = parsed.count;
+          for (final employee in parsed.results) {
+            rosterById[employee.id] = employee;
+          }
+          hasMore = parsed.hasMore;
+          page++;
+          if (page > 100) break;
+        }
+      } catch (_) {
+        totalEmployees = await _fetchTotalEmployeeCount();
+      }
+
+      if (totalEmployees == 0) {
+        totalEmployees = await _fetchTotalEmployeeCount();
+      }
+
+      final todayLoggedIn = _buildTodayLoggedIn(raw, rosterById);
+
+      return LiveAttendanceSnapshot(
+        totalEmployees: totalEmployees,
+        todayLoggedIn: todayLoggedIn,
+      );
     } catch (e) {
       throw Exception(ErrorHandler.format(e));
     }
+  }
+
+  Future<List<Employee>> fetchLiveEmployees() async {
+    final snapshot = await fetchLiveAttendance();
+    return snapshot.todayLoggedIn;
+  }
+
+  Future<int> _fetchTotalEmployeeCount() async {
+    try {
+      final res = await _api.get(
+        "${_accountsBase}employeeslist/",
+        queryParameters: {'page': 1, 'page_size': 1},
+      );
+      return PaginatedResponse.fromJson(res).count;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  List<Employee> _buildTodayLoggedIn(
+    List<dynamic> raw,
+    Map<int, Employee> rosterById,
+  ) {
+    final todayLoggedIn = <Employee>[];
+    for (final item in raw) {
+      if (item is! Map) continue;
+      final live = Map<String, dynamic>.from(item);
+      final id = _parseEmployeeId(live['id']);
+      if (id == null) continue;
+
+      final rosterEmployee = rosterById[id];
+      if (rosterEmployee != null) {
+        todayLoggedIn.add(_mergeEmployeeLiveStatus(rosterEmployee, live));
+      } else {
+        todayLoggedIn.add(Employee.fromJson(live));
+      }
+    }
+    return todayLoggedIn;
+  }
+
+  Future<List<Employee>> _fetchAllEmployeesFromList() async {
+    final all = <Employee>[];
+    var page = 1;
+    var hasMore = true;
+
+    while (hasMore) {
+      final res = await _api.get(
+        "${_accountsBase}employeeslist/",
+        queryParameters: {
+          'page': page,
+          'page_size': 100,
+          'ordering': 'first_name',
+        },
+      );
+      final parsed = PaginatedResponse.fromJson(res);
+      all.addAll(parsed.results);
+      hasMore = parsed.hasMore;
+      page++;
+      if (page > 100) break;
+    }
+
+    return all;
+  }
+
+  int? _parseEmployeeId(dynamic id) {
+    if (id is int) return id;
+    if (id == null) return null;
+    return int.tryParse(id.toString());
+  }
+
+  Employee _mergeEmployeeLiveStatus(
+    Employee employee,
+    Map<String, dynamic>? live,
+  ) {
+    if (live == null) {
+      return employee.copyWith(liveStatus: LiveStatus.loggedOut);
+    }
+
+    final liveName = live['name']?.toString().trim();
+    final resolvedName = (liveName != null && liveName.isNotEmpty)
+        ? liveName
+        : (employee.name.trim().isNotEmpty
+            ? employee.name
+            : employee.fullName);
+
+    return Employee.fromJson({
+      'id': employee.id,
+      'name': resolvedName,
+      'first_name': employee.firstName,
+      'last_name': employee.lastName,
+      'email': employee.email,
+      'employee_id': employee.employeeId,
+      'username': employee.username,
+      'phone_number': employee.phoneNumber,
+      'designation': live['designation'] ?? employee.designation,
+      'department': live['department'] ?? employee.department,
+      'work_location': live['work_location'] ?? employee.workLocation,
+      'address': employee.address,
+      'date_of_birth': employee.dateOfBirth,
+      'date_of_joining': employee.dateOfJoining,
+      'is_active': employee.isActive,
+      'profile_photo': employee.profilePhoto,
+      'status': live['status'],
+      'on_break': live['on_break'] ?? live['is_on_break'] ?? live['is_break'],
+      'check_in': live['check_in'],
+      'check_out': live['check_out'],
+    });
   }
 
   /// Task assignee directory: admins + employees (`GET .../employeeslist/`).

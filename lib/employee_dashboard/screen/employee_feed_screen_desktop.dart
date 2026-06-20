@@ -16,6 +16,9 @@ import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_sideb
 import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_topbar.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
+import 'package:my_app/survey/bloc/survey_employee_event.dart';
+import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/utils/download_and_open.dart';
 
 class EmployeeFeedScreenDesktop extends StatefulWidget {
@@ -40,6 +43,7 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<PostBloc>().add(FetchPosts(category: _category));
+      context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
     });
   }
 
@@ -72,7 +76,10 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
       backgroundColor: _bg,
       body: Row(
         children: [
-          DashboardSidebar(onLogout: _logout),
+          DashboardSidebar(
+            parentContext: context,
+            onLogout: _logout,
+          ),
           Expanded(
             child: Column(
               children: [
@@ -82,6 +89,7 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
                     color: _purple,
                     onRefresh: () async {
                       context.read<PostBloc>().add(FetchPosts(category: _category));
+                      context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
@@ -141,6 +149,8 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
                                 },
                               ),
                               const SizedBox(height: 24),
+                              const SurveyFeedSection(),
+                              const SizedBox(height: 16),
                               BlocBuilder<PostBloc, PostState>(
                                 builder: (context, state) {
                                   if (state is PostLoading || state is PostInitial) {

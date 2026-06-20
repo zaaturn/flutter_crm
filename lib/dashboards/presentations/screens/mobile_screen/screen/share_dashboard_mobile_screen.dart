@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/survey/navigation/survey_flow_controller.dart';
+import 'package:my_app/dashboards/presentations/widgets/share_survey_access_gate.dart';
 import '../widget/share_dashboard_cards.dart';
 import '../widget/share_mobile_top_bar.dart';
 import 'announcements_mobile_screen.dart';
@@ -53,21 +55,26 @@ class ShareDashboardMobileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 28),
-                    ShareDashboardCards(
-                      onAnnouncements: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const AnnouncementsMobileScreen(),
+                    ShareSurveyAccessGate(
+                      builder: (allowed) => ShareDashboardCards(
+                        onAnnouncements: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const AnnouncementsMobileScreen(),
+                          ),
                         ),
-                      ),
-                      onSharedItems: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SharedItemsMobileScreen(),
+                        onSharedItems: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SharedItemsMobileScreen(),
+                          ),
                         ),
-                      ),
-                      onCultureBoards: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CultureBoardsMobileScreen(),
+                        onCultureBoards: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const CultureBoardsMobileScreen(),
+                          ),
                         ),
+                        onCreateSurvey: allowed
+                            ? () => SurveyFlowController.openCreateSurvey(context)
+                            : null,
                       ),
                     ),
                   ],

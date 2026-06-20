@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 class Header extends StatelessWidget {
-  final int total;
-  final int workingCount;
+  final int totalEmployees;
+  final int loggedInToday;
   final bool searchOpen;
   final TextEditingController searchController;
   final Animation<double> searchWidth;
@@ -10,8 +10,8 @@ class Header extends StatelessWidget {
 
   const Header({
     super.key,
-    required this.total,
-    required this.workingCount,
+    required this.totalEmployees,
+    required this.loggedInToday,
     required this.searchOpen,
     required this.searchController,
     required this.searchWidth,
@@ -27,16 +27,30 @@ class Header extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                "Live Attendance",
-                style: GoogleFonts.inter(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                  letterSpacing: -0.5,
-                  decoration: TextDecoration.none,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Live Attendance",
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF0F172A),
+                      letterSpacing: -0.5,
+                      decoration: TextDecoration.none,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$totalEmployees Total · $loggedInToday logged in today',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: 12),

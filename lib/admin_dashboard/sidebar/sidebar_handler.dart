@@ -17,6 +17,7 @@ import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/analytics/navigation/analytics_flow_controller.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
@@ -48,8 +49,9 @@ class SidebarHandler {
 
       switch (action) {
 
-      // ================= DASHBOARD =================
-        case SidebarAction.dashboard:
+      // ================= ANALYTICS =================
+        case SidebarAction.analytics:
+          AnalyticsFlowController.openWithPermissionCheck(parentContext);
           break;
 
       // ================= EMPLOYEES =================

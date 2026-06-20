@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum SidebarAction {
-  dashboard,
+  analytics,
   employees,
 
   // Projects & Tasks
@@ -39,9 +39,9 @@ class SidebarMenuItem {
 
 const sidebarMenuConfig = [
   SidebarMenuItem(
-    title: "Dashboard",
-    icon: Icons.dashboard_outlined,
-    action: SidebarAction.dashboard,
+    title: "Analytics",
+    icon: Icons.analytics_outlined,
+    action: SidebarAction.analytics,
   ),
 
   SidebarMenuItem(

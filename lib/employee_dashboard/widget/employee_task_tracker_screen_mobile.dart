@@ -6,6 +6,7 @@ import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/tasks/presentation/task_detail_screen.dart';
 import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
 class EmployeeTaskTrackerScreenMobile extends StatefulWidget {
   /// Highlights the task row when opened from a notification.
@@ -26,6 +27,14 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
     super.initState();
     if (widget.focusTaskId != null) {
       _isBoardView = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => TaskDetailScreen(taskId: widget.focusTaskId!),
+          ),
+        );
+      });
     }
   }
   String? _selectedStatus;
@@ -348,7 +357,19 @@ class _MobileTaskCard extends StatelessWidget {
     const textMuted = _EmployeeTaskTrackerScreenMobileState._textMuted;
     const border = _EmployeeTaskTrackerScreenMobileState._border;
 
-    return Container(
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(
+            builder: (_) => TaskDetailScreen(
+              taskId: task.id,
+              onUpdated: (_) => context.read<EmployeeBloc>().add(RefreshEvent()),
+            ),
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -389,6 +410,7 @@ class _MobileTaskCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 

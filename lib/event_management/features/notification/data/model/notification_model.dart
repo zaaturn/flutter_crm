@@ -20,6 +20,8 @@ class NotificationModel extends AppNotification {
     super.postId,
     super.postCategory,
     super.postTitle,
+    super.surveyId,
+    super.surveyTitle,
   });
 
   static Map<String, dynamic>? _taskMap(Map<String, dynamic> json) {
@@ -70,6 +72,8 @@ class NotificationModel extends AppNotification {
       postId: json['post_id']?.toString(),
       postCategory: json['post_category']?.toString(),
       postTitle: json['post_title']?.toString(),
+      surveyId: json['survey_id']?.toString(),
+      surveyTitle: json['survey_title']?.toString(),
     );
   }
 
@@ -90,6 +94,11 @@ class NotificationModel extends AppNotification {
     if (taskAssignedByUsername != null)
       'task_assigned_by_username': taskAssignedByUsername,
     if (leaveId != null) 'leave_id': leaveId,
+    if (postId != null) 'post_id': postId,
+    if (postCategory != null) 'post_category': postCategory,
+    if (postTitle != null) 'post_title': postTitle,
+    if (surveyId != null) 'survey_id': surveyId,
+    if (surveyTitle != null) 'survey_title': surveyTitle,
   };
 
   /// Local (WebSocket / FCM-style) payload.
@@ -116,6 +125,8 @@ class NotificationModel extends AppNotification {
       postId: data['post_id']?.toString(),
       postCategory: data['post_category']?.toString(),
       postTitle: data['post_title']?.toString(),
+      surveyId: data['survey_id']?.toString(),
+      surveyTitle: data['survey_title']?.toString(),
     );
   }
 }

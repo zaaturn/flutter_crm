@@ -14,6 +14,7 @@ import '../models/invoice_pdf_response.dart';
 import '../models/pdf_design_option.dart';
 import '../models/invoice_item_model.dart';
 import '../../services/secure_storage_service.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 /* ================= EXCEPTIONS ================= */
 
@@ -101,6 +102,7 @@ class BillingApi {
   ) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
+      AuthSessionRedirect.onAuthFailure(error: 'No auth token');
       throw UnauthorizedException();
     }
 
@@ -120,6 +122,7 @@ class BillingApi {
   ) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
+      AuthSessionRedirect.onAuthFailure(error: 'No auth token');
       throw UnauthorizedException();
     }
 
@@ -158,6 +161,10 @@ class BillingApi {
         if (allowUnauthorized) {
           throw ApiException("Unauthorized for this action");
         }
+        AuthSessionRedirect.onAuthFailure(
+          error: response.body,
+          statusCode: 401,
+        );
         throw UnauthorizedException();
 
       case 404:

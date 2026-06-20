@@ -7,11 +7,13 @@ class ShareDashboardCards extends StatelessWidget {
     required this.onAnnouncements,
     required this.onSharedItems,
     required this.onCultureBoards,
+    this.onCreateSurvey,
   });
 
   final VoidCallback onAnnouncements;
   final VoidCallback onSharedItems;
   final VoidCallback onCultureBoards;
+  final VoidCallback? onCreateSurvey;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,15 @@ class ShareDashboardCards extends StatelessWidget {
           baseColor: const Color(0xFFE6A97A), // Your Orange
         ),
         const SizedBox(height: 16),
+        if (onCreateSurvey != null)
+          _HeroCard(
+            title: 'Surveys',
+            subtitle: 'Create polls and collect employee feedback.',
+            icon: Icons.poll_rounded,
+            onTap: onCreateSurvey!,
+            baseColor: const Color(0xFFD3B6D3),
+          ),
+        if (onCreateSurvey != null) const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
