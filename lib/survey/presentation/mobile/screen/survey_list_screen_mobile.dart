@@ -9,6 +9,7 @@ import '../../../bloc/survey_admin_state.dart';
 import '../../../models/survey_models.dart';
 import '../../../theme/survey_theme.dart';
 import '../../widgets/survey_delete_action.dart';
+import 'package:my_app/core/widgets/survey_icons.dart';
 import 'survey_builder_screen_mobile.dart';
 import 'survey_results_screen_mobile.dart';
 
@@ -160,11 +161,11 @@ class _MobileSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(SurveyStatus?, String, IconData)>[
-      (null, 'All', Icons.view_list_rounded),
-      (SurveyStatus.draft, 'Draft', Icons.edit_note_rounded),
-      (SurveyStatus.active, 'Active', Icons.play_circle_outline_rounded),
-      (SurveyStatus.closed, 'Closed', Icons.archive_outlined),
+    final items = <(SurveyStatus?, String, SurveyIconType)>[
+      (null, 'All', SurveyIconType.list),
+      (SurveyStatus.draft, 'Draft', SurveyIconType.draft),
+      (SurveyStatus.active, 'Active', SurveyIconType.active),
+      (SurveyStatus.closed, 'Closed', SurveyIconType.closed),
     ];
 
     return SizedBox(
@@ -179,7 +180,11 @@ class _MobileSidebar extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                 child: IconButton(
                   onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: const SurveyIcon(
+                    type: SurveyIconType.arrowBack,
+                    size: 20,
+                    color: SurveyTheme.textMain,
+                  ),
                   color: SurveyTheme.textMain,
                   tooltip: 'Back to Share',
                 ),
@@ -199,7 +204,11 @@ class _MobileSidebar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: IconButton.filled(
                   onPressed: onCreate,
-                  icon: const Icon(Icons.add_rounded, size: 20),
+                  icon: const SurveyIcon(
+                    type: SurveyIconType.add,
+                    size: 20,
+                    color: Colors.white,
+                  ),
                   style: IconButton.styleFrom(
                     backgroundColor: SurveyTheme.purple,
                     foregroundColor: Colors.white,
@@ -221,8 +230,8 @@ class _MobileSidebar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Column(
                           children: [
-                            Icon(
-                              item.$3,
+                            SurveyIcon(
+                              type: item.$3,
                               size: 18,
                               color: active ? SurveyTheme.purple : SurveyTheme.textMuted,
                             ),
@@ -316,7 +325,11 @@ class _Card extends StatelessWidget {
             if (survey.canDelete)
               IconButton(
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                icon: const SurveyIcon(
+                  type: SurveyIconType.delete,
+                  size: 20,
+                  color: SurveyTheme.textMuted,
+                ),
                 color: SurveyTheme.textMuted,
                 tooltip: 'Delete survey',
               ),

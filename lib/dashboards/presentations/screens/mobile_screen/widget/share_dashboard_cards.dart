@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/core/widgets/survey_icons.dart';
 
 class ShareDashboardCards extends StatelessWidget {
   const ShareDashboardCards({
@@ -31,7 +32,11 @@ class ShareDashboardCards extends StatelessWidget {
           _HeroCard(
             title: 'Surveys',
             subtitle: 'Create polls and collect employee feedback.',
-            icon: Icons.assignment_outlined,
+            iconWidget: const SurveyIcon(
+              type: SurveyIconType.poll,
+              size: 26,
+              color: Color(0xFF1A1C1E),
+            ),
             onTap: onCreateSurvey!,
             baseColor: const Color(0xFFD3B6D3),
           ),
@@ -68,14 +73,16 @@ class _HeroCard extends StatelessWidget {
   const _HeroCard({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    this.icon,
+    this.iconWidget,
     required this.onTap,
     required this.baseColor,
-  });
+  }) : assert(icon != null || iconWidget != null);
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final IconData? icon;
+  final Widget? iconWidget;
   final VoidCallback onTap;
   final Color baseColor;
 
@@ -107,7 +114,7 @@ class _HeroCard extends StatelessWidget {
                 color: Colors.white.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(icon, color: const Color(0xFF1A1C1E), size: 26),
+              child: iconWidget ?? Icon(icon!, color: const Color(0xFF1A1C1E), size: 26),
             ),
             const SizedBox(width: 16),
             Expanded(

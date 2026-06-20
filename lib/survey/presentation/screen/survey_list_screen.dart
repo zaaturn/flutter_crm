@@ -9,6 +9,7 @@ import '../../bloc/survey_admin_state.dart';
 import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
 import '../widgets/survey_delete_action.dart';
+import 'package:my_app/core/widgets/survey_icons.dart';
 import 'survey_builder_screen.dart';
 import 'survey_results_screen.dart';
 
@@ -85,7 +86,11 @@ class SurveyListScreen extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                Icon(Icons.assignment_outlined, size: 48, color: SurveyTheme.textMuted.withValues(alpha: 0.5)),
+                SurveyIcon(
+                  type: SurveyIconType.poll,
+                  size: 48,
+                  color: SurveyTheme.textMuted.withValues(alpha: 0.5),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'No surveys in this view',
@@ -184,11 +189,11 @@ class _StatusSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(SurveyStatus?, String, IconData)>[
-      (null, 'All surveys', Icons.view_list_rounded),
-      (SurveyStatus.draft, 'Draft', Icons.edit_note_rounded),
-      (SurveyStatus.active, 'Active', Icons.play_circle_outline_rounded),
-      (SurveyStatus.closed, 'Closed', Icons.archive_outlined),
+    final items = <(SurveyStatus?, String, SurveyIconType)>[
+      (null, 'All surveys', SurveyIconType.list),
+      (SurveyStatus.draft, 'Draft', SurveyIconType.draft),
+      (SurveyStatus.active, 'Active', SurveyIconType.active),
+      (SurveyStatus.closed, 'Closed', SurveyIconType.closed),
     ];
 
     return SizedBox(
@@ -215,15 +220,21 @@ class _StatusSidebar extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FilledButton.icon(
+              child: FilledButton(
                 onPressed: onCreate,
-                icon: const Icon(Icons.add_rounded, size: 20),
-                label: const Text('Create Survey'),
                 style: FilledButton.styleFrom(
                   backgroundColor: SurveyTheme.purple,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    SurveyIcon(type: SurveyIconType.add, size: 20, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Create Survey'),
+                  ],
                 ),
               ),
             ),
@@ -270,7 +281,11 @@ class _BackToShareButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.arrow_back_rounded, size: 20, color: SurveyTheme.textMuted),
+              const SurveyIcon(
+                type: SurveyIconType.arrowBack,
+                size: 20,
+                color: SurveyTheme.textMuted,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Share',
@@ -297,7 +312,7 @@ class _SidebarItem extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final SurveyIconType icon;
   final bool active;
   final VoidCallback onTap;
 
@@ -315,8 +330,8 @@ class _SidebarItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
-                Icon(
-                  icon,
+                SurveyIcon(
+                  type: icon,
                   size: 20,
                   color: active ? SurveyTheme.purple : SurveyTheme.textMuted,
                 ),
@@ -423,11 +438,19 @@ class _SurveyRow extends StatelessWidget {
             if (survey.canDelete)
               IconButton(
                 onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                icon: const SurveyIcon(
+                  type: SurveyIconType.delete,
+                  size: 20,
+                  color: SurveyTheme.textMuted,
+                ),
                 color: SurveyTheme.textMuted,
                 tooltip: 'Delete survey',
               ),
-            const Icon(Icons.chevron_right_rounded, color: SurveyTheme.textMuted, size: 20),
+            const SurveyIcon(
+              type: SurveyIconType.chevronRight,
+              size: 20,
+              color: SurveyTheme.textMuted,
+            ),
           ],
         ),
       ),
