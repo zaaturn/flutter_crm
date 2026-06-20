@@ -7,6 +7,7 @@ import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/widgets/app_material_icon.dart';
 import 'package:my_app/core/widgets/sidebar_chart_icon.dart';
+import 'package:my_app/core/keyboard/keyboard_navigation.dart';
 import 'workspace_switcher_desktop.dart';
 
 class DesktopSidebar extends StatefulWidget {
@@ -31,6 +32,7 @@ class DesktopSidebar extends StatefulWidget {
 
 class _DesktopSidebarState extends State<DesktopSidebar> {
   SidebarAction? _selectedAction = SidebarAction.analytics;
+  final Set<String> _expandedGroups = {};
 
   Map<String, bool> _adminModules = {};
   bool _isSuperuser = false;
@@ -87,6 +89,55 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     return _adminModules[moduleKey] ?? true;
   }
 
+  List<SidebarAction> _visibleActions() {
+    final actions = <SidebarAction>[];
+    if (_isSuperuser) actions.add(SidebarAction.superadminUsers);
+    for (final item in sidebarMenuConfig) {
+      if (item.children != null && item.children!.isNotEmpty) {
+        for (final child in item.children!) {
+          if (_moduleAllowed(child.moduleKey) && child.action != null) {
+            actions.add(child.action!);
+          }
+        }
+      } else if (_moduleAllowed(item.moduleKey) && item.action != null) {
+        actions.add(item.action!);
+      }
+    }
+    return actions;
+  }
+
+  int _selectedKeyboardIndex(List<SidebarAction> actions) {
+    if (_selectedAction == null || actions.isEmpty) return 0;
+    final idx = actions.indexOf(_selectedAction!);
+    return idx >= 0 ? idx : 0;
+  }
+
+  void _ensureGroupExpandedForAction(SidebarAction action) {
+    for (final item in sidebarMenuConfig) {
+      final children = item.children;
+      if (children == null) continue;
+      if (children.any((c) => c.action == action)) {
+        _expandedGroups.add(item.title);
+      }
+    }
+  }
+
+  void _onKeyboardIndexChanged(int index) {
+    final actions = _visibleActions();
+    if (index < 0 || index >= actions.length) return;
+    final action = actions[index];
+    setState(() {
+      _selectedAction = action;
+      _ensureGroupExpandedForAction(action);
+    });
+  }
+
+  void _onKeyboardActivate() {
+    final actions = _visibleActions();
+    final index = _selectedKeyboardIndex(actions);
+    if (index < actions.length) _onAction(actions[index]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -135,25 +186,47 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
   }
 
   Widget _buildMenu() {
+    final actions = _visibleActions();
+    final keyboardScope = dashboardSidebarKeyboardScopeOf(context);
+
     return Expanded(
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          _sectionLabel('Workspace'),
-          if (_isSuperuser) _buildManageUsersNavTile(),
-          ...sidebarMenuConfig.map((item) {
-            if (item.children != null && item.children!.isNotEmpty) {
-              return _ExpandableMenuTile(
-                item: item,
-                selectedAction: _selectedAction,
-                onActionSelected: _onAction,
-                moduleAllowed: _moduleAllowed,
-              );
-            }
-            return _buildMenuItem(item);
-          }),
-        ],
+      child: KeyboardNavList(
+        itemCount: actions.length,
+        selectedIndex: _selectedKeyboardIndex(actions),
+        onSelectedIndexChanged: _onKeyboardIndexChanged,
+        onActivate: _onKeyboardActivate,
+        autofocus: true,
+        focusNode: keyboardScope?.focusNode,
+        onMoveToNextRegion: keyboardScope?.onMoveToContent,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          physics: const BouncingScrollPhysics(),
+          children: [
+            _sectionLabel('Workspace'),
+            if (_isSuperuser) _buildManageUsersNavTile(),
+            ...sidebarMenuConfig.map((item) {
+              if (item.children != null && item.children!.isNotEmpty) {
+                return _ExpandableMenuTile(
+                  item: item,
+                  selectedAction: _selectedAction,
+                  expanded: _expandedGroups.contains(item.title),
+                  onExpandedChanged: (expanded) {
+                    setState(() {
+                      if (expanded) {
+                        _expandedGroups.add(item.title);
+                      } else {
+                        _expandedGroups.remove(item.title);
+                      }
+                    });
+                  },
+                  onActionSelected: _onAction,
+                  moduleAllowed: _moduleAllowed,
+                );
+              }
+              return _buildMenuItem(item);
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -321,51 +394,48 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 }
 
 
-class _ExpandableMenuTile extends StatefulWidget {
+class _ExpandableMenuTile extends StatelessWidget {
   final SidebarMenuItem item;
   final SidebarAction? selectedAction;
+  final bool expanded;
+  final ValueChanged<bool> onExpandedChanged;
   final Function(SidebarAction) onActionSelected;
   final bool Function(String? moduleKey) moduleAllowed;
 
   const _ExpandableMenuTile({
     required this.item,
     required this.selectedAction,
+    required this.expanded,
+    required this.onExpandedChanged,
     required this.onActionSelected,
     required this.moduleAllowed,
   });
 
   @override
-  State<_ExpandableMenuTile> createState() => _ExpandableMenuTileState();
-}
-
-class _ExpandableMenuTileState extends State<_ExpandableMenuTile> {
-  bool _expanded = false;
-
-  @override
   Widget build(BuildContext context) {
-    if (!widget.moduleAllowed(widget.item.moduleKey)) return const SizedBox.shrink();
+    if (!moduleAllowed(item.moduleKey)) return const SizedBox.shrink();
 
-    final visibleChildren = widget.item.children?.where((c) => widget.moduleAllowed(c.moduleKey)).toList() ?? [];
+    final visibleChildren = item.children?.where((c) => moduleAllowed(c.moduleKey)).toList() ?? [];
     if (visibleChildren.isEmpty) return const SizedBox.shrink();
 
-    final hasSelectedChild = visibleChildren.any((c) => c.action == widget.selectedAction);
+    final hasSelectedChild = visibleChildren.any((c) => c.action == selectedAction);
     const purple = Color(0xFF7C3AED);
 
     return Column(
       children: [
         InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
+          onTap: () => onExpandedChanged(!expanded),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             margin: const EdgeInsets.only(bottom: 4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(
               children: [
-                AppMaterialIcon(widget.item.icon, size: 20, color: hasSelectedChild ? purple : const Color(0xFF334155)),
+                AppMaterialIcon(item.icon, size: 20, color: hasSelectedChild ? purple : const Color(0xFF334155)),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
-                    widget.item.title,
+                    item.title,
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: hasSelectedChild ? FontWeight.w900 : FontWeight.w800,
                       fontSize: 14,
@@ -373,19 +443,19 @@ class _ExpandableMenuTileState extends State<_ExpandableMenuTile> {
                     ),
                   ),
                 ),
-                Icon(_expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 22),
+                Icon(expanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 22),
               ],
             ),
           ),
         ),
-        if (_expanded)
+        if (expanded)
           Padding(
             padding: const EdgeInsets.only(left: 14),
             child: Column(
               children: visibleChildren.map((child) {
-                final isSelected = widget.selectedAction == child.action;
+                final isSelected = selectedAction == child.action;
                 return InkWell(
-                  onTap: () { if (child.action != null) widget.onActionSelected(child.action!); },
+                  onTap: () { if (child.action != null) onActionSelected(child.action!); },
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 2),

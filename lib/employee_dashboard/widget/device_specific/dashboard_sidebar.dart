@@ -9,6 +9,7 @@ import 'package:my_app/services/secure_storage_service.dart';
 
 import 'dashboard_sidebar_content.dart';
 import 'dashboard_sidebar_theme.dart';
+import 'package:my_app/core/keyboard/keyboard_navigation.dart';
 
 class DashboardSidebar extends StatefulWidget {
   final BuildContext? parentContext;
@@ -86,6 +87,8 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardScope = dashboardSidebarKeyboardScopeOf(context);
+
     return Container(
       width: DashboardSidebarTheme.width,
       decoration: const BoxDecoration(
@@ -98,18 +101,27 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
         children: [
           _buildBrandHeader(),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                for (var i = 0; i < _nav.length; i++)
-                  _buildNavTile(
-                    label: _nav[i].label,
-                    icon: _nav[i].icon,
-                    isActive: _selected == i,
-                    onTap: () => _onTap(i),
-                  ),
-              ],
+            child: KeyboardNavList(
+              itemCount: _nav.length,
+              selectedIndex: _selected,
+              onSelectedIndexChanged: (index) => setState(() => _selected = index),
+              onActivate: () => _onTap(_selected),
+              autofocus: true,
+              focusNode: keyboardScope?.focusNode,
+              onMoveToNextRegion: keyboardScope?.onMoveToContent,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  for (var i = 0; i < _nav.length; i++)
+                    _buildNavTile(
+                      label: _nav[i].label,
+                      icon: _nav[i].icon,
+                      isActive: _selected == i,
+                      onTap: () => _onTap(i),
+                    ),
+                ],
+              ),
             ),
           ),
           BlocBuilder<EmployeeBloc, EmployeeState>(

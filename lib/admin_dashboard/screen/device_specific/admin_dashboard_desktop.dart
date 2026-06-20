@@ -13,6 +13,7 @@ import 'package:my_app/admin_dashboard/widget/device_specific/task_section_deskt
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_section_desktop.dart';
 // Note: Ensure the path to DashboardCalendar matches where you saved the code from our previous step
 import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.dart';
+import 'package:my_app/core/keyboard/keyboard_navigation.dart';
 
 class AdminDashboardDesktop extends StatelessWidget {
   const AdminDashboardDesktop({super.key});
@@ -37,6 +38,9 @@ class _AdminDashboardDesktopView extends StatefulWidget {
 class _AdminDashboardDesktopViewState
     extends State<_AdminDashboardDesktopView> {
   Timer? _liveStatusTimer;
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _sidebarFocusNode = FocusNode(debugLabel: 'AdminSidebarFocus');
+  final FocusNode _contentFocusNode = FocusNode(debugLabel: 'AdminContentFocus');
 
   @override
   void initState() {
@@ -46,11 +50,17 @@ class _AdminDashboardDesktopViewState
       if (!mounted) return;
       context.read<AdminDashboardBloc>().add(const AdminDashboardRefreshed());
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sidebarFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _liveStatusTimer?.cancel();
+    _scrollController.dispose();
+    _sidebarFocusNode.dispose();
+    _contentFocusNode.dispose();
     super.dispose();
   }
 
@@ -64,14 +74,16 @@ class _AdminDashboardDesktopViewState
 
         return Row(
           children: [
-            // ================= LEFT SIDEBAR =================
-            DesktopSidebar(
-              parentContext: context,
-              userName: state.username ?? "Admin",
-              userRole: state.role ?? "Super Admin",
+            DashboardSidebarFocusScope(
+              focusNode: _sidebarFocusNode,
+              onMoveToContent: () => _contentFocusNode.requestFocus(),
+              child: DesktopSidebar(
+                parentContext: context,
+                userName: state.username ?? "Admin",
+                userRole: state.role ?? "Super Admin",
+              ),
             ),
 
-            // ================= CENTER CONTENT =================
             Expanded(
               flex: 5,
               child: Column(
@@ -80,23 +92,29 @@ class _AdminDashboardDesktopViewState
                     adminName: state.username ?? "Admin",
                   ),
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 32,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          DesktopTaskSectionModern(
-                            tasks: state.tasks,
-                          ),
-                          const SizedBox(height: 32),
-                          DesktopEmployeeSection(
-                            employees: state.liveEmployees,
-                            totalEmployeeCount: state.totalEmployeeCount,
-                          ),
-                        ],
+                    child: KeyboardScrollRegion(
+                      scrollController: _scrollController,
+                      focusNode: _contentFocusNode,
+                      onMoveToPreviousRegion: () => _sidebarFocusNode.requestFocus(),
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 32,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            DesktopTaskSectionModern(
+                              tasks: state.tasks,
+                            ),
+                            const SizedBox(height: 32),
+                            DesktopEmployeeSection(
+                              employees: state.liveEmployees,
+                              totalEmployeeCount: state.totalEmployeeCount,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

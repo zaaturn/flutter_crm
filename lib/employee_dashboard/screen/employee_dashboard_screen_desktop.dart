@@ -27,6 +27,7 @@ import 'package:my_app/event_management/features/dashboard/presentation/bloc/das
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
+import 'package:my_app/core/keyboard/keyboard_navigation.dart';
 
 class EmployeeDashboardDesktop extends StatefulWidget {
   const EmployeeDashboardDesktop({super.key});
@@ -42,6 +43,9 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
   late EmployeeBloc _employeeBloc;
 
   bool _showProfilePanel = false;
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _sidebarFocusNode = FocusNode(debugLabel: 'EmployeeSidebarFocus');
+  final FocusNode _contentFocusNode = FocusNode(debugLabel: 'EmployeeContentFocus');
 
   void _toggleProfilePanel() {
     setState(() {
@@ -69,12 +73,19 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
         _employeeBloc.add(LoadDashboard());
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sidebarFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _autoCheckoutTimer?.cancel();
     _fcmSubscription?.cancel();
+    _scrollController.dispose();
+    _sidebarFocusNode.dispose();
+    _contentFocusNode.dispose();
     _employeeBloc.add(StopTaskPolling());
     super.dispose();
   }
@@ -101,21 +112,25 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
             // ================= MAIN DASHBOARD =================
             Row(
               children: [
-                DashboardSidebar(
-                  parentContext: context,
-                  onLogout: _logout,
-                  onNavigateLeave: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                        const EmployeeLeaveDashboardScreenDesktop(),
-                      ),
-                    );
-                  },
-                  onNavigateTask: () {
-                    // Logic for task navigation if needed
-                  },
+                DashboardSidebarFocusScope(
+                  focusNode: _sidebarFocusNode,
+                  onMoveToContent: () => _contentFocusNode.requestFocus(),
+                  child: DashboardSidebar(
+                    parentContext: context,
+                    onLogout: _logout,
+                    onNavigateLeave: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const EmployeeLeaveDashboardScreenDesktop(),
+                        ),
+                      );
+                    },
+                    onNavigateTask: () {
+                      // Logic for task navigation if needed
+                    },
+                  ),
                 ),
                 Expanded(
                   child: Column(
@@ -129,62 +144,68 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                             return Row(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                // ================= CENTER CONTENT =================
                                 Expanded(
                                   child: state.loading
                                       ? const Center(
                                           child: CircularProgressIndicator(),
                                         )
-                                      : RefreshIndicator(
-                                          onRefresh: () async {
-                                            _employeeBloc.add(LoadDashboard());
-                                            try {
-                                              context
-                                                  .read<DashboardBloc>()
-                                                  .add(DashboardRefreshRequested());
-                                            } catch (_) {}
-                                            try {
-                                              context
-                                                  .read<NotificationBloc>()
-                                                  .add(NotificationLoadRequested());
-                                            } catch (_) {}
-                                          },
-                                          child: SingleChildScrollView(
-                                            physics:
-                                                const AlwaysScrollableScrollPhysics(),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 40,
-                                              vertical: 32,
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const DashboardGreeting(),
-                                                const SizedBox(height: 24),
-                                                DashboardWorkStatusCard(),
-                                                const SizedBox(height: 24),
-                                                DashboardTasksSection(
-                                                  tasks: state.tasks,
-                                                  onUpdateStatus:
-                                                      (taskId, status) {
-                                                    _employeeBloc.add(
-                                                      UpdateTaskStatus(
-                                                        taskId: taskId,
-                                                        status: status,
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                                const SizedBox(height: 24),
-                                                const SurveyFeedSection(
-                                                    compact: true),
-                                                const SizedBox(height: 24),
-                                                const SharedPostsSection(),
-                                                const SizedBox(height: 24),
-                                                const MainDashboardEventsPanel(),
-                                                const SizedBox(height: 24),
-                                              ],
+                                      : KeyboardScrollRegion(
+                                          scrollController: _scrollController,
+                                          focusNode: _contentFocusNode,
+                                          onMoveToPreviousRegion: () =>
+                                              _sidebarFocusNode.requestFocus(),
+                                          child: RefreshIndicator(
+                                            onRefresh: () async {
+                                              _employeeBloc.add(LoadDashboard());
+                                              try {
+                                                context
+                                                    .read<DashboardBloc>()
+                                                    .add(DashboardRefreshRequested());
+                                              } catch (_) {}
+                                              try {
+                                                context
+                                                    .read<NotificationBloc>()
+                                                    .add(NotificationLoadRequested());
+                                              } catch (_) {}
+                                            },
+                                            child: SingleChildScrollView(
+                                              controller: _scrollController,
+                                              physics:
+                                                  const AlwaysScrollableScrollPhysics(),
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 40,
+                                                vertical: 32,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const DashboardGreeting(),
+                                                  const SizedBox(height: 24),
+                                                  DashboardWorkStatusCard(),
+                                                  const SizedBox(height: 24),
+                                                  DashboardTasksSection(
+                                                    tasks: state.tasks,
+                                                    onUpdateStatus:
+                                                        (taskId, status) {
+                                                      _employeeBloc.add(
+                                                        UpdateTaskStatus(
+                                                          taskId: taskId,
+                                                          status: status,
+                                                        ),
+                                                      );
+                                                    },
+                                                  ),
+                                                  const SizedBox(height: 24),
+                                                  const SurveyFeedSection(
+                                                      compact: true),
+                                                  const SizedBox(height: 24),
+                                                  const SharedPostsSection(),
+                                                  const SizedBox(height: 24),
+                                                  const MainDashboardEventsPanel(),
+                                                  const SizedBox(height: 24),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
