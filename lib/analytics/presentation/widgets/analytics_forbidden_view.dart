@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/analytics_theme.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsForbiddenView extends StatelessWidget {
   final VoidCallback onBack;
@@ -18,8 +19,8 @@ class AnalyticsForbiddenView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.lock_outline_rounded,
+              AnalyticsIcon(
+                type: AnalyticsIconType.lock,
                 size: 56,
                 color: AnalyticsDesktopTheme.purple.withValues(alpha: 0.7),
               ),

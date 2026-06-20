@@ -5,6 +5,7 @@ import '../../../models/analytics_overview_model.dart';
 import '../../../theme/analytics_theme.dart';
 import '../analytics_kpi_card.dart';
 import '../analytics_loading_widgets.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class OverviewTab extends StatelessWidget {
   final AnalyticsOverviewModel? overview;
@@ -54,45 +55,45 @@ class OverviewTab extends StatelessWidget {
                   AnalyticsKpiCard(
                     label: 'Total employees',
                     value: '${o.totalEmployees}',
-                    icon: Icons.people_outline_rounded,
+                    icon: AnalyticsIconType.people,
                   ),
                   AnalyticsKpiCard(
                     label: 'Checked in today',
                     value: '${o.checkedInToday}',
-                    icon: Icons.login_rounded,
+                    icon: AnalyticsIconType.login,
                     accent: AnalyticsDesktopTheme.success,
                   ),
                   AnalyticsKpiCard(
                     label: 'On leave today',
                     value: '${o.onLeaveToday}',
-                    icon: Icons.beach_access_outlined,
+                    icon: AnalyticsIconType.onLeave,
                     accent: AnalyticsDesktopTheme.warning,
                   ),
                   AnalyticsKpiCard(
                     label: 'Pending leaves',
                     value: '${o.pendingLeaveRequests}',
-                    icon: Icons.pending_actions_outlined,
+                    icon: AnalyticsIconType.pendingLeave,
                   ),
                   AnalyticsKpiCard(
                     label: 'Tasks pending',
                     value: '${o.pendingTasks}',
-                    icon: Icons.task_alt_rounded,
+                    icon: AnalyticsIconType.tasks,
                   ),
                   AnalyticsKpiCard(
                     label: 'Invoices this month',
                     value: '${o.invoicesIssued}',
-                    icon: Icons.receipt_long_outlined,
+                    icon: AnalyticsIconType.receipt,
                   ),
                   AnalyticsKpiCard(
                     label: 'Amount received',
                     value: o.formatReceived(),
-                    icon: Icons.payments_outlined,
+                    icon: AnalyticsIconType.payments,
                     accent: AnalyticsDesktopTheme.success,
                   ),
                   AnalyticsKpiCard(
                     label: 'Payroll paid',
                     value: o.formatPayrollPaid(),
-                    icon: Icons.account_balance_wallet_outlined,
+                    icon: AnalyticsIconType.wallet,
                     accent: AnalyticsDesktopTheme.purple,
                   ),
                 ],

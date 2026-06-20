@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../theme/analytics_theme.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsShimmerGrid extends StatelessWidget {
   final bool mobile;
@@ -95,7 +96,7 @@ class AnalyticsErrorRetry extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_outlined, size: 48, color: accent),
+            AnalyticsIcon(type: AnalyticsIconType.cloudOff, size: 48, color: accent),
             const SizedBox(height: 16),
             Text(
               message ?? 'Unable to load analytics data.',
@@ -107,11 +108,21 @@ class AnalyticsErrorRetry extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            FilledButton.icon(
+            FilledButton(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Retry'),
               style: FilledButton.styleFrom(backgroundColor: accent),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  AnalyticsIcon(
+                    type: AnalyticsIconType.refresh,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 8),
+                  Text('Retry'),
+                ],
+              ),
             ),
           ],
         ),

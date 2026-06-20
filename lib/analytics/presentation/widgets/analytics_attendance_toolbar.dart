@@ -9,6 +9,7 @@ import '../../theme/analytics_theme.dart';
 import '../../utils/analytics_date_utils.dart';
 import '../../utils/iso_week.dart';
 import 'attendance_day_filter.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 /// Attendance filters: week navigation, daily/weekly toggle, day picker.
 class AnalyticsAttendanceToolbar extends StatelessWidget {
@@ -30,7 +31,7 @@ class AnalyticsAttendanceToolbar extends StatelessWidget {
           Row(
             children: [
               _NavBtn(
-                icon: Icons.chevron_left_rounded,
+                icon: AnalyticsIconType.chevronLeft,
                 onTap: () => _shiftWeek(context, -1),
               ),
               const SizedBox(width: 8),
@@ -47,7 +48,7 @@ class AnalyticsAttendanceToolbar extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               _NavBtn(
-                icon: Icons.chevron_right_rounded,
+                icon: AnalyticsIconType.chevronRight,
                 onTap: () => _shiftWeek(context, 1),
               ),
               const SizedBox(width: 16),
@@ -110,7 +111,7 @@ class AnalyticsAttendanceToolbar extends StatelessWidget {
 }
 
 class _NavBtn extends StatelessWidget {
-  final IconData icon;
+  final AnalyticsIconType icon;
   final VoidCallback onTap;
 
   const _NavBtn({required this.icon, required this.onTap});
@@ -129,7 +130,13 @@ class _NavBtn extends StatelessWidget {
         child: SizedBox(
           width: 36,
           height: 36,
-          child: Icon(icon, size: 22, color: AnalyticsDesktopTheme.textMain),
+          child: Center(
+            child: AnalyticsIcon(
+              type: icon,
+              size: 22,
+              color: AnalyticsDesktopTheme.textMain,
+            ),
+          ),
         ),
       ),
     );
@@ -193,7 +200,7 @@ class _SubviewToggle extends StatelessWidget {
         children: [
           _Tab(
             label: 'Daily',
-            icon: Icons.check_rounded,
+            icon: AnalyticsIconType.check,
             selected: subview == WeeklyAttendanceSubview.daily,
             onTap: () => context.read<AnalyticsBloc>().add(
                   const AnalyticsAttendanceSubviewChanged(
@@ -218,7 +225,7 @@ class _SubviewToggle extends StatelessWidget {
 
 class _Tab extends StatelessWidget {
   final String label;
-  final IconData? icon;
+  final AnalyticsIconType? icon;
   final bool selected;
   final VoidCallback onTap;
 
@@ -243,7 +250,7 @@ class _Tab extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (selected && icon != null) ...[
-                Icon(icon, size: 16, color: Colors.white),
+                AnalyticsIcon(type: icon!, size: 16, color: Colors.white),
                 const SizedBox(width: 6),
               ],
               Text(

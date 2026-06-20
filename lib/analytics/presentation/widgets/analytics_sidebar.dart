@@ -6,10 +6,7 @@ import '../../bloc/analytics_bloc.dart';
 import '../../bloc/analytics_event.dart';
 import '../../bloc/analytics_state.dart';
 import '../../theme/analytics_theme.dart';
-import 'package:my_app/core/widgets/app_material_icon.dart';
-import 'package:my_app/core/widgets/sidebar_chart_icon.dart';
-
-enum _AnalyticsNavIconKind { material, business, leaves }
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsSidebar extends StatelessWidget {
   final VoidCallback onBack;
@@ -37,8 +34,11 @@ class AnalyticsSidebar extends StatelessWidget {
                   IconButton(
                     tooltip: 'Back',
                     onPressed: onBack,
-                    icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                    color: AnalyticsDesktopTheme.textMuted,
+                    icon: const AnalyticsIcon(
+                      type: AnalyticsIconType.arrowBack,
+                      size: 20,
+                      color: AnalyticsDesktopTheme.textMuted,
+                    ),
                   ),
                   Text(
                     'Analytics',
@@ -58,34 +58,31 @@ class AnalyticsSidebar extends StatelessWidget {
                 return Column(
                   children: [
                     _NavItem(
-                      iconKind: _AnalyticsNavIconKind.material,
-                      icon: Icons.dashboard_outlined,
+                      icon: AnalyticsIconType.overview,
                       label: 'Overview',
                       selected: state.tab == AnalyticsTab.overview,
                       onTap: () => _go(context, AnalyticsTab.overview),
                     ),
                     _NavItem(
-                      iconKind: _AnalyticsNavIconKind.material,
-                      icon: Icons.calendar_month_outlined,
+                      icon: AnalyticsIconType.calendar,
                       label: 'Attendance',
                       selected: state.tab == AnalyticsTab.weeklyAttendance,
                       onTap: () => _go(context, AnalyticsTab.weeklyAttendance),
                     ),
                     _NavItem(
-                      iconKind: _AnalyticsNavIconKind.business,
+                      icon: AnalyticsIconType.business,
                       label: 'Business',
                       selected: state.tab == AnalyticsTab.weeklyBusiness,
                       onTap: () => _go(context, AnalyticsTab.weeklyBusiness),
                     ),
                     _NavItem(
-                      iconKind: _AnalyticsNavIconKind.leaves,
+                      icon: AnalyticsIconType.leaves,
                       label: 'Leaves',
                       selected: state.tab == AnalyticsTab.leaves,
                       onTap: () => _go(context, AnalyticsTab.leaves),
                     ),
                     _NavItem(
-                      iconKind: _AnalyticsNavIconKind.material,
-                      icon: Icons.receipt_long_outlined,
+                      icon: AnalyticsIconType.receipt,
                       label: 'Billing',
                       selected: state.tab == AnalyticsTab.monthlyBilling,
                       onTap: () => _go(context, AnalyticsTab.monthlyBilling),
@@ -106,33 +103,24 @@ class AnalyticsSidebar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final _AnalyticsNavIconKind iconKind;
-  final IconData? icon;
+  final AnalyticsIconType icon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
   const _NavItem({
-    this.iconKind = _AnalyticsNavIconKind.material,
-    this.icon,
+    required this.icon,
     required this.label,
     required this.selected,
     required this.onTap,
   });
 
-  Widget _leading(Color color) {
-    switch (iconKind) {
-      case _AnalyticsNavIconKind.business:
-        return AnalyticsTrendIcon(size: 20, color: color);
-      case _AnalyticsNavIconKind.leaves:
-        return AnalyticsLeaveIcon(size: 20, color: color);
-      case _AnalyticsNavIconKind.material:
-        return AppMaterialIcon(icon!, size: 20, color: color);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final color = selected
+        ? AnalyticsDesktopTheme.purple
+        : AnalyticsDesktopTheme.textMuted;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
@@ -147,11 +135,7 @@ class _NavItem extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                _leading(
-                  selected
-                      ? AnalyticsDesktopTheme.purple
-                      : AnalyticsDesktopTheme.textMuted,
-                ),
+                AnalyticsIcon(type: icon, size: 20, color: color),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

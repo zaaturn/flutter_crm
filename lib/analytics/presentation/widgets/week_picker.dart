@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/analytics_theme.dart';
 import '../../utils/iso_week.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class WeekPickerBar extends StatelessWidget {
   final int year;
@@ -59,7 +60,7 @@ class WeekPickerBar extends StatelessWidget {
           IconButton(
             tooltip: 'Previous week',
             onPressed: onPrevious,
-            icon: Icon(Icons.chevron_left_rounded, color: accent),
+            icon: AnalyticsIcon(type: AnalyticsIconType.chevronLeft, color: accent, size: 24),
           ),
           _chipDropdown(
             value: year,
@@ -75,7 +76,7 @@ class WeekPickerBar extends StatelessWidget {
           IconButton(
             tooltip: 'Next week',
             onPressed: onNext,
-            icon: Icon(Icons.chevron_right_rounded, color: accent),
+            icon: AnalyticsIcon(type: AnalyticsIconType.chevronRight, color: accent, size: 24),
           ),
           Expanded(
             child: Text(

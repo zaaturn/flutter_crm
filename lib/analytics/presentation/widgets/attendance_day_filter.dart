@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/analytics_theme.dart';
 import '../../utils/analytics_date_utils.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 /// Day dropdown for daily attendance — one day at a time.
 class AttendanceDayFilter extends StatelessWidget {
@@ -40,8 +41,8 @@ class AttendanceDayFilter extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.calendar_today_outlined,
+            const AnalyticsIcon(
+              type: AnalyticsIconType.calendar,
               size: 18,
               color: AnalyticsDesktopTheme.textMuted,
             ),
@@ -93,7 +94,7 @@ class AttendanceDayFilter extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.calendar_view_day_rounded, color: accent, size: 22),
+          AnalyticsIcon(type: AnalyticsIconType.calendar, color: accent, size: 22),
           const SizedBox(width: 12),
           Text(
             'Select day',

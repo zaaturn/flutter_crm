@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/analytics_theme.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsKpiCard extends StatelessWidget {
   final String label;
   final String value;
-  final IconData icon;
+  final AnalyticsIconType icon;
   final Color? accent;
 
   const AnalyticsKpiCard({
@@ -36,7 +37,9 @@ class AnalyticsKpiCard extends StatelessWidget {
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Center(
+              child: AnalyticsIcon(type: icon, color: color, size: 20),
+            ),
           ),
           const Spacer(),
           Text(

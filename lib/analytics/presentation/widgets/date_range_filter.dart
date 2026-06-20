@@ -7,6 +7,7 @@ import '../../bloc/analytics_bloc.dart';
 import '../../bloc/analytics_event.dart';
 import '../../theme/analytics_theme.dart';
 import '../../utils/analytics_date_utils.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class DateRangeFilter extends StatelessWidget {
   final DateRangePreset preset;
@@ -53,18 +54,30 @@ class DateRangeFilter extends StatelessWidget {
               }
             },
           ),
-          OutlinedButton.icon(
+          OutlinedButton(
             onPressed: () => _pickDate(context, isStart: true),
-            icon: const Icon(Icons.calendar_today_outlined, size: 16),
-            label: Text(fmt.format(start)),
             style: OutlinedButton.styleFrom(foregroundColor: purple),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnalyticsIcon(type: AnalyticsIconType.calendar, size: 16, color: purple),
+                const SizedBox(width: 8),
+                Text(fmt.format(start)),
+              ],
+            ),
           ),
           const Text('to'),
-          OutlinedButton.icon(
+          OutlinedButton(
             onPressed: () => _pickDate(context, isStart: false),
-            icon: const Icon(Icons.calendar_today_outlined, size: 16),
-            label: Text(fmt.format(end)),
             style: OutlinedButton.styleFrom(foregroundColor: purple),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnalyticsIcon(type: AnalyticsIconType.calendar, size: 16, color: purple),
+                const SizedBox(width: 8),
+                Text(fmt.format(end)),
+              ],
+            ),
           ),
           if (preset == DateRangePreset.custom)
             FilledButton(

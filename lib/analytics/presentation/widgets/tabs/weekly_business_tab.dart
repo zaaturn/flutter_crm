@@ -5,6 +5,7 @@ import '../../../theme/analytics_theme.dart';
 import '../../../utils/iso_week.dart';
 import '../analytics_kpi_card.dart';
 import '../analytics_loading_widgets.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class WeeklyBusinessTab extends StatelessWidget {
   final WeeklyBusinessModel? data;
@@ -55,50 +56,50 @@ class WeeklyBusinessTab extends StatelessWidget {
                   AnalyticsKpiCard(
                     label: 'New CRM clients',
                     value: '${model.newCrmClients}',
-                    icon: Icons.person_add_alt_1_rounded,
+                    icon: AnalyticsIconType.personAdd,
                   ),
                   AnalyticsKpiCard(
                     label: 'New billing clients',
                     value: '${model.newBillingClients}',
-                    icon: Icons.business_outlined,
+                    icon: AnalyticsIconType.building,
                   ),
                   AnalyticsKpiCard(
                     label: 'Clients invoiced',
                     value: '${model.billingClientsInvoiced}',
-                    icon: Icons.receipt_long_outlined,
+                    icon: AnalyticsIconType.receipt,
                   ),
                   AnalyticsKpiCard(
                     label: 'Invoices issued',
                     value: '${model.invoicesIssued}',
-                    icon: Icons.description_outlined,
+                    icon: AnalyticsIconType.document,
                   ),
                   AnalyticsKpiCard(
                     label: 'Invoices paid',
                     value: '${model.invoicesPaid}',
-                    icon: Icons.check_circle_outline_rounded,
+                    icon: AnalyticsIconType.checkCircle,
                     accent: AnalyticsDesktopTheme.success,
                   ),
                   AnalyticsKpiCard(
                     label: 'Invoices pending',
                     value: '${model.invoicesPending}',
-                    icon: Icons.pending_outlined,
+                    icon: AnalyticsIconType.pending,
                     accent: AnalyticsDesktopTheme.warning,
                   ),
                   AnalyticsKpiCard(
                     label: 'Amount invoiced',
                     value: model.formatInvoiced(),
-                    icon: Icons.trending_up_rounded,
+                    icon: AnalyticsIconType.business,
                   ),
                   AnalyticsKpiCard(
                     label: 'Amount received',
                     value: model.formatReceived(),
-                    icon: Icons.payments_outlined,
+                    icon: AnalyticsIconType.payments,
                     accent: AnalyticsDesktopTheme.success,
                   ),
                   AnalyticsKpiCard(
                     label: 'Amount pending',
                     value: model.formatPending(),
-                    icon: Icons.hourglass_empty_rounded,
+                    icon: AnalyticsIconType.hourglass,
                     accent: AnalyticsDesktopTheme.danger,
                   ),
                 ],

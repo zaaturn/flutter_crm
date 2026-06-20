@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/analytics_theme.dart';
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsHeader extends StatelessWidget {
   final VoidCallback onBack;
@@ -22,8 +23,10 @@ class AnalyticsHeader extends StatelessWidget {
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: AnalyticsDesktopTheme.textMain,
+            icon: const AnalyticsIcon(
+              type: AnalyticsIconType.arrowBack,
+              color: AnalyticsDesktopTheme.textMain,
+            ),
           ),
           Text(
             'Analytics',
@@ -37,8 +40,10 @@ class AnalyticsHeader extends StatelessWidget {
           IconButton(
             tooltip: 'Refresh',
             onPressed: onRefresh,
-            icon: const Icon(Icons.refresh_rounded),
-            color: AnalyticsDesktopTheme.purple,
+            icon: const AnalyticsIcon(
+              type: AnalyticsIconType.refresh,
+              color: AnalyticsDesktopTheme.purple,
+            ),
           ),
         ],
       ),

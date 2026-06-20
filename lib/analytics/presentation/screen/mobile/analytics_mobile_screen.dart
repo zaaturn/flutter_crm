@@ -22,11 +22,9 @@ import '../../widgets/analytics_forbidden_view.dart';
 import '../../widgets/analytics_tab_body.dart';
 import '../../widgets/attendance_day_filter.dart';
 import '../../widgets/week_picker.dart';
-
-
+import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class AnalyticsMobileScreen extends StatelessWidget {
-
   const AnalyticsMobileScreen({super.key});
 
 
@@ -279,9 +277,10 @@ class _MobileHeader extends StatelessWidget {
 
             onPressed: onBack,
 
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-
-                color: AnalyticsMobileTheme.textDark, size: 20),
+            icon: const AnalyticsIcon(
+                type: AnalyticsIconType.arrowBack,
+                color: AnalyticsMobileTheme.textDark,
+                size: 20),
 
           ),
 
@@ -307,8 +306,8 @@ class _MobileHeader extends StatelessWidget {
 
             onPressed: onRefresh,
 
-            icon: const Icon(Icons.refresh_rounded,
-
+            icon: const AnalyticsIcon(
+                type: AnalyticsIconType.refresh,
                 color: AnalyticsMobileTheme.terracotta),
 
           ),
