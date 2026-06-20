@@ -56,7 +56,7 @@ class SidebarMenuItem {
 const sidebarMenuConfig = [
   SidebarMenuItem(
     title: "Analytics",
-    icon: Icons.insert_chart_outlined,
+    icon: Icons.insert_chart,
     action: SidebarAction.analytics,
     moduleKey: 'analytics',
     tooltip: "Analytics overview",

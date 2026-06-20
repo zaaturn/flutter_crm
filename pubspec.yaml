@@ -84,6 +84,10 @@ flutter:
     - family: NotoSansSymbols2
       fonts:
         - asset: assets/fonts/NotoSansSymbols2-Regular.ttf
+    # Full Material Icons font — prevents missing glyphs on web (Firebase / Hostinger).
+    - family: MaterialIcons
+      fonts:
+        - asset: assets/fonts/MaterialIcons-Regular.otf
 
 # ═══════════════════════════════════════════════════
 #  APP ICON CONFIGURATION (Home Screen)

@@ -66,13 +66,13 @@ class AnalyticsSidebar extends StatelessWidget {
                       onTap: () => _go(context, AnalyticsTab.weeklyAttendance),
                     ),
                     _NavItem(
-                      icon: Icons.trending_up_rounded,
+                      icon: Icons.trending_up,
                       label: 'Business',
                       selected: state.tab == AnalyticsTab.weeklyBusiness,
                       onTap: () => _go(context, AnalyticsTab.weeklyBusiness),
                     ),
                     _NavItem(
-                      icon: Icons.beach_access_outlined,
+                      icon: Icons.beach_access,
                       label: 'Leaves',
                       selected: state.tab == AnalyticsTab.leaves,
                       onTap: () => _go(context, AnalyticsTab.leaves),
