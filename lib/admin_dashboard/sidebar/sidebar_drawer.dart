@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'sidebar_menu_config.dart';
 import 'sidebar_widget.dart';
 import 'sidebar_handler.dart';
+import 'package:my_app/core/widgets/sidebar_chart_icon.dart';
 
 class SidebarDrawer extends StatefulWidget {
   final BuildContext parentContext;
@@ -234,7 +235,9 @@ class _ModernSidebarTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(item.icon, size: 18, color: color),
+              item.action == SidebarAction.analytics
+                  ? SidebarChartIcon(size: 18, color: color)
+                  : Icon(item.icon, size: 18, color: color),
               const SizedBox(width: 14),
               Expanded(
                 child: Text(

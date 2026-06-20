@@ -6,6 +6,7 @@ import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/widgets/app_material_icon.dart';
+import 'package:my_app/core/widgets/sidebar_chart_icon.dart';
 import 'workspace_switcher_desktop.dart';
 
 class DesktopSidebar extends StatefulWidget {
@@ -206,6 +207,14 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     );
   }
 
+  Widget _sidebarIcon(SidebarMenuItem item, {required bool isSelected}) {
+    final color = isSelected ? _purple : _textMuted;
+    if (item.action == SidebarAction.analytics) {
+      return SidebarChartIcon(size: 20, color: color);
+    }
+    return AppMaterialIcon(item.icon, size: 20, color: color);
+  }
+
   Widget _buildMenuItem(SidebarMenuItem item) {
     if (!_moduleAllowed(item.moduleKey)) return const SizedBox.shrink();
     final isSelected = _selectedAction == item.action;
@@ -223,7 +232,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         ),
         child: Row(
           children: [
-            AppMaterialIcon(item.icon, size: 20, color: isSelected ? _purple : _textMuted),
+            _sidebarIcon(item, isSelected: isSelected),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
