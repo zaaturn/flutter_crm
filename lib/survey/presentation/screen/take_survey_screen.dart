@@ -22,6 +22,7 @@ class TakeSurveyScreen extends StatefulWidget {
 
 class _TakeSurveyScreenState extends State<TakeSurveyScreen> {
   final _answers = <int, dynamic>{};
+  final _explanations = <int, String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +87,11 @@ class _TakeSurveyScreenState extends State<TakeSurveyScreen> {
                   ...form.questions.map((q) => SurveyFormField(
                         question: q,
                         value: _answers[q.id],
+                        explanationValue: _explanations[q.id],
                         onChanged: (v) => setState(() => _answers[q.id] = v),
+                        onExplanationChanged: q.allowExplanation
+                            ? (text) => setState(() => _explanations[q.id] = text)
+                            : null,
                       )),
                   FilledButton(
                     onPressed: state.form != null &&
@@ -124,6 +129,7 @@ class _TakeSurveyScreenState extends State<TakeSurveyScreen> {
     final payloads = buildSurveyAnswerPayloads(
       form: form,
       answers: _answers,
+      explanations: _explanations,
       showMessage: surveySnack(),
     );
     if (payloads == null) return;

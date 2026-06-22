@@ -488,6 +488,15 @@ class _QuestionRow extends StatelessWidget {
   String get _typeLabel =>
       questionTypeLabel(question.questionType, allowMultiple: question.allowMultiple);
 
+  String get _metaLabel {
+    final parts = <String>[_typeLabel];
+    if (question.isRequired) parts.add('Required');
+    if (question.allowExplanation) {
+      parts.add(question.requireExplanation ? 'Explanation required' : 'Ask explanation');
+    }
+    return parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -512,7 +521,7 @@ class _QuestionRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$_typeLabel${question.isRequired ? ' · Required' : ''}',
+                  _metaLabel,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     color: SurveyTheme.textMuted,

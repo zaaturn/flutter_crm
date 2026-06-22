@@ -177,14 +177,36 @@ class _EmployeeResponseTileState extends State<_EmployeeResponseTile> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          a.displayValue.isNotEmpty ? a.displayValue : '—',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            height: 1.45,
-                            color: textMuted,
+                        if (a.displayValue.isNotEmpty)
+                          Text(
+                            a.displayValue,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              height: 1.45,
+                              fontWeight: FontWeight.w600,
+                              color: textMain,
+                            ),
+                          )
+                        else
+                          Text(
+                            '—',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: textMuted,
+                            ),
                           ),
-                        ),
+                        if (a.explanationText.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            a.explanationText,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              height: 1.45,
+                              color: textMuted,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

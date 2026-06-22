@@ -136,6 +136,10 @@ class SurveyQuestion {
   final int order;
   final bool allowMultiple;
   final int maxWords;
+  final bool allowExplanation;
+  final bool requireExplanation;
+  final String explanationPrompt;
+  final int explanationMaxWords;
   final List<SurveyOption> options;
 
   const SurveyQuestion({
@@ -146,8 +150,22 @@ class SurveyQuestion {
     this.order = 0,
     this.allowMultiple = false,
     this.maxWords = 250,
+    this.allowExplanation = false,
+    this.requireExplanation = false,
+    this.explanationPrompt = 'Please explain your answer',
+    this.explanationMaxWords = 250,
     this.options = const [],
   });
+
+  bool get supportsExplanation =>
+      questionType == QuestionType.yesNo ||
+      questionType == QuestionType.rating ||
+      questionType == QuestionType.mcq;
+
+  String get effectiveExplanationPrompt {
+    final p = explanationPrompt.trim();
+    return p.isEmpty ? 'Please explain your answer' : p;
+  }
 
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
     final rawOptions = json['options'];
@@ -176,6 +194,13 @@ class SurveyQuestion {
       maxWords: json['max_words'] is int
           ? json['max_words'] as int
           : int.tryParse('${json['max_words']}') ?? 250,
+      allowExplanation: json['allow_explanation'] == true,
+      requireExplanation: json['require_explanation'] == true,
+      explanationPrompt:
+          json['explanation_prompt']?.toString() ?? 'Please explain your answer',
+      explanationMaxWords: json['explanation_max_words'] is int
+          ? json['explanation_max_words'] as int
+          : int.tryParse('${json['explanation_max_words']}') ?? 250,
       options: opts,
     );
   }
@@ -383,6 +408,7 @@ class SurveyAnswerPayload {
   final bool? yesNoValue;
   final int? ratingValue;
   final String? textValue;
+  final String? explanationText;
   final List<int> selectedOptionIds;
 
   const SurveyAnswerPayload({
@@ -390,6 +416,7 @@ class SurveyAnswerPayload {
     this.yesNoValue,
     this.ratingValue,
     this.textValue,
+    this.explanationText,
     this.selectedOptionIds = const [],
   });
 
@@ -398,6 +425,9 @@ class SurveyAnswerPayload {
     if (yesNoValue != null) m['yes_no_value'] = yesNoValue;
     if (ratingValue != null) m['rating_value'] = ratingValue;
     if (textValue != null) m['text_value'] = textValue;
+    if (explanationText != null && explanationText!.trim().isNotEmpty) {
+      m['explanation_text'] = explanationText!.trim();
+    }
     if (selectedOptionIds.isNotEmpty) {
       m['selected_option_ids'] = selectedOptionIds;
     }
@@ -798,12 +828,14 @@ class SurveyUserAnswer {
   final String questionText;
   final QuestionType questionType;
   final String displayValue;
+  final String explanationText;
 
   const SurveyUserAnswer({
     required this.questionId,
     required this.questionText,
     required this.questionType,
     required this.displayValue,
+    this.explanationText = '',
   });
 
   factory SurveyUserAnswer.fromJson(Map<String, dynamic> json) {
@@ -820,6 +852,7 @@ class SurveyUserAnswer {
       displayValue: display != null && display.isNotEmpty
           ? display
           : _fallbackDisplayValue(json),
+      explanationText: json['explanation_text']?.toString().trim() ?? '',
     );
   }
 

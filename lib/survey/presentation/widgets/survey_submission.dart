@@ -53,6 +53,7 @@ void showSurveySuccessSnack({
 List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
   required SurveyDetail form,
   required Map<int, dynamic> answers,
+  Map<int, String> explanations = const {},
   required SurveySnack showMessage,
 }) {
   final payloads = <SurveyAnswerPayload>[];
@@ -70,11 +71,32 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
     }
     if (v == null) continue;
 
+    final explanation = (explanations[q.id] ?? '').trim();
+    if (q.allowExplanation && q.supportsExplanation) {
+      if (q.requireExplanation && explanation.isEmpty) {
+        showMessage('${q.effectiveExplanationPrompt} (required)');
+        return null;
+      }
+      if (explanation.isNotEmpty &&
+          surveyWordCount(explanation) > q.explanationMaxWords) {
+        showMessage('Explanation for "${q.text}" exceeds ${q.explanationMaxWords} words.');
+        return null;
+      }
+    }
+
     switch (q.questionType) {
       case QuestionType.yesNo:
-        payloads.add(SurveyAnswerPayload(questionId: q.id, yesNoValue: v as bool));
+        payloads.add(SurveyAnswerPayload(
+          questionId: q.id,
+          yesNoValue: v as bool,
+          explanationText: explanation.isEmpty ? null : explanation,
+        ));
       case QuestionType.rating:
-        payloads.add(SurveyAnswerPayload(questionId: q.id, ratingValue: v as int));
+        payloads.add(SurveyAnswerPayload(
+          questionId: q.id,
+          ratingValue: v as int,
+          explanationText: explanation.isEmpty ? null : explanation,
+        ));
       case QuestionType.text:
         final text = (v as String).trim();
         if (text.isEmpty) {
@@ -105,6 +127,7 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
         payloads.add(SurveyAnswerPayload(
           questionId: q.id,
           selectedOptionIds: optionIds,
+          explanationText: explanation.isEmpty ? null : explanation,
         ));
       case QuestionType.unknown:
         break;

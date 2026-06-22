@@ -53,8 +53,11 @@ class _QuestionEditor extends StatefulWidget {
 class _QuestionEditorState extends State<_QuestionEditor> {
   QuestionType _type = QuestionType.yesNo;
   final _textCtrl = TextEditingController();
+  final _explanationPromptCtrl = TextEditingController(text: 'Please explain your answer');
   bool _required = true;
   bool _allowMultiple = false;
+  bool _allowExplanation = false;
+  bool _requireExplanation = false;
   bool _saving = false;
   final _optionCtrls = [TextEditingController(), TextEditingController()];
 
@@ -83,6 +86,15 @@ class _QuestionEditorState extends State<_QuestionEditor> {
       if ((body['options'] as List).length < 2) {
         _toast('Add at least 2 MCQ options');
         return;
+      }
+    }
+    if (_type != QuestionType.text) {
+      body['allow_explanation'] = _allowExplanation;
+      if (_allowExplanation) {
+        body['require_explanation'] = _requireExplanation;
+        final prompt = _explanationPromptCtrl.text.trim();
+        body['explanation_prompt'] =
+            prompt.isEmpty ? 'Please explain your answer' : prompt;
       }
     }
 
@@ -123,6 +135,7 @@ class _QuestionEditorState extends State<_QuestionEditor> {
   @override
   void dispose() {
     _textCtrl.dispose();
+    _explanationPromptCtrl.dispose();
     for (final c in _optionCtrls) {
       c.dispose();
     }
@@ -161,7 +174,13 @@ class _QuestionEditorState extends State<_QuestionEditor> {
                 FilterChip(
                   label: Text(entry.$2),
                   selected: _type == entry.$1,
-                  onSelected: (_) => setState(() => _type = entry.$1),
+                  onSelected: (_) => setState(() {
+                    _type = entry.$1;
+                    if (_type == QuestionType.text) {
+                      _allowExplanation = false;
+                      _requireExplanation = false;
+                    }
+                  }),
                 ),
             ],
           ),
@@ -181,6 +200,32 @@ class _QuestionEditorState extends State<_QuestionEditor> {
                   child: TextField(controller: c, decoration: const InputDecoration(labelText: 'Option')),
                 )),
             TextButton(onPressed: _addOption, child: const Text('Add option')),
+          ],
+          if (_type != QuestionType.text) ...[
+            SwitchListTile(
+              value: _allowExplanation,
+              onChanged: (v) => setState(() {
+                _allowExplanation = v;
+                if (!v) _requireExplanation = false;
+              }),
+              title: const Text('Ask for explanation'),
+              subtitle: const Text('Show a follow-up text box after the employee answers'),
+            ),
+            if (_allowExplanation) ...[
+              SwitchListTile(
+                value: _requireExplanation,
+                onChanged: (v) => setState(() => _requireExplanation = v),
+                title: const Text('Explanation required'),
+              ),
+              TextField(
+                controller: _explanationPromptCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Explanation prompt',
+                  hintText: 'Please explain your answer',
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
           ],
           const SizedBox(height: 12),
           FilledButton(

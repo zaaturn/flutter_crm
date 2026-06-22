@@ -22,6 +22,7 @@ class TakeSurveyScreenMobile extends StatefulWidget {
 
 class _TakeSurveyScreenMobileState extends State<TakeSurveyScreenMobile> {
   final _answers = <int, dynamic>{};
+  final _explanations = <int, String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +111,12 @@ class _TakeSurveyScreenMobileState extends State<TakeSurveyScreenMobile> {
                 (q) => SurveyFormField(
                   question: q,
                   value: _answers[q.id],
+                  explanationValue: _explanations[q.id],
                   mobile: true,
                   onChanged: (v) => setState(() => _answers[q.id] = v),
+                  onExplanationChanged: q.allowExplanation
+                      ? (text) => setState(() => _explanations[q.id] = text)
+                      : null,
                 ),
               ),
             ],
@@ -125,6 +130,7 @@ class _TakeSurveyScreenMobileState extends State<TakeSurveyScreenMobile> {
     final payloads = buildSurveyAnswerPayloads(
       form: form,
       answers: _answers,
+      explanations: _explanations,
       showMessage: surveySnack(),
     );
     if (payloads == null) return;

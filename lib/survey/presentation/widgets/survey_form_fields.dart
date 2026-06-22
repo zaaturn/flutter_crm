@@ -6,6 +6,7 @@ import '../../theme/survey_mobile_theme.dart';
 import '../../theme/survey_theme.dart';
 import 'survey_star_rating.dart';
 import 'survey_descriptive_text_field.dart';
+import 'survey_explanation_field.dart';
 
 class SurveyFormField extends StatelessWidget {
   const SurveyFormField({
@@ -13,13 +14,33 @@ class SurveyFormField extends StatelessWidget {
     required this.question,
     required this.onChanged,
     this.value,
+    this.explanationValue,
+    this.onExplanationChanged,
     this.mobile = false,
   });
 
   final SurveyQuestion question;
   final dynamic value;
+  final String? explanationValue;
+  final ValueChanged<String>? onExplanationChanged;
   final bool mobile;
   final ValueChanged<dynamic> onChanged;
+
+  bool get _hasSelection {
+    switch (question.questionType) {
+      case QuestionType.yesNo:
+        return value is bool;
+      case QuestionType.rating:
+        return value is int && (value as int) > 0;
+      case QuestionType.mcq:
+        if (value is Set && (value as Set).isNotEmpty) return true;
+        if (value is List && (value as List).isNotEmpty) return true;
+        if (value is int && value > 0) return true;
+        return false;
+      default:
+        return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +85,20 @@ class SurveyFormField extends StatelessWidget {
               ),
             QuestionType.unknown => const SizedBox.shrink(),
           },
+          if (question.allowExplanation &&
+              question.supportsExplanation &&
+              _hasSelection &&
+              onExplanationChanged != null) ...[
+            const SizedBox(height: 16),
+            SurveyExplanationField(
+              label: question.effectiveExplanationPrompt,
+              maxWords: question.explanationMaxWords,
+              value: explanationValue,
+              required: question.requireExplanation,
+              onChanged: onExplanationChanged!,
+              mobile: mobile,
+            ),
+          ],
           Divider(height: 32, color: divider),
         ],
       ),

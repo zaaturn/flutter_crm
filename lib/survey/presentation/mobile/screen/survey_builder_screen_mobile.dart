@@ -235,7 +235,12 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
                             children: [
                               Text(q.text, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
                               Text(
-                                questionTypeLabel(q.questionType, allowMultiple: q.allowMultiple),
+                                [
+                                  questionTypeLabel(q.questionType, allowMultiple: q.allowMultiple),
+                                  if (q.isRequired) 'Required',
+                                  if (q.allowExplanation)
+                                    q.requireExplanation ? 'Explanation required' : 'Ask explanation',
+                                ].join(' · '),
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   color: SurveyMobileTheme.textMuted,
