@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/survey/models/survey_models.dart';
+import 'package:my_app/survey/utils/survey_word_count.dart';
 
 typedef SurveySnack = void Function(String message);
 
@@ -61,7 +62,9 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
 
     final v = answers[q.id];
     final isEmptyMulti = (v is List && v.isEmpty) || (v is Set && v.isEmpty);
-    if (q.isRequired && (v == null || isEmptyMulti)) {
+    final isEmptyText = q.questionType == QuestionType.text &&
+        (v == null || (v is String && v.trim().isEmpty));
+    if (q.isRequired && (v == null || isEmptyMulti || isEmptyText)) {
       showMessage('Please answer: ${q.text}');
       return null;
     }
@@ -72,6 +75,20 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
         payloads.add(SurveyAnswerPayload(questionId: q.id, yesNoValue: v as bool));
       case QuestionType.rating:
         payloads.add(SurveyAnswerPayload(questionId: q.id, ratingValue: v as int));
+      case QuestionType.text:
+        final text = (v as String).trim();
+        if (text.isEmpty) {
+          if (q.isRequired) {
+            showMessage('Please answer: ${q.text}');
+            return null;
+          }
+          continue;
+        }
+        if (surveyWordCount(text) > q.maxWords) {
+          showMessage('Answer for "${q.text}" exceeds ${q.maxWords} words.');
+          return null;
+        }
+        payloads.add(SurveyAnswerPayload(questionId: q.id, textValue: text));
       case QuestionType.mcq:
         final optionIds = q.allowMultiple
             ? (v is Set

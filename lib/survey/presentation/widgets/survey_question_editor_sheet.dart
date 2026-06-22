@@ -148,14 +148,22 @@ class _QuestionEditorState extends State<_QuestionEditor> {
             decoration: const InputDecoration(labelText: 'Question text'),
           ),
           const SizedBox(height: 12),
-          SegmentedButton<QuestionType>(
-            segments: const [
-              ButtonSegment(value: QuestionType.yesNo, label: Text('Yes/No')),
-              ButtonSegment(value: QuestionType.rating, label: Text('Rating')),
-              ButtonSegment(value: QuestionType.mcq, label: Text('MCQ')),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final entry in const [
+                (QuestionType.yesNo, 'Yes/No'),
+                (QuestionType.rating, 'Rating'),
+                (QuestionType.mcq, 'MCQ'),
+                (QuestionType.text, 'Descriptive text'),
+              ])
+                FilterChip(
+                  label: Text(entry.$2),
+                  selected: _type == entry.$1,
+                  onSelected: (_) => setState(() => _type = entry.$1),
+                ),
             ],
-            selected: {_type},
-            onSelectionChanged: (s) => setState(() => _type = s.first),
           ),
           SwitchListTile(
             value: _required,

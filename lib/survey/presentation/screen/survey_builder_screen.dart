@@ -485,18 +485,8 @@ class _QuestionRow extends StatelessWidget {
   final bool editable;
   final VoidCallback onDelete;
 
-  String get _typeLabel {
-    switch (question.questionType) {
-      case QuestionType.yesNo:
-        return 'Yes / No';
-      case QuestionType.rating:
-        return 'Rating';
-      case QuestionType.mcq:
-        return question.allowMultiple ? 'Multiple choice' : 'Single choice';
-      case QuestionType.unknown:
-        return 'Question';
-    }
-  }
+  String get _typeLabel =>
+      questionTypeLabel(question.questionType, allowMultiple: question.allowMultiple);
 
   @override
   Widget build(BuildContext context) {

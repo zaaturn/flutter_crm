@@ -318,6 +318,7 @@ class SurveyAdminBloc extends Bloc<SurveyAdminEvent, SurveyAdminState> {
         status: SurveyAdminLoadStatus.success,
         results: enriched,
         detail: detail,
+        individualResponses: enriched.userResponses,
       ));
     } catch (e) {
       if (emit.isDone) return;
@@ -341,17 +342,10 @@ class SurveyAdminBloc extends Bloc<SurveyAdminEvent, SurveyAdminState> {
         individualResponses: rows,
       ));
     } on DioException catch (e) {
-      if (e.response?.statusCode == 403) {
-        emit(state.copyWith(
-          actionInProgress: false,
-          error: 'Individual responses are not available for anonymous surveys.',
-        ));
-      } else {
-        emit(state.copyWith(
-          actionInProgress: false,
-          error: SurveyApiService.messageFrom(e),
-        ));
-      }
+      emit(state.copyWith(
+        actionInProgress: false,
+        error: SurveyApiService.messageFrom(e),
+      ));
     } catch (e) {
       emit(state.copyWith(
         actionInProgress: false,

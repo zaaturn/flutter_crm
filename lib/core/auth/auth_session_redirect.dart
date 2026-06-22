@@ -15,21 +15,31 @@ class AuthSessionRedirect {
 
   static const String loginRoute = '/employeeLogin';
 
-  static const Set<String> _publicRoutes = {
-    loginRoute,
-    '/',
-    '/dashboardChooser',
-  };
-
-  static bool _isPublicRoute(String? route) {
-    if (route == null || route.isEmpty) return true;
-    return _publicRoutes.contains(route);
-  }
   static const String defaultMessage =
       'Session expired. Please login again.';
 
+  static const Set<String> _loginRoutes = {
+    loginRoute,
+    '/adminLogin',
+  };
+
   static void bindNavigator(GlobalKey<NavigatorState> Function() provider) {
     _navigatorKey = provider;
+  }
+
+  /// Reads the top route name without popping anything from the stack.
+  static String? _topRouteName(NavigatorState nav) {
+    String? name;
+    nav.popUntil((route) {
+      name = route.settings.name;
+      return true;
+    });
+    return name;
+  }
+
+  static bool _isAlreadyOnLogin(NavigatorState nav) {
+    final name = _topRouteName(nav);
+    return name != null && _loginRoutes.contains(name);
   }
 
   static bool isAuthFailure(
@@ -92,23 +102,31 @@ class AuthSessionRedirect {
       ApiClient().forceUnauthenticated();
     } catch (_) {}
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _redirectInProgress = false;
-
-      final nav = _navigatorKey?.call()?.currentState;
-      if (nav == null) return;
-
-      final currentRoute = ModalRoute.of(nav.context)?.settings.name;
-      if (_isPublicRoute(currentRoute)) return;
+    void redirect(NavigatorState nav) {
+      if (_isAlreadyOnLogin(nav)) return;
 
       final msg = message ?? defaultMessage;
-
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(msg)),
       );
-
       nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
-    });
+    }
+
+    void finishRedirect() {
+      _redirectInProgress = false;
+      final nav = _navigatorKey?.call()?.currentState;
+      if (nav != null) {
+        redirect(nav);
+        return;
+      }
+      // Navigator may not be mounted yet (e.g. first frame on web).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final retryNav = _navigatorKey?.call()?.currentState;
+        if (retryNav != null) redirect(retryNav);
+      });
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => finishRedirect());
   }
 
   static void onAuthFailure({

@@ -83,9 +83,13 @@ class SurveyApiService {
 
   Future<List<SurveyIndividualResponse>> getIndividualResponses(int id) async {
     final res = await _dio.get('$_base/$id/results/responses/');
-    final rows = _extractJsonList(res.data);
-    if (rows.isNotEmpty) {
-      return rows.map(SurveyIndividualResponse.fromJson).toList();
+    final map = _asMap(res.data);
+    final rows = map['user_responses'];
+    if (rows is List) {
+      return rows
+          .whereType<Map>()
+          .map((e) => SurveyIndividualResponse.fromJson(Map<String, dynamic>.from(e)))
+          .toList();
     }
     return _parseList(res.data, SurveyIndividualResponse.fromJson);
   }

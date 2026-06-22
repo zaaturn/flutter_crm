@@ -235,7 +235,7 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
                             children: [
                               Text(q.text, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
                               Text(
-                                q.questionType.name,
+                                questionTypeLabel(q.questionType, allowMultiple: q.allowMultiple),
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   color: SurveyMobileTheme.textMuted,

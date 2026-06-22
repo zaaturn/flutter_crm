@@ -1,6 +1,6 @@
 enum SurveyStatus { draft, active, closed, unknown }
 
-enum QuestionType { yesNo, rating, mcq, unknown }
+enum QuestionType { yesNo, rating, mcq, text, unknown }
 
 SurveyStatus parseSurveyStatus(dynamic v) {
   if (v is Map) {
@@ -63,6 +63,11 @@ QuestionType parseQuestionType(dynamic v) {
     case 'single_choice':
     case 'choice':
       return QuestionType.mcq;
+    case 'text':
+    case 'descriptive':
+    case 'descriptive_text':
+    case 'paragraph':
+      return QuestionType.text;
     default:
       return QuestionType.unknown;
   }
@@ -76,8 +81,25 @@ String questionTypeToApi(QuestionType t) {
       return 'rating';
     case QuestionType.mcq:
       return 'mcq';
+    case QuestionType.text:
+      return 'text';
     case QuestionType.unknown:
       return 'yes_no';
+  }
+}
+
+String questionTypeLabel(QuestionType t, {bool allowMultiple = false}) {
+  switch (t) {
+    case QuestionType.yesNo:
+      return 'Yes / No';
+    case QuestionType.rating:
+      return 'Rating';
+    case QuestionType.mcq:
+      return allowMultiple ? 'Multiple choice' : 'Single choice';
+    case QuestionType.text:
+      return 'Descriptive text';
+    case QuestionType.unknown:
+      return 'Question';
   }
 }
 
@@ -113,6 +135,7 @@ class SurveyQuestion {
   final bool isRequired;
   final int order;
   final bool allowMultiple;
+  final int maxWords;
   final List<SurveyOption> options;
 
   const SurveyQuestion({
@@ -122,6 +145,7 @@ class SurveyQuestion {
     this.isRequired = true,
     this.order = 0,
     this.allowMultiple = false,
+    this.maxWords = 250,
     this.options = const [],
   });
 
@@ -149,6 +173,9 @@ class SurveyQuestion {
       isRequired: json['is_required'] == true || json['required'] == true,
       order: json['order'] is int ? json['order'] as int : int.tryParse('${json['order']}') ?? 0,
       allowMultiple: json['allow_multiple'] == true,
+      maxWords: json['max_words'] is int
+          ? json['max_words'] as int
+          : int.tryParse('${json['max_words']}') ?? 250,
       options: opts,
     );
   }
@@ -355,12 +382,14 @@ class SurveyAnswerPayload {
   final int questionId;
   final bool? yesNoValue;
   final int? ratingValue;
+  final String? textValue;
   final List<int> selectedOptionIds;
 
   const SurveyAnswerPayload({
     required this.questionId,
     this.yesNoValue,
     this.ratingValue,
+    this.textValue,
     this.selectedOptionIds = const [],
   });
 
@@ -368,6 +397,7 @@ class SurveyAnswerPayload {
     final m = <String, dynamic>{'question_id': questionId};
     if (yesNoValue != null) m['yes_no_value'] = yesNoValue;
     if (ratingValue != null) m['rating_value'] = ratingValue;
+    if (textValue != null) m['text_value'] = textValue;
     if (selectedOptionIds.isNotEmpty) {
       m['selected_option_ids'] = selectedOptionIds;
     }
@@ -459,6 +489,56 @@ class McqResult {
   }
 }
 
+class TextAnswerResult {
+  final String text;
+  final int wordCount;
+  final String? employeeName;
+
+  const TextAnswerResult({
+    required this.text,
+    this.wordCount = 0,
+    this.employeeName,
+  });
+
+  factory TextAnswerResult.fromJson(Map<String, dynamic> json) {
+    return TextAnswerResult(
+      text: json['text']?.toString() ?? json['text_value']?.toString() ?? '',
+      wordCount: json['word_count'] is int
+          ? json['word_count'] as int
+          : int.tryParse('${json['word_count']}') ?? 0,
+      employeeName: json['employee_name']?.toString(),
+    );
+  }
+}
+
+class TextResult {
+  final int maxWords;
+  final int total;
+  final List<TextAnswerResult> answers;
+
+  const TextResult({
+    this.maxWords = 250,
+    this.total = 0,
+    this.answers = const [],
+  });
+
+  factory TextResult.fromJson(Map<String, dynamic> json) {
+    final answers = (json['answers'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => TextAnswerResult.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    return TextResult(
+      maxWords: json['max_words'] is int
+          ? json['max_words'] as int
+          : int.tryParse('${json['max_words']}') ?? 250,
+      total: json['total'] is int
+          ? json['total'] as int
+          : int.tryParse('${json['total']}') ?? answers.length,
+      answers: answers,
+    );
+  }
+}
+
 class QuestionResult {
   final int questionId;
   final String text;
@@ -466,6 +546,7 @@ class QuestionResult {
   final YesNoResult? yesNo;
   final RatingResult? rating;
   final McqResult? mcq;
+  final TextResult? textResult;
 
   const QuestionResult({
     required this.questionId,
@@ -474,6 +555,7 @@ class QuestionResult {
     this.yesNo,
     this.rating,
     this.mcq,
+    this.textResult,
   });
 
   factory QuestionResult.fromJson(Map<String, dynamic> json) {
@@ -484,8 +566,12 @@ class QuestionResult {
       } else if (json['rating'] is Map || json.containsKey('average')) {
         type = QuestionType.rating;
       } else if (json['mcq'] is Map ||
-          (json['options'] is List && type == QuestionType.unknown)) {
+          (json['options'] is List && json['answers'] is! List)) {
         type = QuestionType.mcq;
+      } else if (json['answers'] is List &&
+          (json['type']?.toString() == 'text' ||
+              json['question_type']?.toString() == 'text')) {
+        type = QuestionType.text;
       }
     }
 
@@ -518,8 +604,21 @@ class QuestionResult {
       if (json['mcq'] is Map) {
         return McqResult.fromJson(Map<String, dynamic>.from(json['mcq']));
       }
-      if (json['options'] is List) {
+      if (json['options'] is List && json['answers'] is! List) {
         return McqResult.fromJson({'options': json['options']});
+      }
+      return null;
+    }
+
+    TextResult? parseText() {
+      if (json['text'] is Map) {
+        return TextResult.fromJson(Map<String, dynamic>.from(json['text']));
+      }
+      if (json['answers'] is List &&
+          (type == QuestionType.text ||
+              json['type']?.toString() == 'text' ||
+              json['question_type']?.toString() == 'text')) {
+        return TextResult.fromJson(json);
       }
       return null;
     }
@@ -531,6 +630,7 @@ class QuestionResult {
       yesNo: parseYesNo(),
       rating: parseRating(),
       mcq: parseMcq(),
+      textResult: parseText(),
     );
   }
 }
@@ -542,6 +642,7 @@ class SurveyResults {
   final double? participationRate;
   final bool isAnonymous;
   final List<QuestionResult> questions;
+  final List<SurveyIndividualResponse> userResponses;
 
   const SurveyResults({
     required this.surveyId,
@@ -550,6 +651,7 @@ class SurveyResults {
     this.participationRate,
     this.isAnonymous = false,
     this.questions = const [],
+    this.userResponses = const [],
   });
 
   SurveyResults copyWith({
@@ -559,6 +661,7 @@ class SurveyResults {
     double? participationRate,
     bool? isAnonymous,
     List<QuestionResult>? questions,
+    List<SurveyIndividualResponse>? userResponses,
   }) {
     return SurveyResults(
       surveyId: surveyId ?? this.surveyId,
@@ -567,6 +670,7 @@ class SurveyResults {
       participationRate: participationRate ?? this.participationRate,
       isAnonymous: isAnonymous ?? this.isAnonymous,
       questions: questions ?? this.questions,
+      userResponses: userResponses ?? this.userResponses,
     );
   }
 
@@ -591,6 +695,7 @@ class SurveyResults {
           yesNo: r.yesNo,
           rating: r.rating,
           mcq: r.mcq,
+          textResult: r.textResult,
         );
       }).toList();
       return copyWith(title: title, questions: enriched);
@@ -625,6 +730,13 @@ class SurveyResults {
                   .toList(),
             ),
           );
+        case QuestionType.text:
+          return QuestionResult(
+            questionId: q.id,
+            text: q.text,
+            questionType: q.questionType,
+            textResult: TextResult(maxWords: q.maxWords, total: 0, answers: const []),
+          );
         case QuestionType.unknown:
           return QuestionResult(
             questionId: q.id,
@@ -657,6 +769,11 @@ class SurveyResults {
 
     final qs = questionRows.map(QuestionResult.fromJson).toList();
 
+    final userResponses = (root['user_responses'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => SurveyIndividualResponse.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
     int parseId(dynamic v) {
       if (v is int) return v;
       return int.tryParse('$v') ?? 0;
@@ -671,38 +788,114 @@ class SurveyResults {
       participationRate: (root['participation_rate'] as num?)?.toDouble(),
       isAnonymous: root['is_anonymous'] == true,
       questions: qs,
+      userResponses: userResponses,
     );
   }
 }
 
+class SurveyUserAnswer {
+  final int questionId;
+  final String questionText;
+  final QuestionType questionType;
+  final String displayValue;
+
+  const SurveyUserAnswer({
+    required this.questionId,
+    required this.questionText,
+    required this.questionType,
+    required this.displayValue,
+  });
+
+  factory SurveyUserAnswer.fromJson(Map<String, dynamic> json) {
+    int parseId(dynamic v) {
+      if (v is int) return v;
+      return int.tryParse('$v') ?? 0;
+    }
+
+    final display = json['display_value']?.toString().trim();
+    return SurveyUserAnswer(
+      questionId: parseId(json['question_id'] ?? json['id']),
+      questionText: json['question_text']?.toString() ?? '',
+      questionType: parseQuestionType(json['type'] ?? json['question_type']),
+      displayValue: display != null && display.isNotEmpty
+          ? display
+          : _fallbackDisplayValue(json),
+    );
+  }
+
+  static String _fallbackDisplayValue(Map<String, dynamic> json) {
+    if (json['text_value'] != null) return json['text_value'].toString();
+    if (json['yes_no_value'] == true) return 'Yes';
+    if (json['yes_no_value'] == false) return 'No';
+    if (json['rating_value'] != null) return json['rating_value'].toString();
+    final opts = json['selected_option_texts'];
+    if (opts is List && opts.isNotEmpty) {
+      return opts.map((e) => e.toString()).join(', ');
+    }
+    return '—';
+  }
+}
+
 class SurveyIndividualResponse {
-  final int? employeeId;
+  final int? responseId;
+  final int? userId;
+  final String? employeeCode;
   final String employeeName;
+  final String? email;
+  final String? department;
+  final String? designation;
   final DateTime? submittedAt;
-  final List<Map<String, dynamic>> answers;
+  final List<SurveyUserAnswer> answers;
 
   const SurveyIndividualResponse({
-    this.employeeId,
+    this.responseId,
+    this.userId,
+    this.employeeCode,
     required this.employeeName,
+    this.email,
+    this.department,
+    this.designation,
     this.submittedAt,
     this.answers = const [],
   });
 
+  String get subtitle {
+    final parts = <String>[];
+    if (department != null && department!.isNotEmpty) parts.add(department!);
+    if (designation != null && designation!.isNotEmpty) parts.add(designation!);
+    if (employeeCode != null && employeeCode!.isNotEmpty) parts.add(employeeCode!);
+    return parts.join(' · ');
+  }
+
   factory SurveyIndividualResponse.fromJson(Map<String, dynamic> json) {
     DateTime? dt(dynamic v) =>
         v == null ? null : DateTime.tryParse(v.toString());
+
+    int? parseInt(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      return int.tryParse('$v');
+    }
+
+    final answersRaw = (json['answers'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => SurveyUserAnswer.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+
     return SurveyIndividualResponse(
-      employeeId: json['employee_id'] is int
-          ? json['employee_id'] as int
-          : int.tryParse('${json['employee_id']}'),
-      employeeName: json['employee_name']?.toString() ??
+      responseId: parseInt(json['response_id']),
+      userId: parseInt(json['user_id']),
+      employeeCode: json['employee_id']?.toString(),
+      employeeName: json['full_name']?.toString() ??
+          json['employee_name']?.toString() ??
           json['user_name']?.toString() ??
+          json['username']?.toString() ??
           'Employee',
+      email: json['email']?.toString(),
+      department: json['department']?.toString(),
+      designation: json['designation']?.toString(),
       submittedAt: dt(json['submitted_at']),
-      answers: (json['answers'] as List? ?? [])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList(),
+      answers: answersRaw,
     );
   }
 }

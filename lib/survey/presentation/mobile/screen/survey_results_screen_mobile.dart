@@ -8,8 +8,8 @@ import '../../../bloc/survey_admin_state.dart';
 import '../../../models/survey_models.dart';
 import '../../../theme/survey_mobile_theme.dart';
 import '../../widgets/survey_delete_action.dart';
-import '../../widgets/survey_rating_summary_table.dart';
-import '../../widgets/survey_results_charts.dart';
+import '../../widgets/survey_results_summary_body.dart';
+import '../../widgets/survey_user_responses_tab.dart';
 
 class SurveyResultsScreenMobile extends StatefulWidget {
   const SurveyResultsScreenMobile({super.key, required this.surveyId});
@@ -20,20 +20,60 @@ class SurveyResultsScreenMobile extends StatefulWidget {
   State<SurveyResultsScreenMobile> createState() => _SurveyResultsScreenMobileState();
 }
 
-class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile> {
+class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabs;
+
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
+    _tabs.addListener(_onTabChanged);
     _loadResults();
+  }
+
+  @override
+  void dispose() {
+    _tabs.removeListener(_onTabChanged);
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_tabs.index == 1 && !_tabs.indexIsChanging) {
+      _loadUserResponsesIfNeeded();
+    }
   }
 
   void _loadResults() {
     context.read<SurveyAdminBloc>().add(SurveyAdminLoadResults(widget.surveyId));
   }
 
+  void _loadUserResponsesIfNeeded() {
+    final state = context.read<SurveyAdminBloc>().state;
+    if (!_isCurrentResults(state)) return;
+    if (state.individualResponses.isNotEmpty) return;
+    context
+        .read<SurveyAdminBloc>()
+        .add(SurveyAdminLoadIndividualResponses(widget.surveyId));
+  }
+
   bool _isCurrentResults(SurveyAdminState state) {
     final results = state.results;
     return results != null && results.surveyId == widget.surveyId;
+  }
+
+  Future<void> _refresh() async {
+    context.read<SurveyAdminBloc>().add(SurveyAdminLoadResults(widget.surveyId));
+    await context.read<SurveyAdminBloc>().stream.firstWhere(
+          (s) => s.status != SurveyAdminLoadStatus.loading,
+        );
+    if (_tabs.index == 1) {
+      if (!mounted) return;
+      context
+          .read<SurveyAdminBloc>()
+          .add(SurveyAdminLoadIndividualResponses(widget.surveyId));
+    }
   }
 
   @override
@@ -68,10 +108,21 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile> {
             },
           ),
           IconButton(
-            onPressed: _loadResults,
+            onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabs,
+          labelColor: SurveyMobileTheme.primary,
+          unselectedLabelColor: SurveyMobileTheme.textMuted,
+          indicatorColor: SurveyMobileTheme.primary,
+          labelStyle: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 13),
+          tabs: const [
+            Tab(text: 'Summary'),
+            Tab(text: 'User responses'),
+          ],
+        ),
       ),
       body: BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
         builder: (context, state) {
@@ -96,87 +147,23 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile> {
             );
           }
 
-          final participation = results.participationRate;
-
           return RefreshIndicator(
             color: SurveyMobileTheme.primary,
-            onRefresh: () async {
-              context.read<SurveyAdminBloc>().add(SurveyAdminLoadResults(widget.surveyId));
-              await context.read<SurveyAdminBloc>().stream.firstWhere(
-                    (s) => s.status != SurveyAdminLoadStatus.loading,
-                  );
-            },
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
+            onRefresh: _refresh,
+            child: TabBarView(
+              controller: _tabs,
               children: [
-                Text(
-                  results.title,
-                  style: GoogleFonts.manrope(fontWeight: FontWeight.w900, fontSize: 22),
+                SurveyResultsSummaryBody(
+                  results: results,
+                  state: state,
+                  surveyId: widget.surveyId,
+                  mobile: true,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '${results.responseCount} response${results.responseCount == 1 ? '' : 's'} · '
-                  '${participation == null ? '—' : '${participation.toStringAsFixed(0)}%'} participation',
-                  style: GoogleFonts.manrope(color: SurveyMobileTheme.textMuted),
+                SurveyUserResponsesTab(
+                  responses: state.individualResponses,
+                  loading: state.actionInProgress && state.individualResponses.isEmpty,
+                  mobile: true,
                 ),
-                if (results.responseCount == 0) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: SurveyMobileTheme.card,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      'No employee responses yet. Pull down to refresh after submissions.',
-                      style: GoogleFonts.manrope(
-                        color: SurveyMobileTheme.textMuted,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-                if (state.detail?.status == SurveyStatus.active) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => context
-                        .read<SurveyAdminBloc>()
-                        .add(SurveyAdminCloseRequested(widget.surveyId)),
-                    child: const Text('Close survey'),
-                  ),
-                ],
-                if (state.detail?.canDelete == true &&
-                    state.detail?.status == SurveyStatus.closed) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: state.actionInProgress
-                        ? null
-                        : () => confirmDeleteSurvey(
-                              context,
-                              survey: state.detail!,
-                              popOnSuccess: true,
-                            ),
-                    icon: Icon(Icons.delete_outline_rounded, color: Colors.red.shade400),
-                    label: Text(
-                      'Delete survey',
-                      style: TextStyle(color: Colors.red.shade400),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.red.shade300),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                SurveyRatingSummaryTable(questions: results.questions, mobile: true),
-                if (results.questions.isEmpty)
-                  Text('No questions in this survey.', style: GoogleFonts.manrope())
-                else
-                  ...results.questions.map(
-                    (q) => SurveyResultChart(question: q, mobile: true),
-                  ),
               ],
             ),
           );

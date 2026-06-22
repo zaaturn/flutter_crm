@@ -5,8 +5,6 @@ import 'package:my_app/auth/screens/superadmin_users_screen.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
 import 'package:my_app/core/layout/adaptive_layout.dart';
-import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen.dart';
-import 'package:my_app/employee_dashboard/screen/employee_dashboard_screen_desktop.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/aniamtion_welcome.dart';
@@ -45,14 +43,8 @@ class AuthNavigation {
 
     // employee, client, or unknown → employee shell
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const AdaptiveLayout(
-          mobile: EmployeeDashboardScreen(),
-          tablet: EmployeeDashboardScreen(),
-          webDesktop: EmployeeDashboardDesktop(),
-        ),
-      ),
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/employeeDashboard',
       (_) => false,
     );
   }
@@ -79,19 +71,14 @@ class AuthNavigation {
 
       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
         MaterialPageRoute(
+          settings: const RouteSettings(name: '/adminDashboard'),
           builder: (routeCtx) {
             return AdaptiveLayout(
               mobile: AdminWelcomeScreen(
                 displayName: displayName,
                 onDone: () {
-                  Navigator.of(routeCtx, rootNavigator: true).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (_) => const AdaptiveLayout(
-                        mobile: AdminDashboardMobile(),
-                        tablet: AdminDashboardMobile(),
-                        webDesktop: AdminDashboardDesktop(),
-                      ),
-                    ),
+                  Navigator.of(routeCtx, rootNavigator: true).pushNamedAndRemoveUntil(
+                    '/adminDashboard',
                     (_) => false,
                   );
                 },
@@ -104,14 +91,8 @@ class AuthNavigation {
         (_) => false,
       );
     } else {
-      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => const AdaptiveLayout(
-            mobile: EmployeeDashboardScreen(),
-            tablet: EmployeeDashboardScreen(),
-            webDesktop: EmployeeDashboardDesktop(),
-          ),
-        ),
+      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+        '/employeeDashboard',
         (_) => false,
       );
     }
@@ -122,17 +103,12 @@ class AuthNavigation {
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/adminDashboard'),
         builder: (routeCtx) => AdaptiveLayout(
           mobile: AdminWelcomeScreen(
             onDone: () {
-              Navigator.of(routeCtx, rootNavigator: true).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const AdaptiveLayout(
-                    mobile: AdminDashboardMobile(),
-                    tablet: AdminDashboardMobile(),
-                    webDesktop: AdminDashboardDesktop(),
-                  ),
-                ),
+              Navigator.of(routeCtx, rootNavigator: true).pushNamedAndRemoveUntil(
+                '/adminDashboard',
                 (_) => false,
               );
             },
@@ -148,14 +124,8 @@ class AuthNavigation {
   static Future<void> openEmployeeShell(BuildContext context) async {
     await AuthService().setActiveDashboard(ActiveDashboard.employee);
     if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => const AdaptiveLayout(
-          mobile: EmployeeDashboardScreen(),
-          tablet: EmployeeDashboardScreen(),
-          webDesktop: EmployeeDashboardDesktop(),
-        ),
-      ),
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/employeeDashboard',
       (_) => false,
     );
   }

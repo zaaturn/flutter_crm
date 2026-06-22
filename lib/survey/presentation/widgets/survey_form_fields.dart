@@ -5,6 +5,7 @@ import '../../models/survey_models.dart';
 import '../../theme/survey_mobile_theme.dart';
 import '../../theme/survey_theme.dart';
 import 'survey_star_rating.dart';
+import 'survey_descriptive_text_field.dart';
 
 class SurveyFormField extends StatelessWidget {
   const SurveyFormField({
@@ -55,6 +56,12 @@ class SurveyFormField extends StatelessWidget {
             QuestionType.yesNo => _yesNo(),
             QuestionType.rating => _rating(),
             QuestionType.mcq => _mcq(),
+            QuestionType.text => SurveyDescriptiveTextField(
+                maxWords: question.maxWords,
+                value: value as String?,
+                onChanged: onChanged,
+                mobile: mobile,
+              ),
             QuestionType.unknown => const SizedBox.shrink(),
           },
           Divider(height: 32, color: divider),
