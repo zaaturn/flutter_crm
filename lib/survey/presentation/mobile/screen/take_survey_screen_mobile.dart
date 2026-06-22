@@ -113,7 +113,12 @@ class _TakeSurveyScreenMobileState extends State<TakeSurveyScreenMobile> {
                   value: _answers[q.id],
                   explanationValue: _explanations[q.id],
                   mobile: true,
-                  onChanged: (v) => setState(() => _answers[q.id] = v),
+                  onChanged: (v) => setState(() {
+                    _answers[q.id] = v;
+                    if (!q.isExplanationTriggered(v)) {
+                      _explanations.remove(q.id);
+                    }
+                  }),
                   onExplanationChanged: q.allowExplanation
                       ? (text) => setState(() => _explanations[q.id] = text)
                       : null,

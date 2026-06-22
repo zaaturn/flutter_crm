@@ -72,8 +72,11 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
     if (v == null) continue;
 
     final explanation = (explanations[q.id] ?? '').trim();
-    if (q.allowExplanation && q.supportsExplanation) {
-      if (q.requireExplanation && explanation.isEmpty) {
+    final explanationTriggered =
+        q.allowExplanation && q.supportsExplanation && q.isExplanationTriggered(v);
+
+    if (explanationTriggered) {
+      if (q.isExplanationRequired(v) && explanation.isEmpty) {
         showMessage('${q.effectiveExplanationPrompt} (required)');
         return null;
       }
@@ -84,18 +87,21 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
       }
     }
 
+    final explanationPayload =
+        explanationTriggered && explanation.isNotEmpty ? explanation : null;
+
     switch (q.questionType) {
       case QuestionType.yesNo:
         payloads.add(SurveyAnswerPayload(
           questionId: q.id,
           yesNoValue: v as bool,
-          explanationText: explanation.isEmpty ? null : explanation,
+          explanationText: explanationPayload,
         ));
       case QuestionType.rating:
         payloads.add(SurveyAnswerPayload(
           questionId: q.id,
           ratingValue: v as int,
-          explanationText: explanation.isEmpty ? null : explanation,
+          explanationText: explanationPayload,
         ));
       case QuestionType.text:
         final text = (v as String).trim();
@@ -127,7 +133,7 @@ List<SurveyAnswerPayload>? buildSurveyAnswerPayloads({
         payloads.add(SurveyAnswerPayload(
           questionId: q.id,
           selectedOptionIds: optionIds,
-          explanationText: explanation.isEmpty ? null : explanation,
+          explanationText: explanationPayload,
         ));
       case QuestionType.unknown:
         break;

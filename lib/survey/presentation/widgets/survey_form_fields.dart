@@ -26,21 +26,11 @@ class SurveyFormField extends StatelessWidget {
   final bool mobile;
   final ValueChanged<dynamic> onChanged;
 
-  bool get _hasSelection {
-    switch (question.questionType) {
-      case QuestionType.yesNo:
-        return value is bool;
-      case QuestionType.rating:
-        return value is int && (value as int) > 0;
-      case QuestionType.mcq:
-        if (value is Set && (value as Set).isNotEmpty) return true;
-        if (value is List && (value as List).isNotEmpty) return true;
-        if (value is int && value > 0) return true;
-        return false;
-      default:
-        return false;
-    }
-  }
+  bool get _showExplanation =>
+      question.allowExplanation &&
+      question.supportsExplanation &&
+      question.isExplanationTriggered(value) &&
+      onExplanationChanged != null;
 
   @override
   Widget build(BuildContext context) {
@@ -85,16 +75,13 @@ class SurveyFormField extends StatelessWidget {
               ),
             QuestionType.unknown => const SizedBox.shrink(),
           },
-          if (question.allowExplanation &&
-              question.supportsExplanation &&
-              _hasSelection &&
-              onExplanationChanged != null) ...[
+          if (_showExplanation) ...[
             const SizedBox(height: 16),
             SurveyExplanationField(
               label: question.effectiveExplanationPrompt,
               maxWords: question.explanationMaxWords,
               value: explanationValue,
-              required: question.requireExplanation,
+              required: question.isExplanationRequired(value),
               onChanged: onExplanationChanged!,
               mobile: mobile,
             ),

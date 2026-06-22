@@ -10,6 +10,16 @@ import '../../services/survey_api_service.dart';
 import '../../theme/survey_mobile_theme.dart';
 import '../../theme/survey_theme.dart';
 
+class _McqOptionField {
+  _McqOptionField({String text = '', this.triggersExplanation = false})
+      : controller = TextEditingController(text: text);
+
+  final TextEditingController controller;
+  bool triggersExplanation;
+
+  void dispose() => controller.dispose();
+}
+
 /// Bottom sheet for adding a new question (draft surveys only).
 Future<void> showSurveyQuestionAddSheet(
   BuildContext context, {
@@ -25,18 +35,24 @@ Future<void> showSurveyQuestionAddSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (ctx) => BlocProvider.value(
-      value: bloc,
-      child: Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: SurveyQuestionEditorPage(
-          surveyId: surveyId,
-          nextOrder: nextOrder,
-          mobile: mobile,
-          embeddedInSheet: true,
+    builder: (ctx) {
+      final sheetHeight = MediaQuery.sizeOf(ctx).height * 0.92;
+      return BlocProvider.value(
+        value: bloc,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
+          child: SizedBox(
+            height: sheetHeight,
+            child: SurveyQuestionEditorPage(
+              surveyId: surveyId,
+              nextOrder: nextOrder,
+              mobile: mobile,
+              embeddedInSheet: true,
+            ),
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 }
 
@@ -89,20 +105,20 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
   final _repository = SurveyRepository();
   final _textCtrl = TextEditingController();
   final _explanationPromptCtrl = TextEditingController(text: 'Please explain your answer');
+  final _explanationMaxWordsCtrl = TextEditingController(text: '250');
 
   QuestionType _type = QuestionType.yesNo;
   bool _required = true;
   bool _allowMultiple = false;
   bool _allowExplanation = false;
   bool _requireExplanation = false;
+  bool _explanationIfEnabled = false;
+  String _explanationIfYesNo = 'yes';
   bool _saving = false;
   bool _loading = false;
   String? _loadError;
   int _order = 0;
-  List<TextEditingController> _optionCtrls = [
-    TextEditingController(),
-    TextEditingController(),
-  ];
+  List<_McqOptionField> _mcqOptions = [_McqOptionField(), _McqOptionField()];
 
   @override
   void initState() {
@@ -141,15 +157,24 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
     _allowExplanation = q.allowExplanation;
     _requireExplanation = q.requireExplanation;
     _explanationPromptCtrl.text = q.explanationPrompt;
+    _explanationMaxWordsCtrl.text = '${q.explanationMaxWords}';
+    _explanationIfEnabled = q.explanationIfEnabled;
+    _explanationIfYesNo =
+        q.explanationIfYesNo == 'no' ? 'no' : 'yes';
     _order = q.order;
 
-    for (final c in _optionCtrls) {
-      c.dispose();
+    for (final o in _mcqOptions) {
+      o.dispose();
     }
     if (q.questionType == QuestionType.mcq && q.options.isNotEmpty) {
-      _optionCtrls = q.options.map((o) => TextEditingController(text: o.text)).toList();
+      _mcqOptions = q.options
+          .map((o) => _McqOptionField(
+                text: o.text,
+                triggersExplanation: o.triggersExplanation,
+              ))
+          .toList();
     } else {
-      _optionCtrls = [TextEditingController(), TextEditingController()];
+      _mcqOptions = [_McqOptionField(), _McqOptionField()];
     }
   }
 
@@ -171,14 +196,24 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
     };
     if (_type == QuestionType.mcq) {
       body['allow_multiple'] = _allowMultiple;
-      body['options'] = _optionCtrls
-          .map((c) => c.text.trim())
-          .where((s) => s.isNotEmpty)
+      final options = _mcqOptions
+          .map((o) => {
+                'text': o.controller.text.trim(),
+                'triggers_explanation': o.triggersExplanation,
+              })
+          .where((o) => (o['text'] as String).isNotEmpty)
           .toList();
-      if ((body['options'] as List).length < 2) {
+      if (options.length < 2) {
         _toast('Add at least 2 MCQ options');
         return null;
       }
+      if (_allowExplanation &&
+          _explanationIfEnabled &&
+          !options.any((o) => o['triggers_explanation'] == true)) {
+        _toast('Turn on IF explanation for at least one MCQ option');
+        return null;
+      }
+      body['options'] = options;
     }
     if (_type != QuestionType.text) {
       body['allow_explanation'] = _allowExplanation;
@@ -187,8 +222,18 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
         final prompt = _explanationPromptCtrl.text.trim();
         body['explanation_prompt'] =
             prompt.isEmpty ? 'Please explain your answer' : prompt;
+        final maxWords = int.tryParse(_explanationMaxWordsCtrl.text.trim());
+        body['explanation_max_words'] = (maxWords != null && maxWords > 0) ? maxWords : 250;
+        body['explanation_if_enabled'] = _explanationIfEnabled;
+        if (_explanationIfEnabled && _type == QuestionType.yesNo) {
+          body['explanation_if_yes_no'] = _explanationIfYesNo;
+        } else {
+          body['explanation_if_yes_no'] = '';
+        }
       } else {
         body['require_explanation'] = false;
+        body['explanation_if_enabled'] = false;
+        body['explanation_if_yes_no'] = '';
       }
     }
     return body;
@@ -262,140 +307,261 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
   void dispose() {
     _textCtrl.dispose();
     _explanationPromptCtrl.dispose();
-    for (final c in _optionCtrls) {
-      c.dispose();
+    _explanationMaxWordsCtrl.dispose();
+    for (final o in _mcqOptions) {
+      o.dispose();
     }
     super.dispose();
   }
 
-  void _addOption() => setState(() => _optionCtrls.add(TextEditingController()));
+  void _addOption() => setState(() => _mcqOptions.add(_McqOptionField()));
 
-  Widget _buildForm() {
-    final accent = widget.mobile ? SurveyMobileTheme.primaryDark : SurveyTheme.purple;
+  Color get _accent => widget.mobile ? SurveyMobileTheme.primaryDark : SurveyTheme.purple;
 
+  Widget _saveButton() {
+    return FilledButton(
+      onPressed: _saving ? null : _save,
+      style: FilledButton.styleFrom(
+        backgroundColor: _accent,
+        minimumSize: const Size.fromHeight(48),
+      ),
+      child: _saving
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            )
+          : Text(widget.isEdit ? 'Save changes' : 'Save Question'),
+    );
+  }
+
+  Widget _buildExplanationSection() {
+    if (_type == QuestionType.text || !_allowExplanation) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _requireExplanation,
+          onChanged: (v) => setState(() => _requireExplanation = v),
+          title: const Text('Require explanation'),
+        ),
+        TextField(
+          controller: _explanationPromptCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Explanation prompt',
+            hintText: 'Please explain your answer',
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _explanationMaxWordsCtrl,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Max words',
+            hintText: '250',
+          ),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _explanationIfEnabled,
+          onChanged: (v) => setState(() => _explanationIfEnabled = v),
+          title: const Text('IF condition'),
+          subtitle: const Text(
+            'When on, the explanation box opens only for the answer or option you select below',
+          ),
+        ),
+        if (_explanationIfEnabled && _type == QuestionType.yesNo) ...[
+          const SizedBox(height: 4),
+          DropdownButtonFormField<String>(
+            value: _explanationIfYesNo,
+            decoration: const InputDecoration(
+              labelText: 'Open explanation when employee selects',
+            ),
+            items: const [
+              DropdownMenuItem(value: 'yes', child: Text('Yes')),
+              DropdownMenuItem(value: 'no', child: Text('No')),
+            ],
+            onChanged: (v) {
+              if (v != null) setState(() => _explanationIfYesNo = v);
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (_explanationIfEnabled && _type == QuestionType.rating) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Explanation opens after the employee selects any rating.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<Widget> _buildFormFields() {
+    return [
+      if (widget.embeddedInSheet)
+        Text(
+          'Add Question',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900, fontSize: 18),
+        ),
+      if (widget.embeddedInSheet) const SizedBox(height: 12),
+      TextField(
+        controller: _textCtrl,
+        decoration: const InputDecoration(labelText: 'Question text'),
+      ),
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final entry in const [
+            (QuestionType.yesNo, 'Yes/No'),
+            (QuestionType.rating, 'Rating'),
+            (QuestionType.mcq, 'MCQ'),
+            (QuestionType.text, 'Descriptive text'),
+          ])
+            FilterChip(
+              label: Text(entry.$2),
+              selected: _type == entry.$1,
+              onSelected: (_) => setState(() {
+                _type = entry.$1;
+                if (_type == QuestionType.text) {
+                  _allowExplanation = false;
+                  _requireExplanation = false;
+                  _explanationIfEnabled = false;
+                }
+              }),
+            ),
+        ],
+      ),
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        value: _required,
+        onChanged: (v) => setState(() => _required = v),
+        title: const Text('Required'),
+      ),
+      if (_type == QuestionType.mcq) ...[
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _allowMultiple,
+          onChanged: (v) => setState(() => _allowMultiple = v),
+          title: const Text('Allow multiple selections'),
+        ),
+        ..._mcqOptions.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final field = entry.value;
+          final showOptionFlag = _allowExplanation && _explanationIfEnabled;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: field.controller,
+                  decoration: InputDecoration(labelText: 'Option ${idx + 1}'),
+                ),
+                if (showOptionFlag)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: field.triggersExplanation,
+                    onChanged: (v) =>
+                        setState(() => field.triggersExplanation = v == true),
+                    title: const Text(
+                      'Opens explanation',
+                      style: TextStyle(fontSize: 13),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }),
+        TextButton(onPressed: _addOption, child: const Text('Add option')),
+      ],
+      if (_type != QuestionType.text) ...[
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          value: _allowExplanation,
+          onChanged: (v) => setState(() {
+            _allowExplanation = v;
+            if (!v) {
+              _requireExplanation = false;
+              _explanationIfEnabled = false;
+            }
+          }),
+          title: const Text('Allow explanation'),
+          subtitle: const Text('Show a follow-up text box after the employee answers'),
+        ),
+        _buildExplanationSection(),
+      ],
+    ];
+  }
+
+  Widget _buildBodyContent() {
     if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.all(48),
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_loadError != null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_loadError!, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: _loadQuestion, child: const Text('Retry')),
-          ],
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_loadError!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              FilledButton(onPressed: _loadQuestion, child: const Text('Retry')),
+            ],
+          ),
         ),
       );
     }
 
+    if (widget.embeddedInSheet) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: _buildFormFields(),
+              ),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: _saveButton(),
+            ),
+          ),
+        ],
+      );
+    }
+
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(20, widget.embeddedInSheet ? 20 : 8, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (widget.embeddedInSheet)
-            Text(
-              'Add Question',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900, fontSize: 18),
-            ),
-          if (widget.embeddedInSheet) const SizedBox(height: 12),
-          TextField(
-            controller: _textCtrl,
-            decoration: const InputDecoration(labelText: 'Question text'),
-          ),
+          ..._buildFormFields(),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final entry in const [
-                (QuestionType.yesNo, 'Yes/No'),
-                (QuestionType.rating, 'Rating'),
-                (QuestionType.mcq, 'MCQ'),
-                (QuestionType.text, 'Descriptive text'),
-              ])
-                FilterChip(
-                  label: Text(entry.$2),
-                  selected: _type == entry.$1,
-                  onSelected: (_) => setState(() {
-                    _type = entry.$1;
-                    if (_type == QuestionType.text) {
-                      _allowExplanation = false;
-                      _requireExplanation = false;
-                    }
-                  }),
-                ),
-            ],
-          ),
-          SwitchListTile(
-            value: _required,
-            onChanged: (v) => setState(() => _required = v),
-            title: const Text('Required'),
-          ),
-          if (_type == QuestionType.mcq) ...[
-            SwitchListTile(
-              value: _allowMultiple,
-              onChanged: (v) => setState(() => _allowMultiple = v),
-              title: const Text('Allow multiple selections'),
-            ),
-            ..._optionCtrls.map(
-              (c) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TextField(
-                  controller: c,
-                  decoration: const InputDecoration(labelText: 'Option'),
-                ),
-              ),
-            ),
-            TextButton(onPressed: _addOption, child: const Text('Add option')),
-          ],
-          if (_type != QuestionType.text) ...[
-            SwitchListTile(
-              value: _allowExplanation,
-              onChanged: (v) => setState(() {
-                _allowExplanation = v;
-                if (!v) _requireExplanation = false;
-              }),
-              title: const Text('Ask for explanation'),
-              subtitle: const Text('Show a follow-up text box after the employee answers'),
-            ),
-            if (_allowExplanation) ...[
-              SwitchListTile(
-                value: _requireExplanation,
-                onChanged: (v) => setState(() => _requireExplanation = v),
-                title: const Text('Explanation required'),
-              ),
-              TextField(
-                controller: _explanationPromptCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Explanation prompt',
-                  hintText: 'Please explain your answer',
-                ),
-              ),
-              const SizedBox(height: 8),
-            ],
-          ],
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              minimumSize: const Size.fromHeight(48),
-            ),
-            child: _saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : Text(widget.isEdit ? 'Save changes' : 'Save Question'),
-          ),
+          _saveButton(),
         ],
       ),
     );
@@ -404,7 +570,7 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
   @override
   Widget build(BuildContext context) {
     if (widget.embeddedInSheet) {
-      return _buildForm();
+      return _buildBodyContent();
     }
 
     final bg = widget.mobile ? SurveyMobileTheme.background : SurveyTheme.background;
@@ -419,7 +585,7 @@ class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
         ),
       ),
-      body: _buildForm(),
+      body: _buildBodyContent(),
     );
   }
 }

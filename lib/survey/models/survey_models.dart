@@ -112,8 +112,16 @@ bool parseAlreadySubmittedFlag(Map<String, dynamic> json) {
 class SurveyOption {
   final int id;
   final String text;
+  final bool requireExplanation;
 
-  const SurveyOption({required this.id, required this.text});
+  const SurveyOption({
+    required this.id,
+    required this.text,
+    this.requireExplanation = false,
+  });
+
+  /// API field name on form/read payloads.
+  bool get triggersExplanation => requireExplanation;
 
   factory SurveyOption.fromJson(Map<String, dynamic> json) {
     int parseId(dynamic v) {
@@ -124,6 +132,8 @@ class SurveyOption {
     return SurveyOption(
       id: parseId(json['id'] ?? json['option_id'] ?? json['pk']),
       text: json['text']?.toString() ?? json['label']?.toString() ?? '',
+      requireExplanation: json['triggers_explanation'] == true ||
+          json['require_explanation'] == true,
     );
   }
 }
@@ -140,6 +150,8 @@ class SurveyQuestion {
   final bool requireExplanation;
   final String explanationPrompt;
   final int explanationMaxWords;
+  final bool explanationIfEnabled;
+  final String explanationIfYesNo;
   final List<SurveyOption> options;
 
   const SurveyQuestion({
@@ -154,6 +166,8 @@ class SurveyQuestion {
     this.requireExplanation = false,
     this.explanationPrompt = 'Please explain your answer',
     this.explanationMaxWords = 250,
+    this.explanationIfEnabled = false,
+    this.explanationIfYesNo = '',
     this.options = const [],
   });
 
@@ -165,6 +179,71 @@ class SurveyQuestion {
   String get effectiveExplanationPrompt {
     final p = explanationPrompt.trim();
     return p.isEmpty ? 'Please explain your answer' : p;
+  }
+
+  /// Mirrors backend `_explanation_triggered` for employee form display/validation.
+  bool isExplanationTriggered(dynamic value) {
+    if (!allowExplanation || !supportsExplanation) return false;
+
+    if (!explanationIfEnabled) {
+      return _answerHasSelection(value);
+    }
+
+    switch (questionType) {
+      case QuestionType.yesNo:
+        if (value is! bool) return false;
+        final trigger = explanationIfYesNo.toLowerCase();
+        if (trigger == 'yes') return value == true;
+        if (trigger == 'no') return value == false;
+        return false;
+
+      case QuestionType.rating:
+        final rating = value is int ? value : int.tryParse('$value');
+        return rating != null && rating > 0;
+
+      case QuestionType.mcq:
+        final ids = _selectedOptionIds(value);
+        if (ids.isEmpty) return false;
+        return options.any((o) => ids.contains(o.id) && o.requireExplanation);
+
+      default:
+        return false;
+    }
+  }
+
+  bool _answerHasSelection(dynamic value) {
+    switch (questionType) {
+      case QuestionType.yesNo:
+        return value is bool;
+      case QuestionType.rating:
+        final rating = value is int ? value : int.tryParse('$value');
+        return rating != null && rating > 0;
+      case QuestionType.mcq:
+        return _selectedOptionIds(value).isNotEmpty;
+      default:
+        return false;
+    }
+  }
+
+  bool isExplanationRequired(dynamic value) =>
+      isExplanationTriggered(value) && requireExplanation;
+
+  static Set<int> _selectedOptionIds(dynamic value) {
+    if (value is Set) {
+      return value
+          .map((e) => e is int ? e : int.tryParse('$e') ?? 0)
+          .where((id) => id > 0)
+          .toSet();
+    }
+    if (value is List) {
+      return value
+          .map((e) => e is int ? e : int.tryParse('$e') ?? 0)
+          .where((id) => id > 0)
+          .toSet();
+    }
+    final single = value is int ? value : int.tryParse('$value');
+    if (single != null && single > 0) return {single};
+    return {};
   }
 
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
@@ -201,6 +280,9 @@ class SurveyQuestion {
       explanationMaxWords: json['explanation_max_words'] is int
           ? json['explanation_max_words'] as int
           : int.tryParse('${json['explanation_max_words']}') ?? 250,
+      explanationIfEnabled: json['explanation_if_enabled'] == true,
+      explanationIfYesNo:
+          (json['explanation_if_yes_no']?.toString() ?? '').toLowerCase(),
       options: opts,
     );
   }
