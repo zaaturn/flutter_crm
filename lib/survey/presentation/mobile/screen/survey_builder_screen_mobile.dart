@@ -11,7 +11,7 @@ import '../../../models/survey_models.dart';
 import '../../../theme/survey_mobile_theme.dart';
 import '../../../theme/survey_theme.dart';
 import '../../widgets/survey_delete_action.dart';
-import '../../widgets/survey_question_editor_sheet.dart';
+import '../../widgets/survey_question_editor.dart';
 import '../../widgets/survey_audience_section.dart';
 import 'survey_results_screen_mobile.dart';
 
@@ -220,48 +220,69 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
               const SizedBox(height: 16),
               Text('Questions', style: GoogleFonts.manrope(fontWeight: FontWeight.w900, fontSize: 16)),
               const SizedBox(height: 10),
-              ...detail.questions.map((q) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: SurveyMobileTheme.card,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(q.text, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
-                              Text(
-                                [
-                                  questionTypeLabel(q.questionType, allowMultiple: q.allowMultiple),
-                                  if (q.isRequired) 'Required',
-                                  if (q.allowExplanation)
-                                    q.requireExplanation ? 'Explanation required' : 'Ask explanation',
-                                ].join(' · '),
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
-                                  color: SurveyMobileTheme.textMuted,
-                                ),
+              ...detail.questions.map((q) {
+                final card = Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: SurveyMobileTheme.card,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(q.text, style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
+                            Text(
+                              [
+                                questionTypeLabel(q.questionType, allowMultiple: q.allowMultiple),
+                                if (q.isRequired) 'Required',
+                                if (q.allowExplanation)
+                                  q.requireExplanation ? 'Explanation required' : 'Ask explanation',
+                              ].join(' · '),
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: SurveyMobileTheme.textMuted,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        if (editable)
-                          IconButton(
-                            onPressed: () => context.read<SurveyAdminBloc>().add(
-                                  SurveyAdminDeleteQuestion(widget.surveyId, q.id),
-                                ),
-                            icon: const Icon(Icons.delete_outline_rounded),
-                          ),
+                      ),
+                      if (editable) ...[
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: SurveyMobileTheme.textMuted.withValues(alpha: 0.6),
+                        ),
+                        IconButton(
+                          onPressed: () => context.read<SurveyAdminBloc>().add(
+                                SurveyAdminDeleteQuestion(widget.surveyId, q.id),
+                              ),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                        ),
                       ],
+                    ],
+                  ),
+                );
+                if (!editable) return card;
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => openSurveyQuestionEditor(
+                      context,
+                      surveyId: widget.surveyId,
+                      questionId: q.id,
+                      mobile: true,
                     ),
-                  )),
+                    child: card,
+                  ),
+                );
+              }),
               if (editable)
                 OutlinedButton.icon(
-                  onPressed: () => showSurveyQuestionEditorSheet(
+                  onPressed: () => showSurveyQuestionAddSheet(
                     context,
                     surveyId: widget.surveyId,
                     nextOrder: detail.questions.length,

@@ -10,7 +10,7 @@ import '../../bloc/survey_admin_state.dart';
 import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
 import '../widgets/survey_delete_action.dart';
-import '../widgets/survey_question_editor_sheet.dart';
+import '../widgets/survey_question_editor.dart';
 import '../widgets/survey_audience_section.dart';
 import 'survey_results_screen.dart';
 
@@ -300,6 +300,13 @@ class _SurveyBuilderScreenState extends State<SurveyBuilderScreen> {
                     (q) => _QuestionRow(
                       question: q,
                       editable: editable,
+                      onTap: editable
+                          ? () => openSurveyQuestionEditor(
+                                context,
+                                surveyId: widget.surveyId,
+                                questionId: q.id,
+                              )
+                          : null,
                       onDelete: () => context.read<SurveyAdminBloc>().add(
                             SurveyAdminDeleteQuestion(widget.surveyId, q.id),
                           ),
@@ -308,7 +315,7 @@ class _SurveyBuilderScreenState extends State<SurveyBuilderScreen> {
                   if (editable) ...[
                     const SizedBox(height: 8),
                     _AddQuestionArea(
-                      onTap: () => showSurveyQuestionEditorSheet(
+                      onTap: () => showSurveyQuestionAddSheet(
                         context,
                         surveyId: widget.surveyId,
                         nextOrder: detail.questions.length,
@@ -479,11 +486,13 @@ class _QuestionRow extends StatelessWidget {
     required this.question,
     required this.editable,
     required this.onDelete,
+    this.onTap,
   });
 
   final SurveyQuestion question;
   final bool editable;
   final VoidCallback onDelete;
+  final VoidCallback? onTap;
 
   String get _typeLabel =>
       questionTypeLabel(question.questionType, allowMultiple: question.allowMultiple);
@@ -499,7 +508,7 @@ class _QuestionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final row = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: const BoxDecoration(
@@ -530,6 +539,12 @@ class _QuestionRow extends StatelessWidget {
               ],
             ),
           ),
+          if (editable && onTap != null)
+            Icon(
+              Icons.chevron_right_rounded,
+              color: SurveyTheme.textMuted.withValues(alpha: 0.6),
+              size: 22,
+            ),
           if (editable)
             IconButton(
               onPressed: onDelete,
@@ -537,6 +552,16 @@ class _QuestionRow extends StatelessWidget {
               color: SurveyTheme.textMuted,
             ),
         ],
+      ),
+    );
+
+    if (onTap == null) return row;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: row,
       ),
     );
   }

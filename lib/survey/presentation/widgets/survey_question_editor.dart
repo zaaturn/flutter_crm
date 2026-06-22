@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../bloc/survey_admin_bloc.dart';
 import '../../bloc/survey_admin_event.dart';
 import '../../models/survey_models.dart';
+import '../../repository/survey_repository.dart';
+import '../../services/survey_api_service.dart';
 import '../../theme/survey_mobile_theme.dart';
 import '../../theme/survey_theme.dart';
 
-Future<void> showSurveyQuestionEditorSheet(
+/// Bottom sheet for adding a new question (draft surveys only).
+Future<void> showSurveyQuestionAddSheet(
   BuildContext context, {
   required int surveyId,
   required int nextOrder,
@@ -25,9 +29,33 @@ Future<void> showSurveyQuestionEditorSheet(
       value: bloc,
       child: Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-        child: _QuestionEditor(
+        child: SurveyQuestionEditorPage(
           surveyId: surveyId,
           nextOrder: nextOrder,
+          mobile: mobile,
+          embeddedInSheet: true,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Full-screen editor — loads question via GET, saves with PATCH.
+Future<void> openSurveyQuestionEditor(
+  BuildContext context, {
+  required int surveyId,
+  required int questionId,
+  bool mobile = false,
+}) async {
+  final bloc = context.read<SurveyAdminBloc>();
+  await Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: SurveyQuestionEditorPage(
+          surveyId: surveyId,
+          questionId: questionId,
+          nextOrder: 0,
           mobile: mobile,
         ),
       ),
@@ -35,47 +63,111 @@ Future<void> showSurveyQuestionEditorSheet(
   );
 }
 
-class _QuestionEditor extends StatefulWidget {
-  const _QuestionEditor({
+class SurveyQuestionEditorPage extends StatefulWidget {
+  const SurveyQuestionEditorPage({
+    super.key,
     required this.surveyId,
+    this.questionId,
     required this.nextOrder,
-    required this.mobile,
+    this.mobile = false,
+    this.embeddedInSheet = false,
   });
 
   final int surveyId;
+  final int? questionId;
   final int nextOrder;
   final bool mobile;
+  final bool embeddedInSheet;
+
+  bool get isEdit => questionId != null;
 
   @override
-  State<_QuestionEditor> createState() => _QuestionEditorState();
+  State<SurveyQuestionEditorPage> createState() => _SurveyQuestionEditorPageState();
 }
 
-class _QuestionEditorState extends State<_QuestionEditor> {
-  QuestionType _type = QuestionType.yesNo;
+class _SurveyQuestionEditorPageState extends State<SurveyQuestionEditorPage> {
+  final _repository = SurveyRepository();
   final _textCtrl = TextEditingController();
   final _explanationPromptCtrl = TextEditingController(text: 'Please explain your answer');
+
+  QuestionType _type = QuestionType.yesNo;
   bool _required = true;
   bool _allowMultiple = false;
   bool _allowExplanation = false;
   bool _requireExplanation = false;
   bool _saving = false;
-  final _optionCtrls = [TextEditingController(), TextEditingController()];
+  bool _loading = false;
+  String? _loadError;
+  int _order = 0;
+  List<TextEditingController> _optionCtrls = [
+    TextEditingController(),
+    TextEditingController(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEdit) {
+      _loadQuestion();
+    } else {
+      _order = widget.nextOrder;
+    }
+  }
+
+  Future<void> _loadQuestion() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final q = await _repository.getQuestion(widget.surveyId, widget.questionId!);
+      if (!mounted) return;
+      _applyQuestion(q);
+      setState(() => _loading = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _loadError = SurveyApiService.messageFrom(e);
+      });
+    }
+  }
+
+  void _applyQuestion(SurveyQuestion q) {
+    _textCtrl.text = q.text;
+    _type = q.questionType;
+    _required = q.isRequired;
+    _allowMultiple = q.allowMultiple;
+    _allowExplanation = q.allowExplanation;
+    _requireExplanation = q.requireExplanation;
+    _explanationPromptCtrl.text = q.explanationPrompt;
+    _order = q.order;
+
+    for (final c in _optionCtrls) {
+      c.dispose();
+    }
+    if (q.questionType == QuestionType.mcq && q.options.isNotEmpty) {
+      _optionCtrls = q.options.map((o) => TextEditingController(text: o.text)).toList();
+    } else {
+      _optionCtrls = [TextEditingController(), TextEditingController()];
+    }
+  }
 
   void _toast(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<void> _save() async {
+  Map<String, dynamic>? _buildBody() {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) {
       _toast('Enter question text');
-      return;
+      return null;
     }
     final body = <String, dynamic>{
       'text': text,
       'question_type': questionTypeToApi(_type),
       'is_required': _required,
-      'order': widget.nextOrder,
+      'order': _order,
     };
     if (_type == QuestionType.mcq) {
       body['allow_multiple'] = _allowMultiple;
@@ -85,7 +177,7 @@ class _QuestionEditorState extends State<_QuestionEditor> {
           .toList();
       if ((body['options'] as List).length < 2) {
         _toast('Add at least 2 MCQ options');
-        return;
+        return null;
       }
     }
     if (_type != QuestionType.text) {
@@ -95,16 +187,56 @@ class _QuestionEditorState extends State<_QuestionEditor> {
         final prompt = _explanationPromptCtrl.text.trim();
         body['explanation_prompt'] =
             prompt.isEmpty ? 'Please explain your answer' : prompt;
+      } else {
+        body['require_explanation'] = false;
       }
     }
+    return body;
+  }
+
+  Future<void> _save() async {
+    final body = _buildBody();
+    if (body == null) return;
 
     setState(() => _saving = true);
     final bloc = context.read<SurveyAdminBloc>();
-    final beforeCount = bloc.state.detail?.questions.length ?? 0;
-    bloc.add(SurveyAdminAddQuestion(widget.surveyId, body));
+
+    if (widget.isEdit) {
+      bloc.add(SurveyAdminUpdateQuestion(widget.surveyId, widget.questionId!, body));
+    } else {
+      final beforeCount = bloc.state.detail?.questions.length ?? 0;
+      bloc.add(SurveyAdminAddQuestion(widget.surveyId, body));
+
+      try {
+        if (!bloc.state.actionInProgress) {
+          await bloc.stream.firstWhere((s) => s.actionInProgress);
+        }
+        await bloc.stream.firstWhere((s) => !s.actionInProgress);
+
+        if (!mounted) return;
+        final err = bloc.state.error;
+        final afterCount = bloc.state.detail?.questions.length ?? 0;
+        if (err != null) {
+          _toast(err);
+          setState(() => _saving = false);
+          return;
+        }
+        if (afterCount <= beforeCount) {
+          _toast('Question was not added. Check survey is still in draft.');
+          setState(() => _saving = false);
+          return;
+        }
+        Navigator.pop(context);
+      } catch (_) {
+        if (mounted) {
+          _toast('Could not save question');
+          setState(() => _saving = false);
+        }
+      }
+      return;
+    }
 
     try {
-      // Wait for in-flight save (skip matching idle state before handler runs).
       if (!bloc.state.actionInProgress) {
         await bloc.stream.firstWhere((s) => s.actionInProgress);
       }
@@ -112,14 +244,8 @@ class _QuestionEditorState extends State<_QuestionEditor> {
 
       if (!mounted) return;
       final err = bloc.state.error;
-      final afterCount = bloc.state.detail?.questions.length ?? 0;
       if (err != null) {
         _toast(err);
-        setState(() => _saving = false);
-        return;
-      }
-      if (afterCount <= beforeCount) {
-        _toast('Question was not added. Check survey is still in draft.');
         setState(() => _saving = false);
         return;
       }
@@ -144,18 +270,41 @@ class _QuestionEditorState extends State<_QuestionEditor> {
 
   void _addOption() => setState(() => _optionCtrls.add(TextEditingController()));
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildForm() {
     final accent = widget.mobile ? SurveyMobileTheme.primaryDark : SurveyTheme.purple;
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
+
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.all(48),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_loadError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Text('Add Question', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          const SizedBox(height: 12),
+            Text(_loadError!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: _loadQuestion, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(20, widget.embeddedInSheet ? 20 : 8, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (widget.embeddedInSheet)
+            Text(
+              'Add Question',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+          if (widget.embeddedInSheet) const SizedBox(height: 12),
           TextField(
             controller: _textCtrl,
             decoration: const InputDecoration(labelText: 'Question text'),
@@ -195,10 +344,15 @@ class _QuestionEditorState extends State<_QuestionEditor> {
               onChanged: (v) => setState(() => _allowMultiple = v),
               title: const Text('Allow multiple selections'),
             ),
-            ..._optionCtrls.map((c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TextField(controller: c, decoration: const InputDecoration(labelText: 'Option')),
-                )),
+            ..._optionCtrls.map(
+              (c) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TextField(
+                  controller: c,
+                  decoration: const InputDecoration(labelText: 'Option'),
+                ),
+              ),
+            ),
             TextButton(onPressed: _addOption, child: const Text('Add option')),
           ],
           if (_type != QuestionType.text) ...[
@@ -230,18 +384,42 @@ class _QuestionEditorState extends State<_QuestionEditor> {
           const SizedBox(height: 12),
           FilledButton(
             onPressed: _saving ? null : _save,
-            style: FilledButton.styleFrom(backgroundColor: accent),
+            style: FilledButton.styleFrom(
+              backgroundColor: accent,
+              minimumSize: const Size.fromHeight(48),
+            ),
             child: _saving
                 ? const SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
-                : const Text('Save Question'),
+                : Text(widget.isEdit ? 'Save changes' : 'Save Question'),
           ),
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.embeddedInSheet) {
+      return _buildForm();
+    }
+
+    final bg = widget.mobile ? SurveyMobileTheme.background : SurveyTheme.background;
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: AppBar(
+        backgroundColor: bg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          widget.isEdit ? 'Edit question' : 'Add question',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
         ),
       ),
+      body: _buildForm(),
     );
   }
 }

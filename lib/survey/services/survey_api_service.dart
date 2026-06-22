@@ -53,6 +53,11 @@ class SurveyApiService {
     return SurveyQuestion.fromJson(_asMap(res.data));
   }
 
+  Future<SurveyQuestion> getQuestion(int surveyId, int questionId) async {
+    final res = await _dio.get('$_base/$surveyId/questions/$questionId/');
+    return SurveyQuestion.fromJson(_asMap(res.data));
+  }
+
   Future<SurveyQuestion> updateQuestion(
     int surveyId,
     int questionId,

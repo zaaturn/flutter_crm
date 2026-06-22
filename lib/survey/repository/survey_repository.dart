@@ -23,6 +23,9 @@ class SurveyRepository {
   Future<SurveyQuestion> addQuestion(int surveyId, Map<String, dynamic> body) =>
       _api.addQuestion(surveyId, body);
 
+  Future<SurveyQuestion> getQuestion(int surveyId, int questionId) =>
+      _api.getQuestion(surveyId, questionId);
+
   Future<SurveyQuestion> updateQuestion(
     int surveyId,
     int questionId,
