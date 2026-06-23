@@ -10,6 +10,7 @@ import '../../../theme/survey_mobile_theme.dart';
 import '../../widgets/survey_delete_action.dart';
 import '../../widgets/survey_results_summary_body.dart';
 import '../../widgets/survey_user_responses_tab.dart';
+import '../../../utils/survey_pdf_download.dart';
 
 class SurveyResultsScreenMobile extends StatefulWidget {
   const SurveyResultsScreenMobile({super.key, required this.surveyId});
@@ -86,6 +87,15 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
         elevation: 0,
         title: Text('Results', style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
         actions: [
+          IconButton(
+            onPressed: () => SurveyPdfDownload.downloadFullReport(
+              context,
+              surveyId: widget.surveyId,
+            ),
+            icon: const Icon(Icons.download_rounded),
+            color: SurveyMobileTheme.primary,
+            tooltip: 'Download full report',
+          ),
           BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
             builder: (context, state) {
               final results = _isCurrentResults(state) ? state.results : null;
@@ -160,9 +170,20 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
                   mobile: true,
                 ),
                 SurveyUserResponsesTab(
+                  surveyId: widget.surveyId,
                   responses: state.individualResponses,
                   loading: state.actionInProgress && state.individualResponses.isEmpty,
                   mobile: true,
+                  onDownloadIndividual: (response) {
+                    final responseId = response.responseId;
+                    if (responseId == null) return Future.value();
+                    return SurveyPdfDownload.downloadIndividualReport(
+                      context,
+                      surveyId: widget.surveyId,
+                      responseId: responseId,
+                      employeeName: response.employeeName,
+                    );
+                  },
                 ),
               ],
             ),

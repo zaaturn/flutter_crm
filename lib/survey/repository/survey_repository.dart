@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../models/survey_models.dart';
 import '../services/survey_api_service.dart';
 
@@ -44,6 +46,15 @@ class SurveyRepository {
 
   Future<List<SurveyIndividualResponse>> getIndividualResponses(int id) =>
       _api.getIndividualResponses(id);
+
+  Future<Uint8List> downloadFullReportPdf(int surveyId) =>
+      _api.downloadFullReportPdf(surveyId);
+
+  Future<Uint8List> downloadIndividualReportPdf(
+    int surveyId,
+    int responseId,
+  ) =>
+      _api.downloadIndividualReportPdf(surveyId, responseId);
 
   Future<List<SurveySummary>> getActiveSurveys() => _api.getActiveSurveys();
 

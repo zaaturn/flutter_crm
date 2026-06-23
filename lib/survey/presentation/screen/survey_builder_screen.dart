@@ -9,7 +9,6 @@ import '../../bloc/survey_admin_event.dart';
 import '../../bloc/survey_admin_state.dart';
 import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
-import '../widgets/survey_delete_action.dart';
 import '../widgets/survey_question_editor.dart';
 import '../widgets/survey_audience_section.dart';
 import 'survey_results_screen.dart';
@@ -160,37 +159,6 @@ class _SurveyBuilderScreenState extends State<SurveyBuilderScreen> {
           'Create Survey',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
         ),
-        actions: [
-          BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
-            builder: (context, state) {
-              final detail =
-                  state.detail?.id == widget.surveyId ? state.detail : null;
-              if (detail == null || !detail.canDelete) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                onPressed: state.actionInProgress
-                    ? null
-                    : () => confirmDeleteSurvey(
-                          context,
-                          survey: detail,
-                          popOnSuccess: true,
-                        ),
-                icon: const Icon(Icons.delete_outline_rounded),
-                color: SurveyTheme.textMuted,
-                tooltip: 'Delete survey',
-              );
-            },
-          ),
-          TextButton(
-            onPressed: _saveMeta,
-            child: Text(
-              'Save draft',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: BlocConsumer<SurveyAdminBloc, SurveyAdminState>(
         listener: (context, state) {

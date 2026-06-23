@@ -10,7 +10,6 @@ import '../../../bloc/survey_admin_state.dart';
 import '../../../models/survey_models.dart';
 import '../../../theme/survey_mobile_theme.dart';
 import '../../../theme/survey_theme.dart';
-import '../../widgets/survey_delete_action.dart';
 import '../../widgets/survey_question_editor.dart';
 import '../../widgets/survey_audience_section.dart';
 import 'survey_results_screen_mobile.dart';
@@ -119,29 +118,6 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text('Build Survey', style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
-        actions: [
-          BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
-            builder: (context, state) {
-              final detail =
-                  state.detail?.id == widget.surveyId ? state.detail : null;
-              if (detail == null || !detail.canDelete) {
-                return const SizedBox.shrink();
-              }
-              return IconButton(
-                onPressed: state.actionInProgress
-                    ? null
-                    : () => confirmDeleteSurvey(
-                          context,
-                          survey: detail,
-                          popOnSuccess: true,
-                        ),
-                icon: const Icon(Icons.delete_outline_rounded),
-                color: SurveyTheme.textMuted,
-                tooltip: 'Delete survey',
-              );
-            },
-          ),
-        ],
       ),
       bottomNavigationBar: BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
         builder: (context, state) {
@@ -290,14 +266,6 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
                   ),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Add Question'),
-                ),
-              const SizedBox(height: 8),
-              if (editable)
-                TextButton(
-                  onPressed: () => context.read<SurveyAdminBloc>().add(
-                        SurveyAdminUpdateRequested(widget.surveyId, _payload()),
-                      ),
-                  child: Text('Save draft', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
                 ),
             ],
           );

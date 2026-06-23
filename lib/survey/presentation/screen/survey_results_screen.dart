@@ -9,6 +9,7 @@ import '../../models/survey_models.dart';
 import '../widgets/survey_delete_action.dart';
 import '../widgets/survey_results_summary_body.dart';
 import '../widgets/survey_user_responses_tab.dart';
+import '../../utils/survey_pdf_download.dart';
 
 class SurveyResultsScreen extends StatefulWidget {
   const SurveyResultsScreen({super.key, required this.surveyId});
@@ -128,6 +129,24 @@ class _SurveyResultsScreenState extends State<SurveyResultsScreen>
                 ),
               );
             },
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFFEEF2FF),
+                highlightColor: const Color(0xFFE0E7FF),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                side: const BorderSide(color: Color(0xFFE0E7FF), width: 1),
+                padding: const EdgeInsets.all(10),
+              ),
+              onPressed: () => SurveyPdfDownload.downloadFullReport(
+                context,
+                surveyId: widget.surveyId,
+              ),
+              icon: const Icon(Icons.download_rounded, color: Color(0xFF4F46E5), size: 18),
+              tooltip: 'Download full report',
+            ),
           ),
           Container(
             margin: const EdgeInsets.only(right: 24),
@@ -302,9 +321,20 @@ class _SurveyResultsScreenState extends State<SurveyResultsScreen>
                         surveyId: widget.surveyId,
                       ),
                       SurveyUserResponsesTab(
+                        surveyId: widget.surveyId,
                         responses: state.individualResponses,
                         loading: state.actionInProgress && state.individualResponses.isEmpty,
                         onRefresh: _loadUserResponsesIfNeeded,
+                        onDownloadIndividual: (response) {
+                          final responseId = response.responseId;
+                          if (responseId == null) return Future.value();
+                          return SurveyPdfDownload.downloadIndividualReport(
+                            context,
+                            surveyId: widget.surveyId,
+                            responseId: responseId,
+                            employeeName: response.employeeName,
+                          );
+                        },
                       ),
                     ],
                   ),

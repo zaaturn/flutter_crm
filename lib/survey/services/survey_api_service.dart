@@ -1,5 +1,6 @@
-import 'package:dio/dio.dart';
+import 'dart:typed_data';
 
+import 'package:dio/dio.dart';
 import 'package:my_app/services/api_client.dart';
 
 import '../models/survey_models.dart';
@@ -97,6 +98,45 @@ class SurveyApiService {
           .toList();
     }
     return _parseList(res.data, SurveyIndividualResponse.fromJson);
+  }
+
+  Future<Uint8List> downloadFullReportPdf(int surveyId) async {
+    return _downloadPdfBytes('$_base/$surveyId/results/download/');
+  }
+
+  Future<Uint8List> downloadIndividualReportPdf(
+    int surveyId,
+    int responseId,
+  ) async {
+    return _downloadPdfBytes(
+      '$_base/$surveyId/results/responses/$responseId/download/',
+    );
+  }
+
+  Future<Uint8List> _downloadPdfBytes(String path) async {
+    final res = await _dio.get<List<int>>(
+      path,
+      options: Options(
+        responseType: ResponseType.bytes,
+        headers: {'Accept': 'application/pdf'},
+      ),
+    );
+    if (res.statusCode != 200) {
+      throw SurveyApiException('Download failed', statusCode: res.statusCode);
+    }
+    final bytes = Uint8List.fromList(res.data ?? const <int>[]);
+    if (!_looksLikePdf(bytes)) {
+      throw const SurveyApiException('Download did not return a PDF file');
+    }
+    return bytes;
+  }
+
+  bool _looksLikePdf(Uint8List bytes) {
+    if (bytes.length < 4) return false;
+    return bytes[0] == 0x25 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x44 &&
+        bytes[3] == 0x46;
   }
 
   Future<List<SurveySummary>> getActiveSurveys() async {

@@ -10,15 +10,19 @@ class SurveyUserResponsesTab extends StatelessWidget {
   const SurveyUserResponsesTab({
     super.key,
     required this.responses,
+    required this.surveyId,
     this.loading = false,
     this.mobile = false,
     this.onRefresh,
+    this.onDownloadIndividual,
   });
 
   final List<SurveyIndividualResponse> responses;
+  final int surveyId;
   final bool loading;
   final bool mobile;
   final VoidCallback? onRefresh;
+  final Future<void> Function(SurveyIndividualResponse response)? onDownloadIndividual;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +60,9 @@ class SurveyUserResponsesTab extends StatelessWidget {
       itemBuilder: (context, index) => _EmployeeResponseTile(
         response: responses[index],
         mobile: mobile,
+        onDownload: onDownloadIndividual == null
+            ? null
+            : () => onDownloadIndividual!(responses[index]),
       ),
     );
   }
@@ -65,10 +72,12 @@ class _EmployeeResponseTile extends StatefulWidget {
   const _EmployeeResponseTile({
     required this.response,
     required this.mobile,
+    this.onDownload,
   });
 
   final SurveyIndividualResponse response;
   final bool mobile;
+  final Future<void> Function()? onDownload;
 
   @override
   State<_EmployeeResponseTile> createState() => _EmployeeResponseTileState();
@@ -76,6 +85,17 @@ class _EmployeeResponseTile extends StatefulWidget {
 
 class _EmployeeResponseTileState extends State<_EmployeeResponseTile> {
   bool _expanded = false;
+  bool _downloading = false;
+
+  Future<void> _handleDownload() async {
+    if (widget.onDownload == null || widget.response.responseId == null) return;
+    setState(() => _downloading = true);
+    try {
+      await widget.onDownload!();
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,6 +107,8 @@ class _EmployeeResponseTileState extends State<_EmployeeResponseTile> {
     final submitted = widget.response.submittedAt != null
         ? df.format(widget.response.submittedAt!.toLocal())
         : null;
+    final canDownload =
+        widget.onDownload != null && widget.response.responseId != null;
 
     return Material(
       color: surface,
@@ -150,6 +172,21 @@ class _EmployeeResponseTileState extends State<_EmployeeResponseTile> {
                       ],
                     ),
                   ),
+                  if (canDownload)
+                    IconButton(
+                      onPressed: _downloading ? null : _handleDownload,
+                      tooltip: 'Download report',
+                      icon: _downloading
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: accent,
+                              ),
+                            )
+                          : Icon(Icons.download_rounded, color: accent, size: 22),
+                    ),
                   Icon(
                     _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
                     color: textMuted,
@@ -177,9 +214,9 @@ class _EmployeeResponseTileState extends State<_EmployeeResponseTile> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        if (a.displayValue.isNotEmpty)
+                        if (a.resolvedDisplayValue.isNotEmpty)
                           Text(
-                            a.displayValue,
+                            a.resolvedDisplayValue,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 14,
                               height: 1.45,

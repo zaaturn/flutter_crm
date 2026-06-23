@@ -910,6 +910,7 @@ class SurveyUserAnswer {
   final String questionText;
   final QuestionType questionType;
   final String displayValue;
+  final String displayValueFull;
   final String explanationText;
 
   const SurveyUserAnswer({
@@ -917,8 +918,14 @@ class SurveyUserAnswer {
     required this.questionText,
     required this.questionType,
     required this.displayValue,
+    this.displayValueFull = '',
     this.explanationText = '',
   });
+
+  String get resolvedDisplayValue {
+    if (displayValueFull.isNotEmpty) return displayValueFull;
+    return displayValue;
+  }
 
   factory SurveyUserAnswer.fromJson(Map<String, dynamic> json) {
     int parseId(dynamic v) {
@@ -927,6 +934,7 @@ class SurveyUserAnswer {
     }
 
     final display = json['display_value']?.toString().trim();
+    final displayFull = json['display_value_full']?.toString().trim() ?? '';
     return SurveyUserAnswer(
       questionId: parseId(json['question_id'] ?? json['id']),
       questionText: json['question_text']?.toString() ?? '',
@@ -934,6 +942,7 @@ class SurveyUserAnswer {
       displayValue: display != null && display.isNotEmpty
           ? display
           : _fallbackDisplayValue(json),
+      displayValueFull: displayFull,
       explanationText: json['explanation_text']?.toString().trim() ?? '',
     );
   }
