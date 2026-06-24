@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/services/api_client.dart';
 
 import '../models/survey_models.dart';
@@ -243,6 +244,12 @@ class SurveyApiService {
 
   static String messageFrom(dynamic error) {
     if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      final payload = error.error ?? error.response?.data;
+      if (AuthSessionRedirect.isAuthFailure(payload, statusCode: statusCode)) {
+        return AuthSessionRedirect.defaultMessage;
+      }
+
       final data = error.response?.data;
       if (data is Map) {
         final detail = data['detail'] ?? data['message'] ?? data['error'];
@@ -252,8 +259,21 @@ class SurveyApiService {
           return nonField.first.toString();
         }
       }
-      if (data is String && data.isNotEmpty) return data;
+      if (data is String && data.isNotEmpty) {
+        if (AuthSessionRedirect.isAuthFailure(data, statusCode: statusCode)) {
+          return AuthSessionRedirect.defaultMessage;
+        }
+        return data;
+      }
+      final inline = error.error?.toString();
+      if (inline != null &&
+          AuthSessionRedirect.isAuthFailure(inline, statusCode: statusCode)) {
+        return AuthSessionRedirect.defaultMessage;
+      }
       return error.message ?? 'Request failed';
+    }
+    if (AuthSessionRedirect.isAuthFailure(error)) {
+      return AuthSessionRedirect.defaultMessage;
     }
     return error.toString();
   }

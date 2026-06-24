@@ -102,7 +102,7 @@ class BillingApi {
   ) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
-      AuthSessionRedirect.onAuthFailure(error: 'No auth token');
+      AuthSessionRedirect.onAuthFailure(statusCode: 401);
       throw UnauthorizedException();
     }
 
@@ -122,7 +122,7 @@ class BillingApi {
   ) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
-      AuthSessionRedirect.onAuthFailure(error: 'No auth token');
+      AuthSessionRedirect.onAuthFailure(statusCode: 401);
       throw UnauthorizedException();
     }
 

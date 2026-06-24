@@ -3,18 +3,25 @@ import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 class ErrorHandler {
   static String format(Object err) {
-    if (AuthSessionRedirect.isAuthFailure(
-      err is DioException ? (err.error ?? err.response?.data) : err,
-      statusCode: err is DioException ? err.response?.statusCode : null,
-    )) {
-      AuthSessionRedirect.onAuthFailure(error: err);
+    final statusCode = err is DioException ? err.response?.statusCode : null;
+    final payload = err is DioException ? (err.error ?? err.response?.data) : err;
+
+    if (AuthSessionRedirect.isAuthFailure(payload, statusCode: statusCode)) {
+      AuthSessionRedirect.onAuthFailure(
+        error: payload,
+        statusCode: statusCode,
+      );
+      return AuthSessionRedirect.defaultMessage;
     }
 
     if (err is DioException) {
       final message = err.error?.toString() ?? '';
-      if (message.contains('Session expired') ||
-          message.contains('No auth token')) {
-        return "Session expired. Please login again.";
+      if (AuthSessionRedirect.isAuthFailure(message, statusCode: statusCode)) {
+        AuthSessionRedirect.onAuthFailure(
+          error: message,
+          statusCode: statusCode,
+        );
+        return AuthSessionRedirect.defaultMessage;
       }
 
       final response = err.response;
@@ -28,14 +35,14 @@ class ErrorHandler {
             return "Requested data not found.";
 
           case 401:
-            return "Session expired. Please login again.";
+            AuthSessionRedirect.onAuthFailure(statusCode: 401);
+            return AuthSessionRedirect.defaultMessage;
 
           case 403:
             return "You don't have permission to perform this action.";
         }
       }
 
-      // JSON response
       if (response?.data is Map<String, dynamic>) {
         final data = response!.data as Map<String, dynamic>;
 
@@ -44,7 +51,6 @@ class ErrorHandler {
         if (data["detail"] != null) return data["detail"].toString();
       }
 
-      // Plain text / HTML response
       if (response?.data is String) {
         final text = response!.data.toString();
 

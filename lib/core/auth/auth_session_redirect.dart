@@ -16,7 +16,7 @@ class AuthSessionRedirect {
   static const String loginRoute = '/employeeLogin';
 
   static const String defaultMessage =
-      'Session expired. Please login again.';
+      'Your session has expired. Redirecting to login...';
 
   static const Set<String> _loginRoutes = {
     loginRoute,
@@ -46,22 +46,38 @@ class AuthSessionRedirect {
     Object? error, {
     int? statusCode,
   }) {
-    final msg = messageFrom(error)?.toLowerCase() ?? '';
-    if (msg.isEmpty) {
-      return statusCode == 401;
-    }
+    if (statusCode == 401 || statusCode == 403) return true;
+
+    final msg = _normalize(messageFrom(error));
+    if (msg.isEmpty) return false;
 
     return msg.contains('session expired') ||
         msg.contains('no auth token') ||
+        msg.contains('no token') ||
+        msg.contains('token present') ||
         msg.contains('not authenticated') ||
         msg.contains('authentication credentials were not provided') ||
         msg.contains('invalid token') ||
         msg.contains('token has expired') ||
         msg.contains('token is invalid') ||
         msg.contains('token not valid') ||
+        msg.contains('token_not_valid') ||
         msg.contains('refresh token') ||
-        msg.contains('unauthorized');
+        msg.contains('unauthorized') ||
+        msg.contains('given token not valid') ||
+        msg.contains('authentication_failed');
   }
+
+  /// User-facing copy for snackbars, dialogs, and bloc error states.
+  static String displayMessage(Object? error, {int? statusCode}) {
+    if (isAuthFailure(error, statusCode: statusCode)) {
+      return defaultMessage;
+    }
+    return messageFrom(error) ?? 'Something went wrong. Please try again.';
+  }
+
+  static String _normalize(String? value) =>
+      value?.toLowerCase().trim() ?? '';
 
   static String? messageFrom(Object? error) {
     if (error == null) return null;
@@ -79,9 +95,17 @@ class AuthSessionRedirect {
       if (data is Map) {
         final detail = data['detail'] ?? data['message'] ?? data['error'];
         if (detail != null) return detail.toString();
+        final codes = data['code'];
+        if (codes != null) return codes.toString();
       }
       if (data is String && data.isNotEmpty) return data;
       return error.message;
+    }
+
+    if (error is Map) {
+      final detail = error['detail'] ?? error['message'] ?? error['error'];
+      if (detail != null) return detail.toString();
+      return error.toString();
     }
 
     final text = error.toString();
@@ -105,9 +129,8 @@ class AuthSessionRedirect {
     void redirect(NavigatorState nav) {
       if (_isAlreadyOnLogin(nav)) return;
 
-      final msg = message ?? defaultMessage;
       rootScaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text(msg)),
+        SnackBar(content: Text(message ?? defaultMessage)),
       );
       nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
     }
@@ -119,7 +142,6 @@ class AuthSessionRedirect {
         redirect(nav);
         return;
       }
-      // Navigator may not be mounted yet (e.g. first frame on web).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final retryNav = _navigatorKey?.call()?.currentState;
         if (retryNav != null) redirect(retryNav);
@@ -136,11 +158,6 @@ class AuthSessionRedirect {
   }) {
     if (!isAuthFailure(error, statusCode: statusCode)) return;
 
-    final resolved = (message ?? messageFrom(error) ?? defaultMessage).toLowerCase();
-    if (resolved.contains('no auth token')) return;
-
-    unawaited(
-      forceLogin(message: message ?? messageFrom(error) ?? defaultMessage),
-    );
+    unawaited(forceLogin(message: defaultMessage));
   }
 }

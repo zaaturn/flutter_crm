@@ -92,11 +92,8 @@ class ApiClient {
             res = await _executeRequest(method, uri, headers, body);
           } else {
             await _storage.clearAll();
-            AuthSessionRedirect.onAuthFailure(
-              error: "Session expired. Please login again.",
-              statusCode: 401,
-            );
-            throw ApiException(401, "Session expired. Please login again.");
+            AuthSessionRedirect.onAuthFailure(statusCode: 401);
+            throw ApiException(401, AuthSessionRedirect.defaultMessage);
           }
         } else {
           _isRefreshing = true;
@@ -112,11 +109,8 @@ class ApiClient {
             res = await _executeRequest(method, uri, headers, body);
           } else {
             await _storage.clearAll();
-            AuthSessionRedirect.onAuthFailure(
-              error: "Session expired. Please login again.",
-              statusCode: 401,
-            );
-            throw ApiException(401, "Session expired. Please login again.");
+            AuthSessionRedirect.onAuthFailure(statusCode: 401);
+            throw ApiException(401, AuthSessionRedirect.defaultMessage);
           }
         }
       }
@@ -248,10 +242,7 @@ class ApiClient {
     }
 
     if (res.statusCode == 401) {
-      AuthSessionRedirect.onAuthFailure(
-        error: _friendlyError(401),
-        statusCode: 401,
-      );
+      AuthSessionRedirect.onAuthFailure(statusCode: 401);
     }
 
     throw ApiException(
@@ -272,7 +263,7 @@ class ApiClient {
         return "Invalid request.";
 
       case 401:
-        return "Session expired. Please login again.";
+        return AuthSessionRedirect.defaultMessage;
 
       case 403:
         return "You don't have permission to perform this action.";

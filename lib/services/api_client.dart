@@ -225,19 +225,11 @@ class ApiClient {
                 }
               }
               if (token == null || token.isEmpty) {
-                if (refresh != null && refresh.isNotEmpty) {
-                  await _handleSessionExpired();
-                  return handler.reject(
-                    DioException(
-                      requestOptions: options,
-                      error: "Session expired. Please login again.",
-                    ),
-                  );
-                }
+                await _handleSessionExpired();
                 return handler.reject(
                   DioException(
                     requestOptions: options,
-                    error: "No auth token",
+                    error: AuthSessionRedirect.defaultMessage,
                   ),
                 );
               }
@@ -286,7 +278,7 @@ class ApiClient {
               return handler.reject(
                 DioException(
                   requestOptions: error.requestOptions,
-                  error: "Session expired. Please login again.",
+                    error: AuthSessionRedirect.defaultMessage,
                 ),
               );
             } catch (e) {
@@ -377,10 +369,7 @@ class ApiClient {
       await _storage.clearAll();
     } catch (_) {}
     forceUnauthenticated();
-    AuthSessionRedirect.onAuthFailure(
-      error: 'Session expired. Please login again.',
-      statusCode: 401,
-    );
+    AuthSessionRedirect.onAuthFailure(statusCode: 401);
   }
 
   /// Explicitly refreshes the access token using the stored refresh token.
@@ -449,6 +438,10 @@ class ApiClient {
       AuthSessionRedirect.onAuthFailure(
         error: e.error ?? e.response?.data,
         statusCode: e.response?.statusCode,
+      );
+      return ApiException(
+        e.response?.statusCode ?? 401,
+        AuthSessionRedirect.defaultMessage,
       );
     }
     return ApiException(
