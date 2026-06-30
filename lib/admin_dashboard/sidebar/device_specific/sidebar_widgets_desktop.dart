@@ -298,6 +298,8 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
         padding: const EdgeInsets.fromLTRB(10, 16, 10, 20),
         child: Column(
           children: [
+            _buildSidebarLogo(),
+            const SizedBox(height: 10),
             Expanded(
               child: KeyboardNavList(
                 itemCount: actions.length,
@@ -338,12 +340,20 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     tooltip: 'Settings',
                     selected: false,
                     onTap: () {},
+                    customIcon: SidebarSettingsIcon(
+                      size: 22,
+                      color: AdminDashboardTheme.iconInactive,
+                    ),
                   ),
                   _railIcon(
                     icon: Icons.headset_mic_outlined,
                     tooltip: 'Support',
                     selected: false,
                     onTap: () {},
+                    customIcon: SidebarSupportIcon(
+                      size: 22,
+                      color: AdminDashboardTheme.iconInactive,
+                    ),
                   ),
                   _railIcon(
                     icon: Icons.logout_rounded,
@@ -357,6 +367,41 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSidebarLogo() {
+    return Column(
+      children: [
+        ClipOval(
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: ColoredBox(
+              color: AdminDashboardTheme.tealLight,
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const AppMaterialIcon(
+                  Icons.auto_awesome_rounded,
+                  color: AdminDashboardTheme.teal,
+                  size: 22,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'DAXARROW',
+          style: TextStyle(
+            fontSize: 8,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+            color: AdminDashboardTheme.tealDark,
+          ),
+        ),
+      ],
     );
   }
 }

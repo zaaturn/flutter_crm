@@ -16,12 +16,15 @@ class AppMaterialIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(
-      icon,
-      size: size,
-      color: color,
-      textDirection: TextDirection.ltr,
-      applyTextScaling: false,
+    return Text(
+      String.fromCharCode(icon.codePoint),
+      style: TextStyle(
+        fontFamily: icon.fontFamily ?? 'MaterialIcons',
+        package: icon.fontPackage,
+        fontSize: size,
+        color: color,
+        height: 1,
+      ),
     );
   }
 }

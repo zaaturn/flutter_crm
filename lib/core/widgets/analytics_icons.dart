@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Analytics icons drawn with [CustomPaint] — reliable on web/production builds.
@@ -28,6 +29,8 @@ enum AnalyticsIconType {
   check,
   lock,
   cloudOff,
+  settings,
+  support,
 }
 
 class AnalyticsIcon extends StatelessWidget {
@@ -125,6 +128,10 @@ class _AnalyticsIconPainter extends CustomPainter {
         _lock(canvas, s);
       case AnalyticsIconType.cloudOff:
         _cloudOff(canvas, s);
+      case AnalyticsIconType.settings:
+        _settings(canvas, s);
+      case AnalyticsIconType.support:
+        _support(canvas, s);
     }
   }
 
@@ -377,6 +384,35 @@ class _AnalyticsIconPainter extends CustomPainter {
     c.drawLine(Offset(s.width * 0.18, s.height * 0.78), Offset(s.width * 0.82, s.height * 0.22), p);
   }
 
+  void _settings(Canvas c, Size s) {
+    final p = _stroke(s.width * 0.1);
+    c.drawCircle(Offset(s.width * 0.5, s.height * 0.5), s.width * 0.18, p);
+    for (var i = 0; i < 8; i++) {
+      final angle = i * 3.14159 / 4;
+      final inner = s.width * 0.24;
+      final outer = s.width * 0.38;
+      c.drawLine(
+        Offset(s.width * 0.5 + inner * _cos(angle), s.height * 0.5 + inner * _sin(angle)),
+        Offset(s.width * 0.5 + outer * _cos(angle), s.height * 0.5 + outer * _sin(angle)),
+        p,
+      );
+    }
+  }
+
+  double _cos(double a) => math.cos(a);
+  double _sin(double a) => math.sin(a);
+
+  void _support(Canvas c, Size s) {
+    final p = _stroke(s.width * 0.1);
+    c.drawArc(
+      Rect.fromCenter(center: Offset(s.width * 0.5, s.height * 0.58), width: s.width * 0.72, height: s.height * 0.52),
+      3.14159, 3.14159, false, p,
+    );
+    c.drawLine(Offset(s.width * 0.18, s.height * 0.58), Offset(s.width * 0.18, s.height * 0.34), p);
+    c.drawLine(Offset(s.width * 0.82, s.height * 0.58), Offset(s.width * 0.82, s.height * 0.34), p);
+    c.drawCircle(Offset(s.width * 0.5, s.height * 0.72), s.width * 0.08, _fill);
+  }
+
   @override
   bool shouldRepaint(covariant _AnalyticsIconPainter old) =>
       old.type != type || old.color != color;
@@ -390,6 +426,24 @@ class SidebarChartIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       AnalyticsIcon(type: AnalyticsIconType.barChart, size: size, color: color);
+}
+
+class SidebarSettingsIcon extends StatelessWidget {
+  const SidebarSettingsIcon({super.key, this.size = 20, required this.color});
+  final double size;
+  final Color color;
+  @override
+  Widget build(BuildContext context) =>
+      AnalyticsIcon(type: AnalyticsIconType.settings, size: size, color: color);
+}
+
+class SidebarSupportIcon extends StatelessWidget {
+  const SidebarSupportIcon({super.key, this.size = 20, required this.color});
+  final double size;
+  final Color color;
+  @override
+  Widget build(BuildContext context) =>
+      AnalyticsIcon(type: AnalyticsIconType.support, size: size, color: color);
 }
 
 class AnalyticsTrendIcon extends StatelessWidget {
