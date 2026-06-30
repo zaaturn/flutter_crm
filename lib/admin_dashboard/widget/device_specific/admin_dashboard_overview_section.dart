@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
+import 'package:my_app/core/widgets/sidebar_chart_icon.dart';
 
 /// Top analytics-style overview — each metric in its own panel box.
 class AdminDashboardOverviewSection extends StatelessWidget {
@@ -44,10 +46,10 @@ class AdminDashboardOverviewSection extends StatelessWidget {
                   color: AdminDashboardTheme.tealLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.insights_rounded,
-                  color: AdminDashboardTheme.teal,
+                alignment: Alignment.center,
+                child: const SidebarChartIcon(
                   size: 22,
+                  color: AdminDashboardTheme.teal,
                 ),
               ),
               const SizedBox(width: 12),
@@ -182,7 +184,7 @@ class _OverviewStatBox extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: accent, size: 22),
+              AppMaterialIcon(icon, color: accent, size: 22),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

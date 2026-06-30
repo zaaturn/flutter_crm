@@ -136,20 +136,23 @@ class _AnalyticsIconPainter extends CustomPainter {
   }
 
   void _barChart(Canvas c, Size s) {
-    final w = s.width * 0.24;
-    final gap = s.width * 0.1;
-    final r = Radius.circular(w * 0.2);
+    final w = s.width * 0.28;
+    final gap = s.width * 0.08;
+    final r = Radius.circular(w * 0.22);
     void bar(int i, double h) {
       final left = i * (w + gap);
-      final barH = s.height * h;
+      final barH = (s.height * h).clamp(s.height * 0.2, s.height);
       c.drawRRect(
-        RRect.fromRectAndRadius(Rect.fromLTWH(left, s.height - barH, w, barH), r),
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(left, s.height - barH, w, barH),
+          r,
+        ),
         _fill,
       );
     }
-    bar(0, 0.45);
-    bar(1, 0.85);
-    bar(2, 0.62);
+    bar(0, 0.5);
+    bar(1, 0.92);
+    bar(2, 0.68);
   }
 
   void _grid(Canvas c, Size s) {
@@ -404,13 +407,37 @@ class _AnalyticsIconPainter extends CustomPainter {
 
   void _support(Canvas c, Size s) {
     final p = _stroke(s.width * 0.1);
+    final padW = s.width * 0.2;
+    final padH = s.height * 0.3;
+    final padY = s.height * 0.4;
+
     c.drawArc(
-      Rect.fromCenter(center: Offset(s.width * 0.5, s.height * 0.58), width: s.width * 0.72, height: s.height * 0.52),
-      3.14159, 3.14159, false, p,
+      Rect.fromLTWH(s.width * 0.14, s.height * 0.1, s.width * 0.72, s.height * 0.5),
+      3.14159,
+      3.14159,
+      false,
+      p,
     );
-    c.drawLine(Offset(s.width * 0.18, s.height * 0.58), Offset(s.width * 0.18, s.height * 0.34), p);
-    c.drawLine(Offset(s.width * 0.82, s.height * 0.58), Offset(s.width * 0.82, s.height * 0.34), p);
-    c.drawCircle(Offset(s.width * 0.5, s.height * 0.72), s.width * 0.08, _fill);
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(s.width * 0.08, padY, padW, padH),
+        const Radius.circular(3),
+      ),
+      p,
+    );
+    c.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(s.width * 0.72, padY, padW, padH),
+        const Radius.circular(3),
+      ),
+      p,
+    );
+    c.drawLine(
+      Offset(s.width * 0.52, s.height * 0.66),
+      Offset(s.width * 0.7, s.height * 0.84),
+      p,
+    );
+    c.drawCircle(Offset(s.width * 0.74, s.height * 0.86), s.width * 0.055, _fill);
   }
 
   @override
