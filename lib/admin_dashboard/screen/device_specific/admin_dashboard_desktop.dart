@@ -106,16 +106,18 @@ class _AdminDashboardDesktopViewState
               ),
             ),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ModernDashboardHeader(
-                    adminName: state.username ?? 'Admin',
-                    parentContext: context,
-                    showWorkspaceSwitcher: roleIsAdmin,
-                  ),
-                  Expanded(
-                    child: KeyboardScrollRegion(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ModernDashboardHeader(
+                      adminName: state.username ?? 'Admin',
+                      parentContext: context,
+                      showWorkspaceSwitcher: roleIsAdmin,
+                    ),
+                    Expanded(
+                      child: KeyboardScrollRegion(
                       scrollController: _scrollController,
                       focusNode: _contentFocusNode,
                       onMoveToPreviousRegion: () =>
@@ -167,6 +169,7 @@ class _AdminDashboardDesktopViewState
                 ],
               ),
             ),
+          ),
           ],
         );
       },
