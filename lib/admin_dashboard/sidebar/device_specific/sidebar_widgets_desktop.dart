@@ -340,8 +340,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     tooltip: 'Settings',
                     selected: false,
                     onTap: () {},
-                    customIcon: AppMaterialIcon(
-                      Icons.settings_outlined,
+                    customIcon: SidebarSettingsIcon(
                       size: 22,
                       color: AdminDashboardTheme.iconInactive,
                     ),
@@ -351,8 +350,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     tooltip: 'Support',
                     selected: false,
                     onTap: () {},
-                    customIcon: AppMaterialIcon(
-                      Icons.support_agent_outlined,
+                    customIcon: SidebarSupportIcon(
                       size: 22,
                       color: AdminDashboardTheme.iconInactive,
                     ),

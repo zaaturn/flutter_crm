@@ -388,22 +388,22 @@ class _AnalyticsIconPainter extends CustomPainter {
   }
 
   void _settings(Canvas c, Size s) {
-    final p = _stroke(s.width * 0.1);
-    c.drawCircle(Offset(s.width * 0.5, s.height * 0.5), s.width * 0.18, p);
-    for (var i = 0; i < 8; i++) {
-      final angle = i * 3.14159 / 4;
-      final inner = s.width * 0.24;
-      final outer = s.width * 0.38;
+    final p = _stroke(s.width * 0.11);
+    final cx = s.width * 0.5;
+    final cy = s.height * 0.5;
+    c.drawCircle(Offset(cx, cy), s.width * 0.16, p);
+    c.drawCircle(Offset(cx, cy), s.width * 0.34, p);
+    for (var i = 0; i < 6; i++) {
+      final angle = (i * math.pi / 3) - math.pi / 2;
+      final inner = s.width * 0.22;
+      final outer = s.width * 0.42;
       c.drawLine(
-        Offset(s.width * 0.5 + inner * _cos(angle), s.height * 0.5 + inner * _sin(angle)),
-        Offset(s.width * 0.5 + outer * _cos(angle), s.height * 0.5 + outer * _sin(angle)),
+        Offset(cx + inner * math.cos(angle), cy + inner * math.sin(angle)),
+        Offset(cx + outer * math.cos(angle), cy + outer * math.sin(angle)),
         p,
       );
     }
   }
-
-  double _cos(double a) => math.cos(a);
-  double _sin(double a) => math.sin(a);
 
   void _support(Canvas c, Size s) {
     final p = _stroke(s.width * 0.1);

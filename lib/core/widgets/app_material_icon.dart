@@ -16,19 +16,33 @@ class AppMaterialIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final style = TextStyle(
+      inherit: false,
+      fontFamily: icon.fontFamily ?? 'MaterialIcons',
+      fontSize: size,
+      color: color,
+      height: 1,
+    );
+    if (icon.fontPackage != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Text(
+            String.fromCharCode(icon.codePoint),
+            style: style.copyWith(package: icon.fontPackage),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
     return SizedBox(
       width: size,
       height: size,
       child: Center(
         child: Text(
           String.fromCharCode(icon.codePoint),
-          style: TextStyle(
-            fontFamily: icon.fontFamily ?? 'MaterialIcons',
-            package: icon.fontPackage,
-            fontSize: size,
-            color: color,
-            height: 1,
-          ),
+          style: style,
           textAlign: TextAlign.center,
         ),
       ),
