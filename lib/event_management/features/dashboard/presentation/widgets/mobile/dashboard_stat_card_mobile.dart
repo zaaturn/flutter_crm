@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-
-class ZaaturnMobileUI {
-  static const Color background = Color(0xFFFAF3E0); // Light Cream
-  static const Color todayGreen = Color(0xFF8AC926);
-  static const Color upcomingYellow = Color(0xFFFFCA3A);
-  static const Color endedRed = Color(0xFFFF595E);
-  static const Color textDark = Color(0xFF1A1A1A);
-}
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 
 class DashboardStatCardsMobile extends StatelessWidget {
   final DashboardState state;
@@ -17,42 +9,40 @@ class DashboardStatCardsMobile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-
     final todayCount = state.todayEvents.length;
     final upcomingCount = state.upcomingEvents.length;
+    final endedCount = state.missedToday.length;
 
-    // Logic: Calculate ended events ONLY for today's date
-    final endedTodayCount = state.missedEvents.where((e) {
-      return e.startTime.year == now.year &&
-          e.startTime.month == now.month &&
-          e.startTime.day == now.day;
-    }).length;
-
-    return Container(
-      color: ZaaturnMobileUI.background,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
       child: Row(
         children: [
-          _StatBox(
-            label: 'TODAY',
+          _CourseCard(
+            label: 'Today',
             count: todayCount,
-            color: ZaaturnMobileUI.todayGreen,
-            icon: Icons.calendar_today_rounded,
+            tint: const Color(0xFFE8F4FD),
+            accent: const Color(0xFF5B9BD5),
+            icon: Icons.wb_sunny_rounded,
           ),
-          const SizedBox(width: 10),
-          _StatBox(
-            label: 'UPCOMING',
+          const SizedBox(width: 20),
+          _CourseCard(
+            label: 'Upcoming',
             count: upcomingCount,
-            color: ZaaturnMobileUI.upcomingYellow,
-            icon: Icons.arrow_forward_rounded,
+            tint: DashboardUiTheme.statUpcomingLight,
+            accent: DashboardUiTheme.statUpcoming,
+            icon: Icons.event_available_rounded,
           ),
-          const SizedBox(width: 10),
-          _StatBox(
-            label: 'ENDED',
-            count: endedTodayCount,
-            color: ZaaturnMobileUI.endedRed,
-            icon: Icons.event_busy_rounded,
+          const SizedBox(width: 20),
+          _CourseCard(
+            label: 'Ended',
+            count: endedCount,
+            tint: endedCount > 0
+                ? DashboardUiTheme.statEndedLight
+                : const Color(0xFFE8F5E9),
+            accent: endedCount > 0
+                ? DashboardUiTheme.statEnded
+                : DashboardUiTheme.statToday,
+            icon: Icons.history_rounded,
           ),
         ],
       ),
@@ -60,58 +50,54 @@ class DashboardStatCardsMobile extends StatelessWidget {
   }
 }
 
-class _StatBox extends StatelessWidget {
-  final String label;
-  final int count;
-  final Color color;
-  final IconData icon;
-
-  const _StatBox({
+class _CourseCard extends StatelessWidget {
+  const _CourseCard({
     required this.label,
     required this.count,
-    required this.color,
+    required this.tint,
+    required this.accent,
     required this.icon,
   });
+
+  final String label;
+  final int count;
+  final Color tint;
+  final Color accent;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        height: 120,
+        height: 110,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.25),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          color: tint,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: accent.withValues(alpha: 0.15)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: accent, size: 18),
             const Spacer(),
             Text(
               count.toString().padLeft(2, '0'),
-              style: GoogleFonts.manrope(
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                color: Colors.white,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: DashboardUiTheme.textDark,
                 height: 1,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
-              style: GoogleFonts.manrope(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                color: Colors.white.withOpacity(0.9),
-                letterSpacing: 0.5,
+                color: accent.withValues(alpha: 0.9),
+                letterSpacing: 0.4,
               ),
             ),
           ],

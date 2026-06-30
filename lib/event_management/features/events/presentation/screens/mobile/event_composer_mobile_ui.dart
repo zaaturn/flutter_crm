@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/core/utils/indian_time.dart';
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 
 class ZaaturnComposerUI {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color terracotta = Color(0xFFC05E41);
-  static const Color card = Color(0xFFEADBC8);
-  static const Color field = Color(0xFFF5EDE0);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
+  static const Color background = DashboardUiTheme.pageBackground;
+  static const Color terracotta = DashboardUiTheme.primary;
+  static const Color card = Colors.transparent;
+  static const Color field = DashboardUiTheme.primaryLight;
+  static const Color textDark = DashboardUiTheme.textDark;
+  static const Color textMuted = DashboardUiTheme.textMuted;
 }
 
 class EventComposerMobileHeader extends StatelessWidget {
@@ -58,7 +59,7 @@ class EventComposerMobileHeader extends StatelessWidget {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: isSaving
@@ -95,34 +96,29 @@ class EventComposerSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ZaaturnComposerUI.card,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 4,
+                height: 20,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(10),
+                  color: ZaaturnComposerUI.terracotta,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                child: Icon(icon, size: 18, color: ZaaturnComposerUI.terracotta),
               ),
               const SizedBox(width: 10),
+              Icon(icon, size: 18, color: ZaaturnComposerUI.terracotta),
+              const SizedBox(width: 8),
               Text(
                 title,
                 style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
                   color: ZaaturnComposerUI.textDark,
                 ),
               ),
@@ -130,6 +126,11 @@ class EventComposerSectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...children,
+          const SizedBox(height: 8),
+          Divider(
+            height: 1,
+            color: DashboardUiTheme.border.withValues(alpha: 0.55),
+          ),
         ],
       ),
     );
@@ -187,7 +188,7 @@ class EventComposerTextField extends StatelessWidget {
         filled: true,
         fillColor: ZaaturnComposerUI.field,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -280,7 +281,7 @@ class EventComposerReminderChips extends StatelessWidget {
           selected: isSel,
           showCheckmark: true,
           selectedColor: ZaaturnComposerUI.terracotta,
-          backgroundColor: Colors.white.withValues(alpha: 0.7),
+          backgroundColor: ZaaturnComposerUI.field,
           labelStyle: GoogleFonts.manrope(
             fontWeight: FontWeight.w800,
             color: isSel ? Colors.white : ZaaturnComposerUI.textDark,
@@ -290,7 +291,7 @@ class EventComposerReminderChips extends StatelessWidget {
           side: BorderSide(
             color: isSel
                 ? ZaaturnComposerUI.terracotta
-                : ZaaturnComposerUI.textMuted.withValues(alpha: 0.25),
+                : DashboardUiTheme.border.withValues(alpha: 0.5),
           ),
           onSelected: (_) {
             final next = List<int>.from(selected);

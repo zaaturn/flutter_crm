@@ -5,6 +5,7 @@
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/event_management/features/calendar/domain/entities/calendar_holiday.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import '../../domain/usecases/fetch_dashboard_usecase.dart';
 
@@ -32,6 +33,7 @@ class DashboardState extends Equatable {
   final List<Event> todayEvents;
   final List<Event> upcomingEvents;
   final List<Event> missedEvents;
+  final List<CalendarHoliday> monthHolidays;
   final bool isLoading;
   final String? error;
 
@@ -39,6 +41,7 @@ class DashboardState extends Equatable {
     this.todayEvents = const [],
     this.upcomingEvents = const [],
     this.missedEvents = const [],
+    this.monthHolidays = const [],
     this.isLoading = false,
     this.error,
   });
@@ -49,6 +52,7 @@ class DashboardState extends Equatable {
     List<Event>? todayEvents,
     List<Event>? upcomingEvents,
     List<Event>? missedEvents,
+    List<CalendarHoliday>? monthHolidays,
     bool? isLoading,
     String? error,
   }) {
@@ -56,14 +60,31 @@ class DashboardState extends Equatable {
       todayEvents: todayEvents ?? this.todayEvents,
       upcomingEvents: upcomingEvents ?? this.upcomingEvents,
       missedEvents: missedEvents ?? this.missedEvents,
+      monthHolidays: monthHolidays ?? this.monthHolidays,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
   }
 
+  List<Event> get missedToday {
+    final now = DateTime.now();
+    return missedEvents.where((e) {
+      final s = e.startTime.toLocal();
+      return s.year == now.year &&
+          s.month == now.month &&
+          s.day == now.day;
+    }).toList();
+  }
+
   @override
-  List<Object?> get props =>
-      [todayEvents, upcomingEvents, missedEvents, isLoading, error];
+  List<Object?> get props => [
+        todayEvents,
+        upcomingEvents,
+        missedEvents,
+        monthHolidays,
+        isLoading,
+        error,
+      ];
 }
 
 // BLoC
@@ -100,24 +121,22 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     }
 
     try {
-      final results = await Future.wait([
-        fetchDashboard.getToday(),
-        fetchDashboard.getUpcoming(),
-        fetchDashboard.getMissed(),
-      ]);
-
-      final today = results[0];
-      final upcoming = results[1];
-      final missed = results[2];
+      final today = await fetchDashboard.getToday();
+      final upcoming = await fetchDashboard.getUpcoming();
+      final missed = await fetchDashboard.getMissed();
+      final holidays = await fetchDashboard.getMonthHolidays(DateTime.now());
 
       final todayResult = today.fold((f) => <Event>[], (v) => v);
       final upcomingResult = upcoming.fold((f) => <Event>[], (v) => v);
       final missedResult = missed.fold((f) => <Event>[], (v) => v);
+      final holidaysResult =
+          holidays.fold((f) => <CalendarHoliday>[], (v) => v);
 
       emit(state.copyWith(
         todayEvents: todayResult,
         upcomingEvents: upcomingResult,
         missedEvents: missedResult,
+        monthHolidays: holidaysResult,
         isLoading: false,
         error: null,
       ));

@@ -1,130 +1,180 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Required for BlocBuilder
-import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/admin_dashboard/sidebar/device_specific/workspace_switcher_desktop.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 
+/// Top row — DAXARROW left, workspace / notifications / profile right.
 class ModernDashboardHeader extends StatelessWidget {
   final String adminName;
+  final BuildContext parentContext;
+  final bool showWorkspaceSwitcher;
 
   const ModernDashboardHeader({
     super.key,
     required this.adminName,
+    required this.parentContext,
+    this.showWorkspaceSwitcher = false,
   });
-
-  // Your requested brand purple color #7F3DFF
-  static const Color brandPurple = Color(0xFF7F3DFF);
-  static const Color textDark = Color(0xFF1E293B);
-  static const Color textGrey = Color(0xFF64748B);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Left Side: Greeting and Workflow Text
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Welcome back, $adminName",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: textDark,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  "Manage the workflow being more productive",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: textGrey,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
+          Text(
+            'DAXARROW',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+              color: AdminDashboardTheme.tealDark,
             ),
           ),
+          const Spacer(),
+          if (showWorkspaceSwitcher) ...[
+            _ChangeoverButton(parentContext: parentContext),
+            const SizedBox(width: 12),
+          ],
+          _NotificationBell(),
+          const SizedBox(width: 12),
+          _ProfileChip(name: adminName),
+        ],
+      ),
+    );
+  }
+}
 
-          // Right Side: Dynamic Purple Notification Bell
-          BlocBuilder<NotificationBloc, NotificationState>(
-            builder: (context, state) {
-              // We use the unreadCount getter from your NotificationState
-              final count = state.unreadCount;
+class _ProfileChip extends StatelessWidget {
+  final String name;
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationScreenDesktop(),
-                    ),
-                  );
-                },
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // The Purple Icon Button Container
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: brandPurple.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_none_rounded,
-                        size: 26,
-                        color: brandPurple,
-                      ),
-                    ),
+  const _ProfileChip({required this.name});
 
-                    // Dynamic Counter Badge (Disappears if count is 0)
-                    if (count > 0)
-                      Positioned(
-                        right: -4,
-                        top: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          constraints: const BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
-                          ),
-                          decoration: BoxDecoration(
-                            color: brandPurple,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+  @override
+  Widget build(BuildContext context) {
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: () {},
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: AdminDashboardTheme.tealLight,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                color: AdminDashboardTheme.tealDark,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 160),
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AdminDashboardTheme.profileName(),
+            ),
+          ),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: AdminDashboardTheme.textMuted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotificationBell extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NotificationBloc, NotificationState>(
+      builder: (context, state) {
+        final count = state.unreadCount;
+        return Material(
+          color: AdminDashboardTheme.iconRailBg,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreenDesktop(),
                 ),
               );
             },
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 22,
+                    color: AdminDashboardTheme.textDark,
+                  ),
+                  if (count > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFE05252),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _ChangeoverButton extends StatelessWidget {
+  final BuildContext parentContext;
+
+  const _ChangeoverButton({required this.parentContext});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Change workspace',
+      child: Material(
+        color: AdminDashboardTheme.accentYellow,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: () => WorkspaceSwitcherSheet.show(context, parentContext),
+          child: const SizedBox(
+            width: 42,
+            height: 42,
+            child: Icon(
+              Icons.swap_horiz_rounded,
+              size: 22,
+              color: AdminDashboardTheme.textDark,
+            ),
+          ),
+        ),
       ),
     );
   }

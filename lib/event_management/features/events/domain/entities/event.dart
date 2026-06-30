@@ -144,6 +144,12 @@ class Event extends Equatable {
     return p.status.toLowerCase() == 'pending';
   }
 
+  /// True when [userId] matches the event host / creator.
+  bool isOwnedBy(String? userId) =>
+      userId != null &&
+      userId.isNotEmpty &&
+      userId == createdBy.id.toString();
+
   Event copyWith({
     String? id,
     String? title,

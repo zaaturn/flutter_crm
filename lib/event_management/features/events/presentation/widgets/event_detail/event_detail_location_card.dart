@@ -25,7 +25,7 @@ class EventDetailLocationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _header('Location'),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'No location or meeting link on this event.',
               style: EventManagementFonts.bodyReading().copyWith(
@@ -48,109 +48,144 @@ class EventDetailLocationCard extends StatelessWidget {
             isMeetingPrimary ? 'Meeting link' : 'Location',
             icon: isMeetingPrimary ? Icons.videocam_outlined : Icons.pin_drop_outlined,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           if (!isMeetingPrimary) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  color: const Color(0xFFE5E7EB),
-                  child: const Center(
-                    child: Icon(
-                      Icons.location_pin,
-                      size: 48,
-                      color: Color(0xFF9CA3AF),
-                    ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: EventDetailColors.primaryBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.location_on_outlined,
+                    size: 22,
+                    color: EventDetailColors.primaryBlue,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              loc.split(',').first.trim().isEmpty ? 'Location' : loc.split(',').first.trim(),
-              style: EventManagementFonts.jakarta(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              loc,
-              style: EventManagementFonts.bodyReading().copyWith(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
-                  ),
-            ),
-          ] else ...[
-            Material(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                onTap: () => _open(link),
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.video_call_rounded,
-                          color: EventDetailColors.primaryBlue, size: 28),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Join meeting',
-                              style: EventManagementFonts.jakarta(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              link,
-                              style: EventManagementFonts.jakarta(
-                                    fontSize: 12.5,
-                                    color: EventDetailColors.primaryBlue,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      Text(
+                        loc.split(',').first.trim().isEmpty
+                            ? 'Location'
+                            : loc.split(',').first.trim(),
+                        style: EventManagementFonts.jakarta(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Icon(Icons.open_in_new_rounded,
-                          color: EventDetailColors.primaryBlue),
+                      const SizedBox(height: 2),
+                      Text(
+                        loc,
+                        style: EventManagementFonts.bodyReading().copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ] else ...[
+            InkWell(
+              onTap: () => _open(link),
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: EventDetailColors.primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.video_call_rounded,
+                      color: EventDetailColors.primaryBlue,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Join meeting',
+                          style: EventManagementFonts.jakarta(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          link,
+                          style: EventManagementFonts.jakarta(
+                            fontSize: 12.5,
+                            color: EventDetailColors.primaryBlue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.open_in_new_rounded,
+                    size: 18,
+                    color: EventDetailColors.primaryBlue,
+                  ),
+                ],
               ),
             ),
           ],
           if (!isMeetingPrimary && link.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Meeting link',
-              style: EventManagementFonts.jakarta(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 0.5,
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: () => _open(link),
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: EventDetailColors.primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.link_rounded,
+                      size: 20,
+                      color: EventDetailColors.primaryBlue,
+                    ),
                   ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () => _open(link),
-              icon: const Icon(Icons.link_rounded, size: 18),
-              label: Text(
-                link.length > 40 ? '${link.substring(0, 37)}…' : link,
-                style: EventManagementFonts.jakarta(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: EventDetailColors.primaryBlue,
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      link.length > 50 ? '${link.substring(0, 47)}…' : link,
+                      style: EventManagementFonts.jakarta(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: EventDetailColors.primaryBlue,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.open_in_new_rounded,
+                    size: 18,
+                    color: EventDetailColors.primaryBlue,
+                  ),
+                ],
               ),
             ),
           ],

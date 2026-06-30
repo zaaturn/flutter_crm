@@ -6,6 +6,8 @@ import 'package:my_app/event_management/features/calendar/presentation/bloc/cale
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
+import 'package:my_app/services/secure_storage_service.dart';
+
 import '../../domain/entities/event.dart';
 import '../bloc/event_bloc.dart';
 import '../widgets/event_create/event_alert_me_card.dart';
@@ -72,6 +74,22 @@ class _EventEditScreenState extends State<EventEditScreen> {
     _reminderMinutes =
         e?.reminders.map((r) => r.minutesBefore).toList() ?? [];
     _colorOverride = e?.colorOverride ?? '';
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ensureOwner());
+  }
+
+  Future<void> _ensureOwner() async {
+    final e = widget.event;
+    if (e == null || !mounted) return;
+    final uid = await SecureStorageService().readUserId();
+    if (!mounted) return;
+    if (!e.isOwnedBy(uid)) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only the event host can edit this event'),
+        ),
+      );
+    }
   }
 
   @override
@@ -291,10 +309,9 @@ class _EventEditScreenState extends State<EventEditScreen> {
   }
 
   Future<void> _pickParticipants() async {
-    final result = await showModalBottomSheet<List<Participant>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ParticipantPicker(selected: _participants),
+    final result = await showParticipantPicker(
+      context,
+      selected: _participants,
     );
     if (result != null) setState(() => _participants = result);
   }

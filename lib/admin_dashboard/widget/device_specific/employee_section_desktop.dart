@@ -6,12 +6,18 @@ class DesktopEmployeeSection extends StatefulWidget {
   final List<Employee> employees;
   final int totalEmployeeCount;
   final Function(Employee)? onEmployeeTap;
+  final bool flat;
+  final bool compact;
+  final double? maxListHeight;
 
   const DesktopEmployeeSection({
     super.key,
     required this.employees,
     this.totalEmployeeCount = 0,
     this.onEmployeeTap,
+    this.flat = false,
+    this.compact = false,
+    this.maxListHeight,
   });
 
   @override
@@ -51,11 +57,57 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
         ? widget.totalEmployeeCount
         : widget.employees.length;
 
+    final content = widget.flat
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(
+                totalStaff: totalStaff,
+                loggedInToday: widget.employees.length,
+                workingCount: workingCount,
+                breakCount: breakCount,
+                loggedOutCount: loggedOutCount,
+                isDark: isDark,
+              ),
+              Divider(
+                height: 1,
+                color: const Color(0xFFEDF2EF),
+              ),
+              Expanded(
+                child: widget.employees.isEmpty
+                    ? _buildEmptyState()
+                    : _buildList(isDark),
+              ),
+            ],
+          )
+        : Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(
+                totalStaff: totalStaff,
+                loggedInToday: widget.employees.length,
+                workingCount: workingCount,
+                breakCount: breakCount,
+                loggedOutCount: loggedOutCount,
+                isDark: isDark,
+              ),
+              Divider(
+                height: 1,
+                color: _borderPurple,
+              ),
+              if (widget.employees.isEmpty)
+                _buildEmptyState()
+              else
+                _buildList(isDark),
+            ],
+          );
+
+    if (widget.flat) return content;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        // --- ADDED THEME BORDER ---
         border: Border.all(
           color: isDark ? _brandPurple.withOpacity(0.3) : _borderPurple,
           width: 1.5,
@@ -68,24 +120,7 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(
-            totalStaff: totalStaff,
-            loggedInToday: widget.employees.length,
-            workingCount: workingCount,
-            breakCount: breakCount,
-            loggedOutCount: loggedOutCount,
-            isDark: isDark,
-          ),
-          const Divider(height: 1, color: _borderPurple),
-          if (widget.employees.isEmpty)
-            _buildEmptyState()
-          else
-            _buildList(isDark),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -97,110 +132,177 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
     required int loggedOutCount,
     required bool isDark,
   }) {
+    final stats = _buildStatBoxes(
+      totalStaff: totalStaff,
+      loggedInToday: loggedInToday,
+      workingCount: workingCount,
+      breakCount: breakCount,
+      loggedOutCount: loggedOutCount,
+    );
+
+    final icon = Container(
+      padding: EdgeInsets.all(widget.compact ? 8 : 10),
+      decoration: BoxDecoration(
+        color: _brandPurple.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        Icons.sensors_rounded,
+        color: _brandPurple,
+        size: widget.compact ? 18 : 22,
+      ),
+    );
+
+    final title = Text(
+      'Live Attendance',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: widget.compact ? 15 : 18,
+        fontWeight: FontWeight.w800,
+        color: isDark ? Colors.white : _textPrimary,
+        letterSpacing: -0.5,
+      ),
+    );
+
+    if (widget.compact) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                icon,
+                const SizedBox(width: 10),
+                Expanded(child: title),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: stats,
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: _brandPurple.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.sensors_rounded,
-              color: _brandPurple,
-              size: 22,
-            ),
-          ),
+          icon,
           const SizedBox(width: 16),
-          Text(
-            'Live Attendance',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : _textPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
+          title,
           const Spacer(),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.end,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _StatBox(
-                label: 'Total',
-                count: totalStaff,
-                bg: _purpleLight,
-                border: _borderPurple,
-                labelColor: _brandPurple,
-                countColor: _textPrimary,
-              ),
-              _StatBox(
-                label: 'Logged In',
-                count: loggedInToday,
-                bg: const Color(0xFFEEF2FF),
-                border: const Color(0xFFC7D2FE),
-                labelColor: const Color(0xFF4338CA),
-                countColor: _textPrimary,
-              ),
-              _StatBox(
-                label: 'Working',
-                count: workingCount,
-                bg: const Color(0xFFECFDF5),
-                border: const Color(0xFFA7F3D0),
-                labelColor: const Color(0xFF047857),
-                countColor: const Color(0xFF065F46),
-              ),
-              _StatBox(
-                label: 'Break',
-                count: breakCount,
-                bg: const Color(0xFFFFFBEB),
-                border: const Color(0xFFFDE68A),
-                labelColor: const Color(0xFFB45309),
-                countColor: const Color(0xFF92400E),
-              ),
-              _StatBox(
-                label: 'Out',
-                count: loggedOutCount,
-                bg: const Color(0xFFFEF2F2),
-                border: const Color(0xFFFECACA),
-                labelColor: const Color(0xFFB91C1C),
-                countColor: const Color(0xFF991B1B),
-              ),
-            ],
+          Flexible(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: stats,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildList(bool isDark) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 500),
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        itemCount: widget.employees.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final employee = widget.employees[index];
-          return _EmployeeTile(
-            employee: employee,
-            onTap: () => widget.onEmployeeTap?.call(employee),
-            isDark: isDark,
-          );
-        },
+  List<Widget> _buildStatBoxes({
+    required int totalStaff,
+    required int loggedInToday,
+    required int workingCount,
+    required int breakCount,
+    required int loggedOutCount,
+  }) {
+    return [
+      _StatBox(
+        label: 'Total',
+        count: totalStaff,
+        bg: _purpleLight,
+        border: _borderPurple,
+        labelColor: _brandPurple,
+        countColor: _textPrimary,
+        compact: widget.compact,
       ),
+      _StatBox(
+        label: 'Logged In',
+        count: loggedInToday,
+        bg: const Color(0xFFEEF2FF),
+        border: const Color(0xFFC7D2FE),
+        labelColor: const Color(0xFF4338CA),
+        countColor: _textPrimary,
+        compact: widget.compact,
+      ),
+      _StatBox(
+        label: 'Working',
+        count: workingCount,
+        bg: const Color(0xFFECFDF5),
+        border: const Color(0xFFA7F3D0),
+        labelColor: const Color(0xFF047857),
+        countColor: const Color(0xFF065F46),
+        compact: widget.compact,
+      ),
+      _StatBox(
+        label: 'Break',
+        count: breakCount,
+        bg: const Color(0xFFFFFBEB),
+        border: const Color(0xFFFDE68A),
+        labelColor: const Color(0xFFB45309),
+        countColor: const Color(0xFF92400E),
+        compact: widget.compact,
+      ),
+      _StatBox(
+        label: 'Out',
+        count: loggedOutCount,
+        bg: const Color(0xFFFEF2F2),
+        border: const Color(0xFFFECACA),
+        labelColor: const Color(0xFFB91C1C),
+        countColor: const Color(0xFF991B1B),
+        compact: widget.compact,
+      ),
+    ];
+  }
+
+  Widget _buildList(bool isDark) {
+    final listView = ListView.separated(
+      controller: _scrollController,
+      padding: EdgeInsets.fromLTRB(
+        widget.compact ? 16 : 20,
+        widget.compact ? 10 : 16,
+        widget.compact ? 16 : 20,
+        widget.compact ? 14 : 24,
+      ),
+      itemCount: widget.employees.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final employee = widget.employees[index];
+        return _EmployeeTile(
+          employee: employee,
+          onTap: () => widget.onEmployeeTap?.call(employee),
+          isDark: isDark,
+          flat: widget.flat,
+        );
+      },
+    );
+
+    if (widget.flat) return listView;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: widget.maxListHeight ?? 500,
+      ),
+      child: listView,
     );
   }
 
   Widget _buildEmptyState() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 60),
+      padding: EdgeInsets.symmetric(vertical: widget.compact ? 28 : 60),
       child: Center(
         child: Text(
           "No active employees found",
@@ -218,11 +320,13 @@ class _EmployeeTile extends StatelessWidget {
   final Employee employee;
   final VoidCallback? onTap;
   final bool isDark;
+  final bool flat;
 
   const _EmployeeTile({
     required this.employee,
     this.onTap,
     required this.isDark,
+    this.flat = false,
   });
 
   static const _brandPurple = Color(0xFF7C3AED);
@@ -234,15 +338,25 @@ class _EmployeeTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(flat ? 0 : 16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF334155).withOpacity(0.3) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? _brandPurple.withOpacity(0.1) : const Color(0xFFF1F5F9),
-          ),
+          color: flat
+              ? Colors.transparent
+              : (isDark
+                  ? const Color(0xFF334155).withOpacity(0.3)
+                  : Colors.white),
+          borderRadius: flat ? null : BorderRadius.circular(16),
+          border: flat
+              ? const Border(
+                  bottom: BorderSide(color: Color(0xFFEDF2EF)),
+                )
+              : Border.all(
+                  color: isDark
+                      ? _brandPurple.withOpacity(0.1)
+                      : const Color(0xFFF1F5F9),
+                ),
         ),
         child: Row(
           children: [
@@ -412,6 +526,7 @@ class _StatBox extends StatelessWidget {
     required this.border,
     required this.labelColor,
     required this.countColor,
+    this.compact = false,
   });
 
   final String label;
@@ -420,11 +535,15 @@ class _StatBox extends StatelessWidget {
   final Color border;
   final Color labelColor;
   final Color countColor;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 12,
+        vertical: compact ? 5 : 8,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
@@ -436,17 +555,17 @@ class _StatBox extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
+              fontSize: compact ? 10 : 11,
               fontWeight: FontWeight.w700,
               color: labelColor,
               letterSpacing: 0.2,
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: compact ? 5 : 8),
           Text(
             '$count',
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
+              fontSize: compact ? 13 : 16,
               fontWeight: FontWeight.w800,
               color: countColor,
               height: 1,

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/event_management/core/entities/user.dart';
+import 'package:my_app/event_management/features/calendar/data/datasources/calendar_remote_datasource.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/usecases/create_event_usecase.dart';
 import 'event_event.dart';
@@ -15,6 +16,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
   final FetchEventsUseCase fetchEvents;
   final GetEventByIdUseCase getEventById;
   final DetectConflictUseCase detectConflict;
+  final CalendarRemoteDataSource? calendarConflictSource;
   final SearchEventsUseCase searchEvents;
   final AcceptEventInviteUseCase acceptEventInvite;
   final DeclineEventInviteUseCase declineEventInvite;
@@ -28,6 +30,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     required this.fetchEvents,
     required this.getEventById,
     required this.detectConflict,
+    this.calendarConflictSource,
     required this.searchEvents,
     required this.acceptEventInvite,
     required this.declineEventInvite,
@@ -102,14 +105,19 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     Emitter<EventState> emit,
   ) async {
     final cachedIdx = _cachedEvents.indexWhere((e) => e.id == event.eventId);
-    if (cachedIdx >= 0) {
-      emit(EventsLoaded(List<Event>.from(_cachedEvents)));
-      return;
+    if (cachedIdx < 0) {
+      emit(EventLoading());
     }
-    emit(EventLoading());
+
     final result = await getEventById(event.eventId);
     result.fold(
-      (failure) => emit(EventError(failure.message)),
+      (failure) {
+        if (cachedIdx >= 0) {
+          emit(EventsLoaded(List<Event>.from(_cachedEvents)));
+        } else {
+          emit(EventError(failure.message));
+        }
+      },
       (e) {
         final idx = _cachedEvents.indexWhere((x) => x.id == e.id);
         if (idx >= 0) {
@@ -121,7 +129,7 @@ class EventBloc extends Bloc<EventEvent, EventState> {
         } else {
           _cachedEvents = [..._cachedEvents, e];
         }
-        emit(EventsLoaded(_cachedEvents));
+        emit(EventsLoaded(List<Event>.from(_cachedEvents)));
       },
     );
   }
@@ -130,12 +138,13 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     CreateEventRequested event,
     Emitter<EventState> emit,
   ) async {
-    final conflicts = detectConflict(DetectConflictParams(
-      newEvent: event.event,
-      existing: _cachedEvents,
-    ));
-
-    if (conflicts.isNotEmpty) {
+    final conflicts = await _checkConflicts(
+      startTime: event.event.startTime,
+      endTime: event.event.endTime,
+      excludeEventId: event.event.id.isNotEmpty ? event.event.id : null,
+      fallbackEvent: event.event,
+    );
+    if (conflicts != null && conflicts.isNotEmpty) {
       emit(EventConflictDetected(conflicts, event.event));
       return;
     }
@@ -147,7 +156,11 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     ConflictConfirmed event,
     Emitter<EventState> emit,
   ) async {
-    await _doCreate(event.event, emit);
+    if (event.event.id.isNotEmpty) {
+      await _doUpdate(event.event, emit);
+    } else {
+      await _doCreate(event.event, emit);
+    }
   }
 
   Future<void> _doCreate(Event event, Emitter<EventState> emit) async {
@@ -167,8 +180,22 @@ class EventBloc extends Bloc<EventEvent, EventState> {
     UpdateEventRequested event,
     Emitter<EventState> emit,
   ) async {
+    final conflicts = await _checkConflicts(
+      startTime: event.event.startTime,
+      endTime: event.event.endTime,
+      excludeEventId: event.event.id,
+      fallbackEvent: event.event,
+    );
+    if (conflicts != null && conflicts.isNotEmpty) {
+      emit(EventConflictDetected(conflicts, event.event));
+      return;
+    }
+    await _doUpdate(event.event, emit);
+  }
+
+  Future<void> _doUpdate(Event event, Emitter<EventState> emit) async {
     emit(EventUpdating());
-    final result = await updateEvent(UpdateEventParams(event: event.event));
+    final result = await updateEvent(UpdateEventParams(event: event));
     result.fold(
       (failure) => emit(EventError(failure.message)),
       (updated) {
@@ -178,6 +205,47 @@ class EventBloc extends Bloc<EventEvent, EventState> {
         emit(EventUpdated(updated));
         emit(EventsLoaded(_cachedEvents));
       },
+    );
+  }
+
+  Future<List<Event>?> _checkConflicts({
+    required DateTime startTime,
+    required DateTime endTime,
+    String? excludeEventId,
+    required Event fallbackEvent,
+  }) async {
+    if (calendarConflictSource != null) {
+      try {
+        final result = await calendarConflictSource!.conflictCheck(
+          startTime: startTime,
+          endTime: endTime,
+          excludeEventId: excludeEventId,
+        );
+        if (result.hasConflict) {
+          final now = DateTime.now();
+          return result.conflicts
+              .map(
+                (c) => Event(
+                  id: c.id,
+                  title: c.title,
+                  startTime: c.startTime,
+                  endTime: c.endTime,
+                  type: fallbackEvent.type,
+                  createdBy: fallbackEvent.createdBy,
+                  createdAt: now,
+                  updatedAt: now,
+                ),
+              )
+              .toList();
+        }
+        return const [];
+      } catch (_) {
+        // Fall through to local detection.
+      }
+    }
+
+    return detectConflict(
+      DetectConflictParams(newEvent: fallbackEvent, existing: _cachedEvents),
     );
   }
 

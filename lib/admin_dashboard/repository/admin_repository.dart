@@ -264,14 +264,16 @@ class AdminRepository {
 
   Future<List<DashboardEvent>> fetchEvents() async {
     try {
-      final data = await _api.get(_eventBase);
+      final data = await _api.get('${_eventBase}today/');
 
-      final results = data['results'] ?? data;
+      final results = data is List ? data : (data['results'] ?? []);
 
       if (results is List) {
         return results
-            .map((e) =>
-            DashboardEvent.fromJson(Map<String, dynamic>.from(e)))
+            .map((e) => DashboardEvent.tryFromJson(
+                  Map<String, dynamic>.from(e as Map),
+                ))
+            .whereType<DashboardEvent>()
             .toList();
       }
 

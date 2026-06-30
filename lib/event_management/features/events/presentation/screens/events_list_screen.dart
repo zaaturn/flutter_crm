@@ -91,9 +91,9 @@ class _EventsListScreenState extends State<EventsListScreen> {
                   );
                 }
                 return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 100),
+                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 100),
                   itemCount: events.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 14),
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
                   itemBuilder: (context, i) => EventCard(event: events[i]),
                 );
               },

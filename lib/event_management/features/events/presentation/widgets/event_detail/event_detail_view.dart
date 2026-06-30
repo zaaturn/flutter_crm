@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../domain/entities/event.dart';
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 import 'package:my_app/event_management/shared/themes/app_theme.dart';
 import 'package:my_app/event_management/shared/themes/event_management_fonts.dart';
 
@@ -18,6 +19,7 @@ import 'event_detail_schedule_card.dart';
 /// Full-page layout: hero, two-column (wide) or stacked content.
 class EventDetailView extends StatelessWidget {
   final Event event;
+  final bool canEdit;
   final bool canDelete;
   final VoidCallback onDelete;
   final bool showPendingInviteActions;
@@ -28,6 +30,7 @@ class EventDetailView extends StatelessWidget {
   const EventDetailView({
     super.key,
     required this.event,
+    required this.canEdit,
     required this.canDelete,
     required this.onDelete,
     this.showPendingInviteActions = false,
@@ -39,46 +42,43 @@ class EventDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EventDetailColors.surface,
+      backgroundColor: DashboardUiTheme.pageBackground,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: EventDetailColors.surface,
+        backgroundColor: DashboardUiTheme.pageBackground,
         foregroundColor: AppTheme.textPrimary,
-        title: Text(
-          'Event Detail',
-          style: EventManagementFonts.jakarta(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        title: const SizedBox.shrink(),
+        centerTitle: false,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_horiz_rounded),
-            onSelected: (v) {
-              if (v == 'edit') {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        EventEditScreen(eventId: event.id, event: event),
+          if (canEdit || canDelete)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_horiz_rounded),
+              onSelected: (v) {
+                if (v == 'edit') {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          EventEditScreen(eventId: event.id, event: event),
+                    ),
+                  );
+                } else if (v == 'delete') {
+                  onDelete();
+                }
+              },
+              itemBuilder: (context) => [
+                if (canEdit)
+                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                if (canDelete)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(color: Color(0xFFDC2626)),
+                    ),
                   ),
-                );
-              } else if (v == 'delete') {
-                onDelete();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'edit', child: Text('Edit')),
-              if (canDelete)
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text(
-                    'Delete',
-                    style: TextStyle(color: Color(0xFFDC2626)),
-                  ),
-                ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
       body: Column(
@@ -105,44 +105,62 @@ class EventDetailView extends StatelessWidget {
                 );
 
                 final link = event.meetingLink?.trim() ?? '';
-          final hero = EventDetailHero(
-            event: event,
-            onJoinEvent: link.isEmpty
-                ? null
-                : () async {
-                    final normalized = _normalizeWebUrl(link);
-                    final uri = Uri.tryParse(normalized);
-                    if (uri == null) return;
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  },
-          );
+                final hero = EventDetailHero(
+                  event: event,
+                  onJoinEvent: link.isEmpty
+                      ? null
+                      : () async {
+                          final normalized = _normalizeWebUrl(link);
+                          final uri = Uri.tryParse(normalized);
+                          if (uri == null) return;
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                        },
+                );
 
-          final leftCol = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              EventDetailScheduleCard(event: event),
-              const SizedBox(height: 20),
-              EventDetailDescriptionCard(event: event),
-              const SizedBox(height: 24),
-              Text(
-                'Created by ${event.createdBy.username} • ${DateFormat('MMM d, yyyy').format(event.createdAt.toLocal())}',
-                style: EventManagementFonts.jakarta(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          );
-
-          final rightCol = Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              EventDetailLocationCard(event: event),
-              const SizedBox(height: 20),
-              EventDetailParticipantsCard(participants: event.participants),
-            ],
-          );
+                final leftCol = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    EventDetailScheduleCard(event: event),
+                    const SizedBox(height: 16),
+                    Divider(
+                      height: 1,
+                      color: DashboardUiTheme.border.withValues(alpha: 0.55),
+                    ),
+                    const SizedBox(height: 16),
+                    EventDetailLocationCard(event: event),
+                    const SizedBox(height: 16),
+                    Divider(
+                      height: 1,
+                      color: DashboardUiTheme.border.withValues(alpha: 0.55),
+                    ),
+                    const SizedBox(height: 16),
+                    EventDetailParticipantsCard(
+                      participants: event.participants,
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(
+                      height: 1,
+                      color: DashboardUiTheme.border.withValues(alpha: 0.55),
+                    ),
+                    const SizedBox(height: 16),
+                    EventDetailDescriptionCard(event: event),
+                    const SizedBox(height: 16),
+                    Divider(
+                      height: 1,
+                      color: DashboardUiTheme.border.withValues(alpha: 0.55),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Created by ${event.createdBy.username} • ${DateFormat('MMM d, yyyy').format(event.createdAt.toLocal())}',
+                      style: EventManagementFonts.jakarta(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                );
 
                 return SingleChildScrollView(
                   padding: pad,
@@ -155,20 +173,8 @@ class EventDetailView extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           hero,
-                          if (wide)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(flex: 2, child: leftCol),
-                                const SizedBox(width: 28),
-                                Expanded(flex: 1, child: rightCol),
-                              ],
-                            )
-                          else ...[
-                            leftCol,
-                            const SizedBox(height: 20),
-                            rightCol,
-                          ],
+                          const SizedBox(height: 8),
+                          leftCol,
                         ],
                       ),
                     ),

@@ -5,6 +5,7 @@ import 'package:my_app/admin_dashboard/model/task.dart';
 class ModernTaskCard extends StatelessWidget {
   final Task task;
   final bool isDark;
+  final bool flat;
   final Function(Task)? onTap;
   final VoidCallback? onEdit;
   final Function(Task)? onDelete;
@@ -13,6 +14,7 @@ class ModernTaskCard extends StatelessWidget {
     super.key,
     required this.task,
     required this.isDark,
+    this.flat = false,
     this.onTap,
     this.onEdit,
     this.onDelete,
@@ -36,18 +38,24 @@ class ModernTaskCard extends StatelessWidget {
     final statusColor = _getStatusColor(task.status);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 4),
+      margin: EdgeInsets.only(bottom: flat ? 0 : 4),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? _brandPurple.withOpacity(0.3) : _borderPurple,
-          width: 1.2,
-        ),
+        color: flat
+            ? Colors.transparent
+            : (isDark ? const Color(0xFF1E293B) : Colors.white),
+        borderRadius: flat ? null : BorderRadius.circular(16),
+        border: flat
+            ? const Border(bottom: BorderSide(color: Color(0xFFEDF2EF)))
+            : Border.all(
+                color: isDark
+                    ? _brandPurple.withOpacity(0.3)
+                    : _borderPurple,
+                width: 1.2,
+              ),
       ),
       child: InkWell(
         onTap: () => onTap?.call(task),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(flat ? 0 : 16),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

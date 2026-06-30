@@ -1,22 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
-import 'package:my_app/event_management/features/calendar/presentation/screen/mobile_screen/event_calendar_mobile_screen.dart';
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 
-class ZaaturnUI {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color cardBeige = Color(0xFFEADBC8);
-  static const Color accentOrange = Color(0xFFF3924C);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
-}
-
+/// Tomorrow's schedule — flat on mint surface (no white card).
 class DashboardTomorrowSectionMobile extends StatelessWidget {
-  final List<Event> upcoming;
-
   const DashboardTomorrowSectionMobile({super.key, required this.upcoming});
+
+  final List<Event> upcoming;
 
   @override
   Widget build(BuildContext context) {
@@ -27,80 +19,67 @@ class DashboardTomorrowSectionMobile extends StatelessWidget {
       ..sort((a, b) => a.startTime.toLocal().compareTo(b.startTime.toLocal()));
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.only(top: 36),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Tomorrow, ${DateFormat('MMM d').format(tomorrow)}',
-                style: GoogleFonts.manrope(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: ZaaturnUI.textDark,
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: DashboardUiTheme.statUpcoming,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const EventCalendarMobileScreen()),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Tomorrow, ${DateFormat('EEE, MMM d').format(tomorrow)}',
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: DashboardUiTheme.textDark,
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: DashboardUiTheme.statUpcomingLight,
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  'Calendar',
-                  style: GoogleFonts.manrope(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: ZaaturnUI.accentOrange,
+                  '${list.length}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: DashboardUiTheme.statUpcoming,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          list.isEmpty
-              ? _buildEmptyState()
-              : Container(
-            decoration: BoxDecoration(
-              color: ZaaturnUI.cardBeige,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: ListView.separated(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                indent: 12,
-                endIndent: 12,
-                color: ZaaturnUI.textDark.withOpacity(0.05),
+          const SizedBox(height: 14),
+          if (list.isEmpty)
+            Text(
+              'Nothing scheduled for tomorrow.',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: DashboardUiTheme.textMuted.withValues(alpha: 0.9),
               ),
-              itemBuilder: (context, i) => _TomorrowMobileRow(event: list[i]),
+            )
+          else
+            ...list.map(
+              (e) => _TomorrowSurfaceRowMobile(
+                event: e,
+                showDivider: e != list.last,
+              ),
             ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: ZaaturnUI.cardBeige.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Text(
-          "No events tomorrow",
-          style: GoogleFonts.manrope(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: ZaaturnUI.textMuted,
-          ),
-        ),
       ),
     );
   }
@@ -109,119 +88,136 @@ class DashboardTomorrowSectionMobile extends StatelessWidget {
       a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-class _TomorrowMobileRow extends StatelessWidget {
+class _TomorrowSurfaceRowMobile extends StatelessWidget {
+  const _TomorrowSurfaceRowMobile({
+    required this.event,
+    this.showDivider = true,
+  });
+
   final Event event;
-  const _TomorrowMobileRow({required this.event});
-
-  Color get _typeColor => Color(int.parse('0xFF${event.displayColor.replaceAll('#', '')}'));
-
-  IconData get _typeIcon {
-    switch (event.type) {
-      case EventType.meeting: return Icons.videocam_rounded;
-      case EventType.task: return Icons.check_circle_rounded;
-      case EventType.reminder: return Icons.notifications_rounded;
-      case EventType.personal: return Icons.person_rounded;
-    }
-  }
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
     final start = event.startTime.toLocal();
-    final time = event.isAllDay ? 'All day' : DateFormat.jm().format(start);
+    final end = event.endTime.toLocal();
+    final time =
+        event.isAllDay ? 'All day' : DateFormat('hh:mm a').format(start);
+    final duration = event.isAllDay
+        ? ''
+        : '${end.difference(start).inMinutes} min';
+    final accent = DashboardUiTheme.eventAccent(event.type);
+    final fill = DashboardUiTheme.eventFill(event.type);
+    final loc = (event.location ?? '').trim();
+    final meta = loc.isNotEmpty
+        ? loc
+        : ((event.meetingLink ?? '').trim().isNotEmpty
+            ? 'Google Meet'
+            : event.type.label);
 
-    return InkWell(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => EventDetailMobileScreen(eventId: event.id)),
-      ),
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    time,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      color: ZaaturnUI.accentOrange,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    event.title,
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: ZaaturnUI.textDark,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => EventDetailMobileScreen(eventId: event.id),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: _typeColor.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
+          ),
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 64,
+                  child: Text(
+                    time,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: DashboardUiTheme.textMuted,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(_typeIcon, size: 10, color: _typeColor),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            event.type.label,
-                            style: GoogleFonts.manrope(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w900,
-                              color: ZaaturnUI.textDark,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: fill,
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(
+                    DashboardUiTheme.eventIcon(event.type),
+                    size: 16,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14,
+                          color: DashboardUiTheme.textDark,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        meta,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: DashboardUiTheme.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (event.description.trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          event.description.trim(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: DashboardUiTheme.textMuted
+                                .withValues(alpha: 0.85),
+                            height: 1.3,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
+                    ],
+                  ),
+                ),
+                if (duration.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6, top: 2),
+                    child: Text(
+                      duration,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: DashboardUiTheme.textMuted,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _subtitle(),
-                    style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      color: ZaaturnUI.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+              ],
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded, color: ZaaturnUI.textMuted, size: 16),
-          ],
+          ),
         ),
-      ),
+        if (showDivider)
+          Divider(
+            height: 1,
+            color: DashboardUiTheme.border.withValues(alpha: 0.55),
+          ),
+      ],
     );
-  }
-
-  String _subtitle() {
-    final loc = (event.location ?? '').trim();
-    if (loc.isNotEmpty) return loc;
-    if ((event.meetingLink ?? '').trim().isNotEmpty) return 'Online';
-    return 'Scheduled';
   }
 }

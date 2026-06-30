@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
@@ -15,12 +16,12 @@ import 'package:my_app/event_management/features/events/domain/entities/event.da
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_edit_screen_mobile.dart';
 class ZaaturnUI {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color terracotta = Color(0xFFC05E41);
-  static const Color cardBeige = Color(0xFFEADBC8);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
-  static const Color meetingBlue = Color(0xFFE3F2FD);
+  static const Color background = DashboardUiTheme.pageBackground;
+  static const Color terracotta = DashboardUiTheme.primary;
+  static const Color cardBeige = DashboardUiTheme.primaryLight;
+  static const Color textDark = DashboardUiTheme.textDark;
+  static const Color textMuted = DashboardUiTheme.textMuted;
+  static const Color meetingBlue = DashboardUiTheme.statTodayLight;
 }
 
 class EventDetailMobileScreen extends StatefulWidget {
@@ -206,7 +207,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
       future: SecureStorageService().readUserId(),
       builder: (context, snap) {
         final uid = snap.data;
-        final isOwner = uid == event.createdBy.id.toString();
+        final isOwner = event.isOwnedBy(uid);
         final isPending = event.invitePendingForUser(uid ?? "");
 
         return Stack(
@@ -264,17 +265,18 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
 
   Widget _buildSliverAppBar(BuildContext context, Event event, bool canDelete) {
     return SliverAppBar(
-      expandedHeight: 150,
       pinned: true,
-      backgroundColor: ZaaturnUI.terracotta,
+      elevation: 0,
+      backgroundColor: ZaaturnUI.background,
+      foregroundColor: ZaaturnUI.textDark,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         onPressed: () => Navigator.pop(context),
       ),
       actions: [
         if (canDelete)
           IconButton(
-            icon: const Icon(Icons.edit_rounded, color: Colors.white),
+            icon: const Icon(Icons.edit_rounded),
             onPressed: () {
               Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
@@ -288,16 +290,10 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
           ),
         if (canDelete)
           IconButton(
-            icon: const Icon(Icons.delete_sweep_rounded, color: Colors.white),
+            icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
             onPressed: () => _handleDelete(context, event),
           ),
       ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          color: ZaaturnUI.terracotta,
-          child: const Icon(Icons.event_available, size: 80, color: Colors.white12),
-        ),
-      ),
     );
   }
 
@@ -357,25 +353,53 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
   }
 
   Widget _buildMeetingLinkCard(String url) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ZaaturnUI.meetingBlue,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.videocam_rounded, color: Colors.blue, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text("Join via Meeting Link", style: GoogleFonts.manrope(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: ZaaturnUI.terracotta,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Meeting link',
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: ZaaturnUI.textDark,
+                ),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () => _launchUrl(url),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white, elevation: 0),
-            child: const Text("Join"),
+          const SizedBox(height: 12),
+          InkWell(
+            onTap: () => _launchUrl(url),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Icon(Icons.videocam_rounded, color: ZaaturnUI.terracotta, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    url,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      color: ZaaturnUI.terracotta,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const Icon(Icons.open_in_new_rounded, size: 18),
+              ],
+            ),
           ),
         ],
       ),
@@ -412,18 +436,11 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
         ),
         const SizedBox(height: 12),
         if (participants.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: ZaaturnUI.cardBeige,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Text(
-              "No participants",
-              style: GoogleFonts.inter(
-                color: ZaaturnUI.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
+          Text(
+            "No participants",
+            style: GoogleFonts.inter(
+              color: ZaaturnUI.textMuted,
+              fontWeight: FontWeight.w600,
             ),
           )
         else
@@ -437,21 +454,21 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(top: 18),
+      padding: const EdgeInsets.only(top: 14),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: ZaaturnUI.cardBeige, borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: ZaaturnUI.terracotta, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: GoogleFonts.manrope(fontSize: 11, color: ZaaturnUI.textMuted, fontWeight: FontWeight.w800)),
-              Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: ZaaturnUI.textDark)),
-            ],
+          Icon(icon, color: ZaaturnUI.terracotta, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: GoogleFonts.manrope(fontSize: 11, color: ZaaturnUI.textMuted, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: ZaaturnUI.textDark)),
+              ],
+            ),
           ),
         ],
       ),
@@ -543,14 +560,9 @@ class _ParticipantsPreview extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: ZaaturnUI.cardBeige,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: ZaaturnUI.terracotta.withOpacity(0.12)),
-        ),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             SizedBox(

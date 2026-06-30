@@ -48,15 +48,23 @@ class ParticipantModel extends Participant {
       final u = userRaw;
       return ParticipantModel(
         id: u['id']?.toString() ?? '',
-        username: u['username'] as String? ?? '',
+        username: u['username']?.toString() ??
+            u['name']?.toString() ??
+            u['email']?.toString() ??
+            '',
         avatar: u['avatar'] as String?,
         status: json['status'] as String? ?? 'pending',
       );
     }
-    if (json['user_id'] != null) {
+    final id = json['user_id']?.toString() ?? json['id']?.toString() ?? '';
+    final username = json['username']?.toString() ??
+        json['user_name']?.toString() ??
+        json['name']?.toString() ??
+        '';
+    if (id.isNotEmpty || username.isNotEmpty) {
       return ParticipantModel(
-        id: json['user_id'].toString(),
-        username: json['username'] as String? ?? '',
+        id: id,
+        username: username,
         avatar: json['avatar'] as String?,
         status: json['status'] as String? ?? 'pending',
       );
@@ -172,8 +180,9 @@ class EventModel extends Event {
       type: EventTypeExtension.fromString(typeRaw.toString()),
       colorOverride:
           _jsonStringOrNull(json, 'color') ?? mergeFrom?.colorOverride ?? '',
-      meetingLink:
-          _jsonStringOrNull(json, 'meeting_link') ?? mergeFrom?.meetingLink,
+      meetingLink: _jsonStringOrNull(json, 'meeting_link') ??
+          _jsonStringOrNull(json, 'meeting_url') ??
+          mergeFrom?.meetingLink,
       location: _jsonStringOrNull(json, 'location') ?? mergeFrom?.location,
       recurrence: _parseRecurrence(
         _jsonStringOrNull(json, 'recurrence') ?? mergeFrom?.recurrence.name,

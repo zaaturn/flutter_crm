@@ -40,7 +40,7 @@ class EventDetailsCard extends StatelessWidget {
                 color: AppTheme.textHint.withValues(alpha: 0.9),
               ),
               filled: true,
-              fillColor: const Color(0xFFF3F4F6),
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,

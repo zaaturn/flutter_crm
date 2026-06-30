@@ -9,6 +9,8 @@ import 'package:my_app/event_management/features/events/presentation/bloc/event_
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_composer_mobile_ui.dart';
 import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'package:my_app/event_management/features/events/presentation/widgets/event_create/event_create_date_picker.dart';
+import 'package:my_app/services/secure_storage_service.dart';
+
 import 'package:my_app/event_management/features/events/presentation/widgets/participant_picker.dart';
 
 class EventEditScreenMobile extends StatefulWidget {
@@ -55,6 +57,22 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
     _participants = List<Participant>.from(e?.participants ?? []);
     _reminderMinutes =
         e?.reminders.map((r) => r.minutesBefore).toList() ?? [30];
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ensureOwner());
+  }
+
+  Future<void> _ensureOwner() async {
+    final e = widget.event;
+    if (e == null || !mounted) return;
+    final uid = await SecureStorageService().readUserId();
+    if (!mounted) return;
+    if (!e.isOwnedBy(uid)) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only the event host can edit this event'),
+        ),
+      );
+    }
   }
 
   @override
@@ -333,10 +351,9 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
   }
 
   Future<void> _pickParticipants() async {
-    final result = await showModalBottomSheet<List<Participant>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ParticipantPicker(selected: _participants),
+    final result = await showParticipantPicker(
+      context,
+      selected: _participants,
     );
     if (result != null) setState(() => _participants = result);
   }

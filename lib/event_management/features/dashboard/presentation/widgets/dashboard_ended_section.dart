@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:my_app/event_management/core/utils/event_instant.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
+
+import '../../shared/dashboard_ui_theme.dart';
 
 class DashboardEndedSection extends StatelessWidget {
   final List<Event> endedEvents;
@@ -15,30 +16,41 @@ class DashboardEndedSection extends StatelessWidget {
     if (endedEvents.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Text(
-                'Ended',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                width: 4,
+                height: 22,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(10),
+                  color: DashboardUiTheme.statEnded,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Ended Today',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: DashboardUiTheme.textDark,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DashboardUiTheme.statEndedLight,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   '${endedEvents.length}',
                   style: const TextStyle(
-                    color: Color(0xFFDC2626),
+                    color: DashboardUiTheme.statEnded,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   ),
@@ -46,7 +58,7 @@ class DashboardEndedSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           ...endedEvents.take(3).map((e) => _EndedEventCard(event: e)),
         ],
       ),
@@ -62,25 +74,27 @@ class _EndedEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final start = event.startTime.toLocal();
-    final color = Color(int.parse('0xFF${event.displayColor.replaceAll('#', '')}'));
+    final accent = DashboardUiTheme.eventAccent(event.type);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFCECEC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFAD1D1)),
+        color: DashboardUiTheme.statEndedLight,
+        borderRadius: BorderRadius.circular(DashboardUiTheme.cardRadius),
+        border: Border.all(
+          color: DashboardUiTheme.statEnded.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 52,
+            height: 52,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: DashboardUiTheme.cardBackground,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFF3E8FF), width: 0.5),
+              border: Border.all(color: DashboardUiTheme.border),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -90,7 +104,7 @@ class _EndedEventCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textHint,
+                    color: DashboardUiTheme.textMuted,
                     height: 1,
                   ),
                 ),
@@ -98,59 +112,38 @@ class _EndedEventCard extends StatelessWidget {
                 Text(
                   '${start.day}',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: AppTheme.textPrimary,
+                    color: DashboardUiTheme.textDark,
                     height: 1,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        event.type.label.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: color,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                  ],
+                Text(
+                  event.title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: DashboardUiTheme.textDark,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.schedule_rounded,
-                        size: 14, color: AppTheme.textSecondary),
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 14,
+                      color: DashboardUiTheme.textMuted.withValues(alpha: 0.9),
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       EventInstant.formatTimeRange(
@@ -160,31 +153,36 @@ class _EndedEventCard extends StatelessWidget {
                       ),
                       style: const TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textSecondary,
+                        color: DashboardUiTheme.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if ((event.meetingLink ?? '').isNotEmpty) ...[
-                      const SizedBox(width: 10),
-                      const Icon(Icons.videocam_outlined,
-                          size: 14, color: AppTheme.textSecondary),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Meeting',
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        event.type.label,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: accent,
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(width: 12),
-          OutlinedButton(
+          FilledButton(
             onPressed: () {
               Navigator.of(context).push<void>(
                 MaterialPageRoute<void>(
@@ -192,17 +190,18 @@ class _EndedEventCard extends StatelessWidget {
                 ),
               );
             },
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              foregroundColor: AppTheme.textPrimary,
-              side: BorderSide(color: AppTheme.borderLight.withValues(alpha: 0.9)),
+            style: FilledButton.styleFrom(
+              backgroundColor: DashboardUiTheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(14),
               ),
+              elevation: 0,
             ),
             child: const Text(
               'Review',
-              style: TextStyle(fontWeight: FontWeight.w700),
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
           ),
         ],
@@ -210,4 +209,3 @@ class _EndedEventCard extends StatelessWidget {
     );
   }
 }
-

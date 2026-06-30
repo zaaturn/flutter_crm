@@ -56,7 +56,7 @@ class EventCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         onTap: () {
           Navigator.of(context).push<void>(
             MaterialPageRoute<void>(
@@ -65,53 +65,42 @@ class EventCard extends StatelessWidget {
           );
         },
         child: Ink(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: AppTheme.borderLight.withValues(alpha: 0.85),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
+          color: Colors.transparent,
+          child: Column(
+            children: [
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: _color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      margin: const EdgeInsets.only(top: 6, bottom: 6),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+                        child: compact
+                            ? _CompactContent(event: event, color: _color)
+                            : _FullContent(
+                                event: event,
+                                color: _color,
+                                onDeleteTap: () => _confirmDelete(context),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+              Divider(
+                height: 1,
+                color: AppTheme.borderLight.withValues(alpha: 0.7),
               ),
             ],
-          ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Container(
-                  width: 5,
-                  decoration: BoxDecoration(
-                    color: _color,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      bottomLeft: Radius.circular(18),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-                    child: compact
-                        ? _CompactContent(event: event, color: _color)
-                        : _FullContent(
-                            event: event,
-                            color: _color,
-                            onDeleteTap: () => _confirmDelete(context),
-                          ),
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -212,48 +201,32 @@ class _FullContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F9FB),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppTheme.borderLight.withValues(alpha: 0.65),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _MetaRow(
-                icon: Icons.calendar_today_rounded,
-                iconColor: AppTheme.primaryBlue,
-                label: EventInstant.formatShortDate(event.startTime),
-              ),
-              const SizedBox(height: 10),
-              _MetaRow(
-                icon: Icons.schedule_rounded,
-                iconColor: AppTheme.primaryBlue,
-                label: EventInstant.formatTimeRange(
-                  event.startTime,
-                  event.endTime,
-                  allDay: event.isAllDay,
-                ),
-                emphasis: true,
-              ),
-              if (loc.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _MetaRow(
-                  icon: Icons.location_on_outlined,
-                  iconColor: AppTheme.textSecondary,
-                  label: loc,
-                  maxLines: 2,
-                ),
-              ],
-            ],
-          ),
+        const SizedBox(height: 12),
+        _MetaRow(
+          icon: Icons.calendar_today_rounded,
+          iconColor: AppTheme.primaryBlue,
+          label: EventInstant.formatShortDate(event.startTime),
         ),
+        const SizedBox(height: 8),
+        _MetaRow(
+          icon: Icons.schedule_rounded,
+          iconColor: AppTheme.primaryBlue,
+          label: EventInstant.formatTimeRange(
+            event.startTime,
+            event.endTime,
+            allDay: event.isAllDay,
+          ),
+          emphasis: true,
+        ),
+        if (loc.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _MetaRow(
+            icon: Icons.location_on_outlined,
+            iconColor: AppTheme.textSecondary,
+            label: loc,
+            maxLines: 2,
+          ),
+        ],
       ],
     );
   }

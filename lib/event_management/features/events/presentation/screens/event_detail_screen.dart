@@ -123,15 +123,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             future: SecureStorageService().readUserId(),
             builder: (context, snap) {
               final uid = snap.data;
-              final mine = uid != null &&
-                  uid.isNotEmpty &&
-                  uid == event!.createdBy.id.toString();
+              final mine = event!.isOwnedBy(uid);
               final pendingInvite = uid != null &&
                   uid.isNotEmpty &&
                   event!.invitePendingForUser(uid);
 
               return EventDetailView(
                 event: event!,
+                canEdit: mine,
                 canDelete: mine,
                 onDelete: () => _confirmDelete(context, event!),
                 showPendingInviteActions: pendingInvite,

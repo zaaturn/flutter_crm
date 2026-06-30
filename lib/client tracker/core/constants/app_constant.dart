@@ -12,6 +12,7 @@ class AppConstants {
   static const String credentials = '/api/client/credentials/';
   static const String payments    = '/api/client/payments/';
   static const String dashboard   = '/api/client/dashboard/';
+  static const String dashboardSummary = '/api/client/dashboard-summary/';
   static const String events      = '/api/events/';
 
   static String clientById(int id)           => '/api/client/clients/$id/';

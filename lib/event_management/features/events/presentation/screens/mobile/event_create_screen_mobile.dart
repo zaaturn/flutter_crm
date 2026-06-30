@@ -33,6 +33,7 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
+  final _meetingLinkCtrl = TextEditingController();
 
   late DateTime _startTime;
   late DateTime _endTime;
@@ -60,6 +61,7 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _locationCtrl.dispose();
+    _meetingLinkCtrl.dispose();
     super.dispose();
   }
 
@@ -115,6 +117,7 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
                       _buildDetailsCard(),
                       _buildScheduleCard(),
                       _buildLocationCard(),
+                      _buildMeetingLinkCard(),
                       _buildGuestsCard(),
                       _buildRemindersCard(),
                       _buildDescriptionCard(),
@@ -249,6 +252,19 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
     );
   }
 
+  Widget _buildMeetingLinkCard() {
+    return EventComposerSectionCard(
+      icon: Icons.videocam_rounded,
+      title: 'Meeting link',
+      children: [
+        EventComposerTextField(
+          controller: _meetingLinkCtrl,
+          hint: 'https://meet.google.com/...',
+        ),
+      ],
+    );
+  }
+
   Widget _buildGuestsCard() {
     return EventComposerSectionCard(
       icon: Icons.people_rounded,
@@ -335,10 +351,9 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
   }
 
   Future<void> _pickParticipants() async {
-    final result = await showModalBottomSheet<List<Participant>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ParticipantPicker(selected: _participants),
+    final result = await showParticipantPicker(
+      context,
+      selected: _participants,
     );
     if (result != null) setState(() => _participants = result);
   }
@@ -365,6 +380,9 @@ class _EventCreateScreenMobileState extends State<EventCreateScreenMobile> {
       type: _eventType,
       location: _locationCtrl.text.trim().isNotEmpty
           ? _locationCtrl.text.trim()
+          : null,
+      meetingLink: _meetingLinkCtrl.text.trim().isNotEmpty
+          ? _meetingLinkCtrl.text.trim()
           : null,
       recurrence: _recurrence,
       participants: _participants,

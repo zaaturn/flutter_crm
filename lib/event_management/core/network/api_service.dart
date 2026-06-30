@@ -34,6 +34,11 @@ class ApiEndpoints {
   // Events
   static const String events = '/api/events/';
   static const String eventsRange = '/api/events/range/';
+  static const String eventsCalendar = '/api/events/calendar/';
+  static const String eventsDotMap = '/api/events/dot-map/';
+  static const String eventsMyReminders = '/api/events/my-reminders/';
+  static const String eventsConflictCheck = '/api/events/conflict-check/';
+  static const String eventsExportIcs = '/api/events/export-ics/';
   static const String eventsToday = '/api/events/today/';
   static const String eventsUpcoming = '/api/events/upcoming/';
   static const String eventsMissed = '/api/events/missed/';

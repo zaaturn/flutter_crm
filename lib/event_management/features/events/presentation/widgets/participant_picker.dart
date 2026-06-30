@@ -2,16 +2,55 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 import 'package:my_app/event_management/features/events/data/datasources/user_directory_datasource.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
 import '../../domain/entities/event.dart';
+
+/// Opens participant picker — dialog on desktop, bottom sheet on mobile.
+Future<List<Participant>?> showParticipantPicker(
+  BuildContext context, {
+  required List<Participant> selected,
+}) {
+  if (AdaptiveLayout.useMobileUi(context)) {
+    return showModalBottomSheet<List<Participant>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ParticipantPicker(selected: selected),
+    );
+  }
+
+  return showDialog<List<Participant>>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: DashboardUiTheme.pageBackground,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 640),
+        child: ParticipantPicker(
+          selected: selected,
+          embedded: true,
+        ),
+      ),
+    ),
+  );
+}
 
 /// Loads paginated users from `GET /api/users/all/?search=&page=`.
 class ParticipantPicker extends StatefulWidget {
   final List<Participant> selected;
+  final bool embedded;
 
-  const ParticipantPicker({required this.selected, super.key});
+  const ParticipantPicker({
+    required this.selected,
+    this.embedded = false,
+    super.key,
+  });
 
   @override
   State<ParticipantPicker> createState() => _ParticipantPickerState();
@@ -19,6 +58,7 @@ class ParticipantPicker extends StatefulWidget {
 
 class _ParticipantPickerState extends State<ParticipantPicker> {
   final _searchCtrl = TextEditingController();
+  final _scrollCtrl = ScrollController();
   final _datasource = UserDirectoryDatasource();
 
   late List<Participant> _selected;
@@ -45,6 +85,7 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
   void dispose() {
     _debounce?.cancel();
     _searchCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -79,9 +120,7 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
       if (!mounted) return;
       String msg;
       if (e is DioException) {
-        msg = e.message ??
-            e.error?.toString() ??
-            'Network error';
+        msg = e.message ?? e.error?.toString() ?? 'Network error';
       } else {
         msg = e.toString();
       }
@@ -130,21 +169,34 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
     });
   }
 
+  void _done() => Navigator.pop(context, _selected);
+
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFFAF3E0);
-    const terracotta = Color(0xFFC05E41);
-    const cardBeige = Color(0xFFEADBC8);
-    const textDark = Color(0xFF3E2723);
-    const textMuted = Color(0xFF8D6E63);
+    final body = _ParticipantPickerBody(
+      embedded: widget.embedded,
+      searchCtrl: _searchCtrl,
+      scrollCtrl: _scrollCtrl,
+      selected: _selected,
+      results: _results,
+      loading: _loading,
+      loadingMore: _loadingMore,
+      error: _error,
+      onSearchChanged: _onSearchChanged,
+      onRemoveSelected: (i) => setState(() => _selected.removeAt(i)),
+      onAddUser: _addUser,
+      onLoadMore: _loadMore,
+      onDone: _done,
+    );
+
+    if (widget.embedded) return body;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       maxChildSize: 0.95,
       minChildSize: 0.4,
-      // Must be true so the sheet passes a bounded height to [Column] + [Expanded].
       expand: true,
-      builder: (ctx, sheetScroll) {
+      builder: (_, sheetScroll) {
         return NotificationListener<ScrollNotification>(
           onNotification: (n) {
             if (n.metrics.pixels > n.metrics.maxScrollExtent - 200) {
@@ -154,235 +206,350 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
           },
           child: Container(
             decoration: const BoxDecoration(
-              color: bg,
+              color: DashboardUiTheme.pageBackground,
               borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
             clipBehavior: Clip.antiAlias,
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: terracotta.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _searchCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'Search people…',
-                      hintStyle: const TextStyle(color: textMuted),
-                      prefixIcon: const Icon(Icons.search, color: terracotta),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.65),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    onChanged: _onSearchChanged,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Selected (${_selected.length})',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: textMuted,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 44,
-                  child: _selected.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Tap a user below to add',
-                            style: TextStyle(
-                              color: textMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          itemCount: _selected.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 6),
-                          itemBuilder: (_, i) {
-                            final p = _selected[i];
-                            return Chip(
-                              label: Text(p.username, maxLines: 1),
-                              onDeleted: () =>
-                                  setState(() => _selected.removeAt(i)),
-                              backgroundColor:
-                                  Colors.white.withValues(alpha: 0.65),
-                              deleteIconColor: terracotta,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                                side: BorderSide(
-                                  color: terracotta.withValues(alpha: 0.18),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                const Divider(height: 1),
-                if (_error != null)
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Scrollbar(
-                        thumbVisibility: true,
-                        child: SingleChildScrollView(
-                          child: SelectableText(
-                            _error!,
-                            style: const TextStyle(
-                              color: Colors.red,
-                              fontSize: 12,
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                Expanded(
-                  child: _loading && _results.isEmpty
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          controller: sheetScroll,
-                          itemCount: _results.length + (_loadingMore ? 1 : 0),
-                          itemBuilder: (_, i) {
-                            if (i >= _results.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
-                            final u = _results[i];
-                            final already = _selected.any((p) => p.id == u.id);
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              child: Material(
-                                color: cardBeige,
-                                borderRadius: BorderRadius.circular(18),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(18),
-                                  onTap: already ? null : () => _addUser(u),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 18,
-                                          backgroundColor:
-                                              Colors.white.withValues(alpha: 0.65),
-                                          child: Text(
-                                            (u.username.isNotEmpty
-                                                    ? u.username.characters.first
-                                                    : '?')
-                                                .toUpperCase(),
-                                            style: const TextStyle(
-                                              color: terracotta,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                u.username,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                  color: textDark,
-                                                ),
-                                              ),
-                                              if (u.email != null &&
-                                                  u.email!.isNotEmpty)
-                                                Text(
-                                                  u.email!,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    color: textMuted,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 12.5,
-                                                  ),
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Icon(
-                                          already
-                                              ? Icons.check_circle_rounded
-                                              : Icons.add_circle_outline_rounded,
-                                          color: already
-                                              ? terracotta
-                                              : textMuted,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: terracotta,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      onPressed: () => Navigator.pop(context, _selected),
-                      child: const Text('Done'),
-                    ),
-                  ),
-                ),
-              ],
+            child: _ParticipantPickerBody(
+              embedded: false,
+              searchCtrl: _searchCtrl,
+              scrollCtrl: sheetScroll,
+              selected: _selected,
+              results: _results,
+              loading: _loading,
+              loadingMore: _loadingMore,
+              error: _error,
+              onSearchChanged: _onSearchChanged,
+              onRemoveSelected: (i) => setState(() => _selected.removeAt(i)),
+              onAddUser: _addUser,
+              onLoadMore: _loadMore,
+              onDone: _done,
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _ParticipantPickerBody extends StatelessWidget {
+  const _ParticipantPickerBody({
+    required this.embedded,
+    required this.searchCtrl,
+    required this.scrollCtrl,
+    required this.selected,
+    required this.results,
+    required this.loading,
+    required this.loadingMore,
+    required this.error,
+    required this.onSearchChanged,
+    required this.onRemoveSelected,
+    required this.onAddUser,
+    required this.onLoadMore,
+    required this.onDone,
+  });
+
+  final bool embedded;
+  final TextEditingController searchCtrl;
+  final ScrollController scrollCtrl;
+  final List<Participant> selected;
+  final List<DirectoryUser> results;
+  final bool loading;
+  final bool loadingMore;
+  final String? error;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<int> onRemoveSelected;
+  final ValueChanged<DirectoryUser> onAddUser;
+  final VoidCallback onLoadMore;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        if (embedded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Add participants',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: DashboardUiTheme.textDark,
+                        ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  color: DashboardUiTheme.textMuted,
+                ),
+              ],
+            ),
+          )
+        else
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: DashboardUiTheme.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(16, embedded ? 8 : 0, 16, 0),
+          child: TextField(
+            controller: searchCtrl,
+            decoration: InputDecoration(
+              hintText: 'Search people…',
+              hintStyle: const TextStyle(color: DashboardUiTheme.textMuted),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: DashboardUiTheme.primary,
+              ),
+              filled: true,
+              fillColor: DashboardUiTheme.cardBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: DashboardUiTheme.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: DashboardUiTheme.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(
+                  color: DashboardUiTheme.primary,
+                  width: 1.5,
+                ),
+              ),
+            ),
+            onChanged: onSearchChanged,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Selected (${selected.length})',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: DashboardUiTheme.textMuted,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 44,
+          child: selected.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Tap a user below to add',
+                    style: TextStyle(
+                      color: DashboardUiTheme.textMuted,
+                      fontSize: 13,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: selected.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (_, i) {
+                    final p = selected[i];
+                    return Chip(
+                      label: Text(p.username, maxLines: 1),
+                      onDeleted: () => onRemoveSelected(i),
+                      backgroundColor: DashboardUiTheme.primaryLight,
+                      deleteIconColor: DashboardUiTheme.primary,
+                      labelStyle: const TextStyle(
+                        color: DashboardUiTheme.textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                        side: BorderSide(
+                          color: DashboardUiTheme.primary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        Divider(
+          height: 1,
+          color: DashboardUiTheme.border.withValues(alpha: 0.7),
+        ),
+        if (error != null)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 120),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Scrollbar(
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    error!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Expanded(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (embedded &&
+                  n.metrics.pixels > n.metrics.maxScrollExtent - 200) {
+                onLoadMore();
+              }
+              return false;
+            },
+            child: loading && results.isEmpty
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: DashboardUiTheme.primary,
+                    ),
+                  )
+                : ListView.builder(
+                    controller: scrollCtrl,
+                    itemCount: results.length + (loadingMore ? 1 : 0),
+                    itemBuilder: (_, i) {
+                      if (i >= results.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: DashboardUiTheme.primary,
+                            ),
+                          ),
+                        );
+                      }
+                      final u = results[i];
+                      final already =
+                          selected.any((p) => p.id == u.id);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 5,
+                        ),
+                        child: Material(
+                          color: DashboardUiTheme.cardBackground,
+                          borderRadius: BorderRadius.circular(14),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: already ? null : () => onAddUser(u),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: already
+                                      ? DashboardUiTheme.primary
+                                          .withValues(alpha: 0.35)
+                                      : DashboardUiTheme.border,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor:
+                                        DashboardUiTheme.primaryLight,
+                                    child: Text(
+                                      (u.username.isNotEmpty
+                                              ? u.username.characters.first
+                                              : '?')
+                                          .toUpperCase(),
+                                      style: const TextStyle(
+                                        color: DashboardUiTheme.primary,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          u.username,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            color: DashboardUiTheme.textDark,
+                                          ),
+                                        ),
+                                        if (u.email != null &&
+                                            u.email!.isNotEmpty)
+                                          Text(
+                                            u.email!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              color: DashboardUiTheme.textMuted,
+                                              fontWeight: FontWeight.w500,
+                                              fontSize: 12.5,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Icon(
+                                    already
+                                        ? Icons.check_circle_rounded
+                                        : Icons.add_circle_outline_rounded,
+                                    color: already
+                                        ? DashboardUiTheme.primary
+                                        : DashboardUiTheme.textMuted,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: DashboardUiTheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onDone,
+              child: const Text('Done'),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

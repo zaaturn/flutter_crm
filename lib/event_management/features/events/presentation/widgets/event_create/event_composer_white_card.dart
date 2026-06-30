@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
-/// Rounded white panel with light border and shadow used across the composer.
+import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
+
+/// Flat section wrapper — content sits on page surface (no white card).
 class EventComposerWhiteCard extends StatelessWidget {
   final Widget child;
 
@@ -9,22 +10,24 @@ class EventComposerWhiteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderLight.withValues(alpha: 0.6)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: child,
+    );
+  }
+}
+
+class EventComposerSectionDivider extends StatelessWidget {
+  const EventComposerSectionDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Divider(
+        height: 1,
+        color: DashboardUiTheme.border.withValues(alpha: 0.55),
+      ),
     );
   }
 }

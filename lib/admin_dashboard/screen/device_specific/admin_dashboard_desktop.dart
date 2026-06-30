@@ -5,14 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
-
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/sidebar/device_specific/sidebar_widgets_desktop.dart';
-
 import 'package:my_app/admin_dashboard/widget/device_specific/welcome_header_desktop.dart';
-import 'package:my_app/admin_dashboard/widget/device_specific/task_section_desktop.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_section_desktop.dart';
-// Note: Ensure the path to DashboardCalendar matches where you saved the code from our previous step
-import 'package:my_app/admin_dashboard/widget/device_specific/calender_desktop.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/admin_dashboard_overview_section.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/admin_client_summary_panel.dart';
+import 'package:my_app/admin_dashboard/cubit/client_dashboard_summary_cubit.dart';
+import 'package:my_app/admin_dashboard/repository/client_dashboard_summary_repository.dart';
 import 'package:my_app/core/keyboard/keyboard_navigation.dart';
 
 class AdminDashboardDesktop extends StatelessWidget {
@@ -21,14 +21,19 @@ class AdminDashboardDesktop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFFF9FAFB),
-      body: _AdminDashboardDesktopView(),
+      backgroundColor: AdminDashboardTheme.shellMint,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(AdminDashboardTheme.shellPadding),
+          child: _AdminDashboardDesktopView(),
+        ),
+      ),
     );
   }
 }
 
 class _AdminDashboardDesktopView extends StatefulWidget {
-  const _AdminDashboardDesktopView({super.key});
+  const _AdminDashboardDesktopView();
 
   @override
   State<_AdminDashboardDesktopView> createState() =>
@@ -41,10 +46,17 @@ class _AdminDashboardDesktopViewState
   final ScrollController _scrollController = ScrollController();
   final FocusNode _sidebarFocusNode = FocusNode(debugLabel: 'AdminSidebarFocus');
   final FocusNode _contentFocusNode = FocusNode(debugLabel: 'AdminContentFocus');
+  late final ClientDashboardSummaryCubit _clientSummaryCubit;
+
+  static const _gap = AdminDashboardTheme.panelGap;
+  static const _splitPanelHeight = 380.0;
 
   @override
   void initState() {
     super.initState();
+    _clientSummaryCubit = ClientDashboardSummaryCubit(
+      ClientDashboardSummaryRepository(),
+    )..initialize();
     context.read<AdminDashboardBloc>().add(AdminDashboardStarted());
     _liveStatusTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted) return;
@@ -58,6 +70,7 @@ class _AdminDashboardDesktopViewState
   @override
   void dispose() {
     _liveStatusTimer?.cancel();
+    _clientSummaryCubit.close();
     _scrollController.dispose();
     _sidebarFocusNode.dispose();
     _contentFocusNode.dispose();
@@ -69,79 +82,89 @@ class _AdminDashboardDesktopViewState
     return BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
       builder: (context, state) {
         if (state.isLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
+          );
         }
 
+        final roleIsAdmin = state.role?.toLowerCase() == 'admin';
+
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DashboardSidebarFocusScope(
-              focusNode: _sidebarFocusNode,
-              onMoveToContent: () => _contentFocusNode.requestFocus(),
-              child: DesktopSidebar(
-                parentContext: context,
-                userName: state.username ?? "Admin",
-                userRole: state.role ?? "Super Admin",
+            AdminDashboardPanel(
+              margin: const EdgeInsets.only(right: _gap),
+              width: AdminDashboardTheme.railWidth,
+              child: DashboardSidebarFocusScope(
+                focusNode: _sidebarFocusNode,
+                onMoveToContent: () => _contentFocusNode.requestFocus(),
+                child: DesktopSidebar(
+                  parentContext: context,
+                  userName: state.username ?? 'Admin',
+                  userRole: state.role ?? 'Super Admin',
+                ),
               ),
             ),
-
             Expanded(
-              flex: 5,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ModernDashboardHeader(
-                    adminName: state.username ?? "Admin",
+                    adminName: state.username ?? 'Admin',
+                    parentContext: context,
+                    showWorkspaceSwitcher: roleIsAdmin,
                   ),
                   Expanded(
                     child: KeyboardScrollRegion(
                       scrollController: _scrollController,
                       focusNode: _contentFocusNode,
-                      onMoveToPreviousRegion: () => _sidebarFocusNode.requestFocus(),
+                      onMoveToPreviousRegion: () =>
+                          _sidebarFocusNode.requestFocus(),
                       child: SingleChildScrollView(
                         controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 32,
-                        ),
+                        padding: const EdgeInsets.only(top: 20),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            DesktopTaskSectionModern(
-                              tasks: state.tasks,
+                            const SizedBox(height: 12),
+                            AdminDashboardOverviewSection(state: state),
+                            const SizedBox(height: 40),
+                            SizedBox(
+                              height: _splitPanelHeight,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: AdminDashboardPanel(
+                                      child: DesktopEmployeeSection(
+                                        employees: state.liveEmployees,
+                                        totalEmployeeCount:
+                                            state.totalEmployeeCount,
+                                        flat: true,
+                                        compact: true,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: _gap),
+                                  Expanded(
+                                    child: AdminDashboardPanel(
+                                      child: BlocProvider.value(
+                                        value: _clientSummaryCubit,
+                                        child:
+                                            const AdminClientSummaryPanel(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 32),
-                            DesktopEmployeeSection(
-                              employees: state.liveEmployees,
-                              totalEmployeeCount: state.totalEmployeeCount,
-                            ),
+                            const SizedBox(height: _gap),
                           ],
                         ),
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            // ================= RIGHT PANEL (CALENDAR AT TOP) =================
-            Container(
-              width: 380,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  left: BorderSide(color: Colors.grey.shade100),
-                ),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.fromLTRB(12, 20, 12, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // The Calendar now sits at the very top
-                    Expanded(
-                      child: DashboardCalendar(),
-                    ),
-                  ],
-                ),
               ),
             ),
           ],

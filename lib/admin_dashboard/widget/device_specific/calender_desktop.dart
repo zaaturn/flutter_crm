@@ -10,7 +10,9 @@ import 'package:my_app/event_management/features/events/presentation/screens/eve
 import 'package:my_app/services/api_client.dart';
 
 class DashboardCalendar extends StatefulWidget {
-  const DashboardCalendar({super.key});
+  final bool embedded;
+
+  const DashboardCalendar({super.key, this.embedded = false});
 
   @override
   State<DashboardCalendar> createState() => _DashboardCalendarState();
@@ -87,88 +89,124 @@ class _DashboardCalendarState extends State<DashboardCalendar> with WidgetsBindi
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator(strokeWidth: 3, color: _primaryPurple)),
-      );
+      return widget.embedded
+          ? const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: _primaryPurple,
+              ),
+            )
+          : const Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: _primaryPurple,
+                ),
+              ),
+            );
     }
 
     final selectedDate = _selectedDay ?? DateTime.now();
     final todayEvents = _getEventsForDay(selectedDate);
-
-    // Filter for events occurring after the current selected day
     final upcomingEvents = _eventsMonth.where((e) {
       final eventDate = e.startTime.toLocal();
-      final endOfCurrentDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, 23, 59, 59);
+      final endOfCurrentDay = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        23,
+        59,
+        59,
+      );
       return eventDate.isAfter(endOfCurrentDay);
-    }).toList()..sort((a, b) => a.startTime.compareTo(b.startTime));
+    }).toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          // 1. CALENDAR SECTION
-          SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-                border: Border(bottom: BorderSide(color: _primaryPurple.withOpacity(0.05))),
-              ),
-              child: Column(
-                children: [
-                  _buildSyncIndicator(),
-                  _buildCalendar(),
-                ],
-              ),
+    final body = CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Container(
+            padding: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: widget.embedded
+                  ? null
+                  : const BorderRadius.vertical(bottom: Radius.circular(32)),
+              border: widget.embedded
+                  ? null
+                  : Border(
+                      bottom: BorderSide(
+                        color: _primaryPurple.withOpacity(0.05),
+                      ),
+                    ),
+            ),
+            child: Column(
+              children: [
+                _buildSyncIndicator(),
+                _buildCalendar(),
+              ],
             ),
           ),
-
-          // 2. SELECTED DAY EVENTS
-          _buildSectionHeader(
-            title: isSameDay(selectedDate, DateTime.now()) ? "Today's Schedule" : "Schedule",
-            subtitle: DateFormat('EEEE, MMM d').format(selectedDate),
-          ),
-
-          todayEvents.isNotEmpty
-              ? SliverPadding(
+        ),
+        _buildSectionHeader(
+          title: isSameDay(selectedDate, DateTime.now())
+              ? "Today's Schedule"
+              : 'Schedule',
+          subtitle: DateFormat('EEEE, MMM d').format(selectedDate),
+        ),
+        if (todayEvents.isNotEmpty)
+          SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildModernEventCard(todayEvents[index]),
+                (context, index) =>
+                    _buildModernEventCard(todayEvents[index]),
                 childCount: todayEvents.length,
               ),
             ),
           )
-              : SliverToBoxAdapter(child: _buildEmptyState("No events scheduled for this day")),
-
-          // 3. UPCOMING EVENTS SECTION (Always visible title)
-          _buildSectionHeader(
-            title: "Upcoming Events",
-            subtitle: "Coming up soon",
-            showFilter: false,
+        else
+          SliverToBoxAdapter(
+            child: _buildEmptyState('No events scheduled for this day'),
           ),
-
-          upcomingEvents.isNotEmpty
-              ? SliverPadding(
+        _buildSectionHeader(
+          title: 'Upcoming Events',
+          subtitle: 'Coming up soon',
+          showFilter: false,
+        ),
+        if (upcomingEvents.isNotEmpty)
+          SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildModernEventCard(upcomingEvents[index], showDate: true),
-                childCount: upcomingEvents.length > 5 ? 5 : upcomingEvents.length,
+                (context, index) => _buildModernEventCard(
+                  upcomingEvents[index],
+                  showDate: true,
+                ),
+                childCount:
+                    upcomingEvents.length > 5 ? 5 : upcomingEvents.length,
               ),
             ),
           )
-              : SliverToBoxAdapter(child: _buildEmptyState("No upcoming events this month")),
+        else
+          SliverToBoxAdapter(
+            child: _buildEmptyState('No upcoming events this month'),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+      ],
+    );
 
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
+    if (widget.embedded) {
+      return ColoredBox(color: Colors.white, child: body);
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: body,
     );
   }
-
   Widget _buildSectionHeader({required String title, required String subtitle, bool showFilter = true}) {
     return SliverToBoxAdapter(
       child: Padding(

@@ -3,84 +3,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
-import 'package:my_app/event_management/shared/themes/event_adaptive_theme.dart';
 
+import '../../shared/dashboard_ui_theme.dart';
 import '../bloc/dashboard_bloc.dart';
 
+/// Top bar: dynamic greeting left, month pill centered, actions right.
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Dashboard',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: EventAdaptiveTheme.text(context),
-                        letterSpacing: -0.2,
-                      ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Notifications',
-                onPressed: () => _openNotifications(context),
-                icon: BlocBuilder<DashboardBloc, DashboardState>(
-                  builder: (_, state) => Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Icon(
-                        Icons.notifications_none_rounded,
-                        size: 24,
-                        color: EventAdaptiveTheme.text(context),
-                      ),
-                      if (state.missedEvents.isNotEmpty)
-                        Positioned(
-                          right: -1,
-                          top: -1,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Help',
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Today is ${DateFormat('EEEE, MMMM d').format(DateTime.now())}.',
-                      ),
-                    ),
-                  );
-                },
-                icon: Icon(
-                  Icons.help_outline_rounded,
-                  size: 24,
-                  color: EventAdaptiveTheme.text(context),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+    return DashboardTopBar(
+      onNotifications: () => _openNotifications(context),
+      showMissedBadge: context.watch<DashboardBloc>().state.missedEvents.isNotEmpty,
     );
   }
 
@@ -104,3 +39,164 @@ class DashboardHeader extends StatelessWidget {
   }
 }
 
+class DashboardTopBar extends StatelessWidget {
+  const DashboardTopBar({
+    super.key,
+    this.leading,
+    required this.onNotifications,
+    this.showMissedBadge = false,
+    this.notificationBadge = false,
+  });
+
+  final Widget? leading;
+  final VoidCallback onNotifications;
+  final bool showMissedBadge;
+  final bool notificationBadge;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel = DateFormat('EEEE, MMMM d').format(DateTime.now());
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: SizedBox(
+        height: 48,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: const DashboardMonthPill(),
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (leading != null) leading!,
+                Expanded(
+                  child: Text(
+                    DashboardUiTheme.greeting(),
+                    style: TextStyle(
+                      fontSize: leading != null ? 17 : 22,
+                      fontWeight: FontWeight.w800,
+                      color: DashboardUiTheme.textDark,
+                      letterSpacing: -0.4,
+                      height: 1.1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                _HeaderIconButton(
+                  icon: Icons.notifications_none_rounded,
+                  tooltip: 'Notifications',
+                  onPressed: onNotifications,
+                  badge: notificationBadge || showMissedBadge,
+                ),
+                const SizedBox(width: 8),
+                _HeaderIconButton(
+                  icon: Icons.help_outline_rounded,
+                  tooltip: 'Help',
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Today is $dateLabel.'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class DashboardMonthPill extends StatelessWidget {
+  const DashboardMonthPill({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final monthLabel = DateFormat('MMMM yyyy').format(DateTime.now());
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      decoration: BoxDecoration(
+        color: DashboardUiTheme.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: DashboardUiTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        monthLabel,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          color: DashboardUiTheme.textDark,
+          letterSpacing: -0.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.badge = false,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final bool badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: DashboardUiTheme.cardBackground,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: DashboardUiTheme.border),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(icon, size: 22, color: DashboardUiTheme.textDark),
+              if (badge)
+                Positioned(
+                  right: 10,
+                  top: 10,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: DashboardUiTheme.statEnded,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

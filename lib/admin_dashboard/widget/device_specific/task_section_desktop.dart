@@ -11,12 +11,14 @@ class DesktopTaskSectionModern extends StatefulWidget {
   final List<Task> tasks;
   final VoidCallback? onViewAll;
   final Function(Task)? onTaskTap;
+  final bool flat;
 
   const DesktopTaskSectionModern({
     super.key,
     required this.tasks,
     this.onViewAll,
     this.onTaskTap,
+    this.flat = false,
   });
 
   @override
@@ -60,11 +62,37 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filteredTasks = _filteredTasks;
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildPremiumHeader(isDark),
+        AnimatedCrossFade(
+          firstChild: const SizedBox(width: double.infinity),
+          secondChild: Column(
+            children: [
+              Divider(
+                height: 1,
+                color: widget.flat
+                    ? const Color(0xFFEDF2EF)
+                    : _borderPurple,
+              ),
+              _buildTaskList(filteredTasks, isDark),
+            ],
+          ),
+          crossFadeState: _isExpanded
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          duration: const Duration(milliseconds: 300),
+        ),
+      ],
+    );
+
+    if (widget.flat) return content;
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(24),
-        // --- ADDED PURPLE BORDER ---
         border: Border.all(
           color: isDark ? _brandPurple.withOpacity(0.3) : _borderPurple,
           width: 1.5,
@@ -77,27 +105,7 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
           )
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildPremiumHeader(isDark),
-
-          // Animated Visibility for the Dropdown content
-          AnimatedCrossFade(
-            firstChild: const SizedBox(width: double.infinity),
-            secondChild: Column(
-              children: [
-                const Divider(height: 1, color: _borderPurple),
-                _buildTaskList(filteredTasks, isDark),
-              ],
-            ),
-            crossFadeState: _isExpanded
-                ? CrossFadeState.showSecond
-                : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 300),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 
@@ -231,6 +239,7 @@ class _DesktopTaskSectionModernState extends State<DesktopTaskSectionModern> {
             return ModernTaskCard(
               task: task,
               isDark: isDark,
+              flat: widget.flat,
               onTap: widget.onTaskTap,
               onEdit: () => openTaskEditForDashboard(context, task.id),
               onDelete: (taskToArchive) {

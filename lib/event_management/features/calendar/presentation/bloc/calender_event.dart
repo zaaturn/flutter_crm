@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 // ── Calendar Views ─────────────────────────────────────────────────────────────
-enum CalendarView { month, week, day }
+enum CalendarView { month, week, day, agenda }
 
 // ── Events ────────────────────────────────────────────────────────────────────
 abstract class CalendarEvent extends Equatable {

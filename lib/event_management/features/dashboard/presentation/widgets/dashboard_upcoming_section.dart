@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
-import 'package:my_app/event_management/shared/themes/app_theme.dart';
+
+import '../../shared/dashboard_ui_theme.dart';
 
 class DashboardUpcomingSection extends StatelessWidget {
   final List<Event> upcoming;
@@ -12,8 +13,8 @@ class DashboardUpcomingSection extends StatelessWidget {
   const DashboardUpcomingSection({
     super.key,
     required this.upcoming,
-    this.sectionPadding = const EdgeInsets.fromLTRB(24, 28, 24, 0),
-    this.maxItems = 6, // Slightly reduced for cleaner look
+    this.sectionPadding = const EdgeInsets.fromLTRB(20, 24, 20, 0),
+    this.maxItems = 6,
   });
 
   @override
@@ -30,39 +31,49 @@ class DashboardUpcomingSection extends StatelessWidget {
 
     final shown = list.take(maxItems).toList();
 
-    return Container(
-      color: Colors.white, // Pure white background
+    return Padding(
       padding: sectionPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text(
-                'Upcoming Events',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.5,
+              Container(
+                width: 4,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: DashboardUiTheme.statUpcoming,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Upcoming Events',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: DashboardUiTheme.textDark,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+              ),
               TextButton(
                 onPressed: () => Navigator.of(context).pushNamed('/calendar'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF0D3199),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  foregroundColor: DashboardUiTheme.primary,
                 ),
-                child: const Text('View Calendar'),
+                child: const Text(
+                  'View Calendar',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           if (shown.isEmpty)
             _buildEmptyState()
           else
-          // Changed from a single box to individual rows or a clean list
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -78,16 +89,15 @@ class DashboardUpcomingSection extends StatelessWidget {
   Widget _buildEmptyState() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 28),
+      decoration: DashboardUiTheme.cardDecoration(),
       child: const Text(
         'No upcoming events scheduled.',
         textAlign: TextAlign.center,
-        style: TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+        style: TextStyle(
+          color: DashboardUiTheme.textMuted,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -102,120 +112,99 @@ class _UpcomingRow extends StatelessWidget {
     final start = event.startTime.toLocal();
     final dateLabel = DateFormat('EEE, MMM d').format(start);
     final time = event.isAllDay ? 'All day' : DateFormat.jm().format(start);
-    final color = Color(int.parse('0xFF${event.displayColor.replaceAll('#', '')}'));
+    final accent = DashboardUiTheme.eventAccent(event.type);
+    final fill = DashboardUiTheme.eventFill(event.type);
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: event.id)),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFF1F5F9)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Date & Time Block
-            SizedBox(
-              width: 85,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateLabel.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF0D3199), // Brand color for dates
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: event.id)),
+          );
+        },
+        borderRadius: BorderRadius.circular(DashboardUiTheme.cardRadiusSm),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: DashboardUiTheme.cardDecoration(),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: fill,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      dateLabel.split(',').first.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: accent,
+                        letterSpacing: 0.4,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                    const SizedBox(height: 2),
+                    Text(
+                      time,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: DashboardUiTheme.eventText(event.type),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            // Vertical Separator
-            Container(
-              height: 24,
-              width: 1,
-              color: const Color(0xFFE2E8F0),
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-            ),
-            // Status Dot
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 12),
-            // Title & Subtitle
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _subtitle(),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF94A3B8),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // SaaS-style Type Tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                event.type.label.toUpperCase(),
-                style: TextStyle(
-                  color: color,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        color: DashboardUiTheme.textDark,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      _subtitle(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: DashboardUiTheme.textMuted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DashboardUiTheme.primaryLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  event.type.label,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

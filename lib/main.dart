@@ -28,6 +28,9 @@ import 'admin_dashboard/repository/admin_repository.dart';
 
 // Calendar / Events
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
+import 'package:my_app/event_management/features/calendar/data/datasources/calendar_remote_datasource.dart';
+import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_data_bloc.dart';
+import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_data_event.dart';
 import 'package:my_app/event_management/features/dashboard/data/repositories/dashboard_repositories_impl.dart';
 import 'package:my_app/event_management/features/dashboard/domain/usecases/fetch_dashboard_usecase.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -41,6 +44,7 @@ import 'package:my_app/event_management/features/notification/data/repositories/
 import 'package:my_app/event_management/features/notification/domain/usecases/fetch_notification_usecases.dart';
 import 'package:my_app/event_management/features/notification/domain/usecases/mark_read_usecases.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/event_management/core/network/api_service.dart';
 import 'package:my_app/event_management/core/network/websocket_client.dart';
 import 'package:my_app/event_management/features/notification/data/model/notification_model.dart';
 import 'package:my_app/event_management/features/events/data/models/event_model.dart';
@@ -155,16 +159,26 @@ Future<void> main() async {
               fetchEvents: FetchEventsUseCase(eventRepo),
               getEventById: GetEventByIdUseCase(eventRepo),
               detectConflict: DetectConflictUseCase(),
+              calendarConflictSource:
+                  CalendarRemoteDataSourceImpl(EventApiClient.create()),
               searchEvents: SearchEventsUseCase(eventRepo),
               acceptEventInvite: AcceptEventInviteUseCase(eventRepo),
               declineEventInvite: DeclineEventInviteUseCase(eventRepo),
             ),
           ),
           BlocProvider<CalendarBloc>(create: (_) => CalendarBloc()),
+          BlocProvider<CalendarDataBloc>(
+            create: (_) => CalendarDataBloc(
+              dataSource: CalendarRemoteDataSourceImpl(EventApiClient.create()),
+            ),
+          ),
           BlocProvider<DashboardBloc>(
             create: (_) => DashboardBloc(
               fetchDashboard: FetchDashboardUseCase(
-                DashboardRepositoryImpl(eventRepo),
+                DashboardRepositoryImpl(
+                  eventRepo,
+                  CalendarRemoteDataSourceImpl(EventApiClient.create()),
+                ),
               ),
             ),
           ),
@@ -301,7 +315,55 @@ class _RealtimeWsBootstrapState extends State<_RealtimeWsBootstrap> {
     }
 
     // Task / leave notification routing from WebSocket payloads.
-    final notifType = type.isNotEmpty ? type : (data['notif_type']?.toString() ?? '');
+    final notifType = (data['notif_type'] ?? '').toString().toLowerCase();
+    final msgType = type.isNotEmpty ? type : notifType;
+
+    if (msgType == 'calendar_refresh') {
+      try {
+        ctx.read<CalendarDataBloc>().add(const CalendarRefreshCurrentRange());
+      } catch (_) {}
+      return;
+    }
+
+    if (msgType == 'event_notification' || type == 'event_notification') {
+      if (notifType == 'reminder') {
+        final payload = data['data'] is Map
+            ? Map<String, dynamic>.from(data['data'] as Map)
+            : data;
+        final title = payload['title']?.toString() ?? 'Reminder';
+        final body = payload['body']?.toString() ?? '';
+        rootScaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text('Reminder: $title${body.isEmpty ? '' : ' — $body'}'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () {
+                try {
+                  ctx.read<CalendarDataBloc>().add(const CalendarRefreshCurrentRange());
+                } catch (_) {}
+              },
+            ),
+          ),
+        );
+      }
+      if (notifType == 'invite' ||
+          notifType == 'event_updated' ||
+          notifType == 'event_deleted') {
+        try {
+          ctx.read<CalendarDataBloc>().add(const CalendarRefreshCurrentRange());
+        } catch (_) {}
+      }
+      if (notifType == 'event_deleted') {
+        final eventId = (data['data'] is Map
+                ? (data['data'] as Map)['event_id']
+                : data['event_id'])
+            ?.toString();
+        if (eventId != null) {
+          ctx.read<EventBloc>().add(ExternalEventDeleted(eventId));
+        }
+      }
+    }
+
     if (notifType == 'task_updated' ||
         notifType == 'task_due_reminder' ||
         notifType == 'leave_status' ||

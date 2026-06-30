@@ -16,7 +16,6 @@ import '../widgets/event_create/event_create_constants.dart';
 import '../widgets/event_create/event_create_date_picker.dart';
 import '../widgets/event_create/event_create_dialogs.dart';
 import '../widgets/event_create/event_details_card.dart';
-import '../widgets/event_create/event_inspiration_card.dart';
 import '../widgets/event_create/event_schedule_card.dart';
 import '../widgets/event_create/event_settings_card.dart';
 import '../widgets/event_create/event_type_of_entry_section.dart';
@@ -228,8 +227,6 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
           selected: _reminderMinutes,
           onChanged: (r) => setState(() => _reminderMinutes = r),
         ),
-        const SizedBox(height: 16),
-        const EventInspirationCard(),
       ],
     );
   }
@@ -270,10 +267,9 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
   }
 
   Future<void> _pickParticipants() async {
-    final result = await showModalBottomSheet<List<Participant>>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => ParticipantPicker(selected: _participants),
+    final result = await showParticipantPicker(
+      context,
+      selected: _participants,
     );
     if (result != null) setState(() => _participants = result);
   }
