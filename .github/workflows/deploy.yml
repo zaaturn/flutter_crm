@@ -25,9 +25,20 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --pwa-strategy=none --dart-define=BASE_URL=https://crm-application-zaaturn.up.railway.app
 
-
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
       - name: Deploy to Firebase
-        run: firebase deploy --only hosting --token ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          set +e
+          output=$(firebase deploy --only hosting --non-interactive --token "${{ secrets.FIREBASE_TOKEN }}" 2>&1)
+          exit_code=$?
+          echo "$output"
+          if [ "$exit_code" -eq 0 ]; then
+            exit 0
+          fi
+          if echo "$output" | grep -q "is the current active version"; then
+            echo "Hosting already serves this build. Skipping release (not a failure)."
+            exit 0
+          fi
+          exit "$exit_code"
