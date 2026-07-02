@@ -248,7 +248,9 @@ class ApiClient {
             handler.next(options);
           } catch (e) {
             handler.reject(DioException(
-                requestOptions: options, error: e.toString()));
+              requestOptions: options,
+              error: AuthSessionRedirect.displayMessage(e),
+            ));
           }
         },
         onError: (error, handler) async {
@@ -286,7 +288,13 @@ class ApiClient {
                   (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
                 await _handleSessionExpired();
               }
-              return handler.reject(error);
+              return handler.reject(
+                DioException(
+                  requestOptions: error.requestOptions,
+                  error: AuthSessionRedirect.defaultMessage,
+                  response: error.response,
+                ),
+              );
             }
           }
           if (statusCode == 403) {
@@ -445,7 +453,33 @@ class ApiClient {
       );
     }
     return ApiException(
-        e.response?.statusCode ?? 500, e.response?.data ?? e.error);
+      e.response?.statusCode ?? 500,
+      _friendlyMessage(e.response?.statusCode, e.response?.data, e.error),
+    );
+  }
+
+  String _friendlyMessage(int? statusCode, dynamic data, dynamic error) {
+    if (data is Map<String, dynamic>) {
+      final detail = data['detail'] ?? data['message'] ?? data['error'];
+      if (detail != null) return detail.toString();
+    }
+    if (data is String && data.isNotEmpty) {
+      if (data.contains('<html') || data.contains('<!DOCTYPE')) {
+        return 'Server error occurred. Please refresh the page.';
+      }
+      return data;
+    }
+    if (error != null && error.toString().isNotEmpty) {
+      return error.toString();
+    }
+    switch (statusCode) {
+      case 404:
+        return 'Requested data not found.';
+      case 500:
+        return 'Server error occurred. Please refresh the page.';
+      default:
+        return 'Something went wrong. Please try again.';
+    }
   }
 
   Future<Map<String, dynamic>> get(String url,

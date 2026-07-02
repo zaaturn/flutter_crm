@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/cubit/client_dashboard_summary_state.dart';
 import 'package:my_app/admin_dashboard/model/client_dashboard_summary_models.dart';
 import 'package:my_app/admin_dashboard/repository/client_dashboard_summary_repository.dart';
-import 'package:my_app/client tracker/core/network/api_services.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
   ClientDashboardSummaryCubit(this._repository)
@@ -47,7 +47,7 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
       if (isClosed) return;
       _safeEmit(state.copyWith(
         isLoading: false,
-        error: e is ApiException ? e.message : e.toString(),
+        error: AuthSessionRedirect.resolveBlocError(e),
       ));
     }
   }
@@ -150,9 +150,10 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
       _scheduleFlashClear();
     } catch (e) {
       if (isClosed) return;
+      final toastError = AuthSessionRedirect.resolveBlocError(e);
       _safeEmit(state.copyWith(
         clearUpdatingCell: true,
-        toastError: e is ApiException ? e.message : 'Update failed',
+        toastError: toastError,
         summary: _patchSummary(
           rowId: row.paymentRecordId,
           invoiceSent: oldValue,
@@ -191,9 +192,10 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
       _scheduleFlashClear();
     } catch (e) {
       if (isClosed) return;
+      final toastError = AuthSessionRedirect.resolveBlocError(e);
       _safeEmit(state.copyWith(
         clearUpdatingCell: true,
-        toastError: e is ApiException ? e.message : 'Update failed',
+        toastError: toastError,
         summary: _patchSummary(
           rowId: row.paymentRecordId,
           paymentReceived: oldValue,

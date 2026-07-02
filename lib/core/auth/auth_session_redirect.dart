@@ -15,8 +15,9 @@ class AuthSessionRedirect {
 
   static const String loginRoute = '/employeeLogin';
 
-  static const String defaultMessage =
-      'Your session has expired. Redirecting to login...';
+  static const String defaultMessage = 'Session expired';
+
+  static const String defaultSubtitle = 'Redirecting you to sign in…';
 
   static const Set<String> _loginRoutes = {
     loginRoute,
@@ -76,6 +77,30 @@ class AuthSessionRedirect {
     return messageFrom(error) ?? 'Something went wrong. Please try again.';
   }
 
+  /// Returns `true` when [error] is an auth failure and redirect was triggered.
+  static bool handleIfAuthFailure(Object? error, {int? statusCode}) {
+    final code = statusCode ?? extractStatusCode(error);
+    if (!isAuthFailure(error, statusCode: code)) return false;
+    onAuthFailure(error: error, statusCode: code);
+    return true;
+  }
+
+  /// For bloc/cubit `catch` blocks — returns `null` on auth failure so UI stays clean.
+  static String? resolveBlocError(Object error, {int? statusCode}) {
+    if (handleIfAuthFailure(error, statusCode: statusCode)) return null;
+    return displayMessage(error, statusCode: statusCode);
+  }
+
+  static int? extractStatusCode(Object? error) {
+    if (error is DioException) return error.response?.statusCode;
+    try {
+      final dynamic value = error;
+      final code = value.statusCode ?? value.code;
+      if (code is int) return code;
+    } catch (_) {}
+    return null;
+  }
+
   static String _normalize(String? value) =>
       value?.toLowerCase().trim() ?? '';
 
@@ -129,8 +154,9 @@ class AuthSessionRedirect {
     void redirect(NavigatorState nav) {
       if (_isAlreadyOnLogin(nav)) return;
 
-      rootScaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text(message ?? defaultMessage)),
+      _showSessionExpiredSnackBar(
+        title: message ?? defaultMessage,
+        subtitle: defaultSubtitle,
       );
       nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
     }
@@ -158,6 +184,71 @@ class AuthSessionRedirect {
   }) {
     if (!isAuthFailure(error, statusCode: statusCode)) return;
 
-    unawaited(forceLogin(message: defaultMessage));
+    unawaited(forceLogin(message: message ?? defaultMessage));
+  }
+
+  static void _showSessionExpiredSnackBar({
+    required String title,
+    required String subtitle,
+  }) {
+    final messenger = rootScaffoldMessengerKey.currentState;
+    if (messenger == null) return;
+
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        elevation: 8,
+        backgroundColor: const Color(0xFFB71C1C),
+        margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        duration: const Duration(seconds: 3),
+        content: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.lock_clock_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: Colors.white,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFFFCDD2),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

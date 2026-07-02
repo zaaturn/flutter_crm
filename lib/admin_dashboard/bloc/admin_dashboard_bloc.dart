@@ -5,6 +5,7 @@ import 'admin_dashboard_event.dart';
 import 'admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 import '../model/employee.dart';
@@ -55,7 +56,10 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
         events: events,
       ));
     } catch (e) {
-      emit(state.copyWith(isLoading: false, error: e.toString()));
+      emit(state.copyWith(
+        isLoading: false,
+        error: AuthSessionRedirect.resolveBlocError(e),
+      ));
     }
   }
 
@@ -77,7 +81,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
 
       debugPrint("✅ Task ${event.taskId} approved and archived");
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      emit(state.copyWith(error: AuthSessionRedirect.resolveBlocError(e)));
     }
   }
 
@@ -96,7 +100,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
         error: null,
       ));
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      emit(state.copyWith(error: AuthSessionRedirect.resolveBlocError(e)));
     }
   }
 
@@ -111,7 +115,7 @@ class AdminDashboardBloc extends Bloc<AdminDashboardEvent, AdminDashboardState> 
       final List<Task> tasks = await repository.fetchTasks();
       emit(state.copyWith(tasks: tasks, error: null));
     } catch (e) {
-      emit(state.copyWith(error: e.toString()));
+      emit(state.copyWith(error: AuthSessionRedirect.resolveBlocError(e)));
     }
   }
 

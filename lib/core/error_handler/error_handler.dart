@@ -76,8 +76,8 @@ class ErrorHandler {
 
     String message = err.toString();
     message = message
-        .replaceAll("Exception: ", "")
-        .replaceAll(RegExp(r"ApiException\\(\\d+\\): "), "");
+        .replaceAll('Exception: ', '')
+        .replaceAll(RegExp(r'ApiException\(\d+\):\s*'), '');
 
     return message.isEmpty ? "Something went wrong." : message;
   }
