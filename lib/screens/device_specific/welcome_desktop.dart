@@ -224,7 +224,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'LOGIN PORTAL',
+                  'VISUALIZE EVERYTHING',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 11,
@@ -234,7 +234,7 @@ class _BrandPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 28),
                 Text(
-                  'One workspace for employees, tasks,\npayroll, billing and everything else\nyour team runs on.',
+                  'Digital marketing, branding, social media,\ncontent and campaigns — your creative\nworkspace in one place.',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white.withValues(alpha: 0.88),
                     fontSize: 14,
@@ -297,7 +297,7 @@ class _CompactBrandHeader extends StatelessWidget {
           ),
         ),
         Text(
-          'LOGIN PORTAL',
+          'VISUALIZE EVERYTHING',
           style: GoogleFonts.plusJakartaSans(
             color: AdminDashboardTheme.teal,
             fontSize: 10,
