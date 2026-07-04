@@ -27,8 +27,6 @@ class DesktopEmployeeSection extends StatefulWidget {
 
 class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   final ScrollController _scrollController = ScrollController();
-  int _attendancePage = 0;
-  static const _attendancePageSize = 4;
 
   // --- Daxarrow Theme Constants ---
   static const _brandPurple = Color(0xFF7C3AED);
@@ -37,30 +35,7 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   static const _textPrimary = Color(0xFF0F172A);
   static const _textMuted = Color(0xFF64748B);
 
-  int get _maxAttendancePage {
-    final count = widget.employees.length;
-    if (count == 0) return 0;
-    return ((count - 1) / _attendancePageSize).floor();
-  }
-
-  List<Employee> get _visibleEmployees {
-    if (!widget.compact) return widget.employees;
-    final start = _attendancePage * _attendancePageSize;
-    if (start >= widget.employees.length) return [];
-    final end = (start + _attendancePageSize).clamp(0, widget.employees.length);
-    return widget.employees.sublist(start, end);
-  }
-
-  @override
-  void didUpdateWidget(DesktopEmployeeSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.employees.length != widget.employees.length) {
-      final maxPage = _maxAttendancePage;
-      if (_attendancePage > maxPage) {
-        setState(() => _attendancePage = maxPage);
-      }
-    }
-  }
+  bool get _dashboardEmbed => widget.flat && widget.compact;
 
   @override
   void dispose() {
@@ -103,13 +78,7 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
               Expanded(
                 child: widget.employees.isEmpty
                     ? _buildEmptyState()
-                    : Column(
-                        children: [
-                          Expanded(child: _buildList(isDark)),
-                          if (widget.employees.length > _attendancePageSize)
-                            _buildPaginationBar(),
-                        ],
-                      ),
+                    : _buildList(isDark),
               ),
             ],
           )
@@ -302,22 +271,19 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   }
 
   Widget _buildList(bool isDark) {
-    final employees = _visibleEmployees;
     final listView = ListView.separated(
       controller: _scrollController,
-      physics: widget.compact
-          ? const NeverScrollableScrollPhysics()
-          : const ClampingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         widget.compact ? 16 : 20,
         widget.compact ? 10 : 16,
         widget.compact ? 16 : 20,
         widget.compact ? 8 : 24,
       ),
-      itemCount: employees.length,
+      itemCount: widget.employees.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final employee = employees[index];
+        final employee = widget.employees[index];
         return _EmployeeTile(
           employee: employee,
           onTap: () => widget.onEmployeeTap?.call(employee),
@@ -327,14 +293,34 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
       },
     );
 
-    if (widget.flat) return listView;
+    final scrollableList = _dashboardEmbed
+        ? NotificationListener<ScrollNotification>(
+            onNotification: _absorbInnerScroll,
+            child: listView,
+          )
+        : listView;
+
+    if (widget.flat) return scrollableList;
 
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: widget.maxListHeight ?? 500,
       ),
-      child: listView,
+      child: scrollableList,
     );
+  }
+
+  bool _absorbInnerScroll(ScrollNotification notification) {
+    if (notification.metrics.maxScrollExtent <= 0) return false;
+    if (notification is! ScrollUpdateNotification) return false;
+    final delta = notification.scrollDelta;
+    if (delta == null || delta == 0) return false;
+
+    final pixels = notification.metrics.pixels;
+    final max = notification.metrics.maxScrollExtent;
+    if (delta > 0 && pixels < max) return true;
+    if (delta < 0 && pixels > 0) return true;
+    return false;
   }
 
   Widget _buildEmptyState() {
@@ -348,58 +334,6 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
             fontWeight: FontWeight.w600,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildPaginationBar() {
-    final total = widget.employees.length;
-    final start = _attendancePage * _attendancePageSize + 1;
-    final end = ((_attendancePage + 1) * _attendancePageSize).clamp(0, total);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '$start–$end of $total',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: _textMuted,
-              ),
-            ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed: _attendancePage > 0
-                ? () => setState(() => _attendancePage--)
-                : null,
-            icon: const Icon(Icons.chevron_left_rounded),
-          ),
-          Text(
-            '${_attendancePage + 1} / ${_maxAttendancePage + 1}',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _textPrimary,
-            ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            iconSize: 18,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed: _attendancePage < _maxAttendancePage
-                ? () => setState(() => _attendancePage++)
-                : null,
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
       ),
     );
   }
