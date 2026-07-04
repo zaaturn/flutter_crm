@@ -8,6 +8,10 @@ abstract final class BillingAdaptiveTheme {
   static Color bg(BuildContext context) =>
       isMobile(context) ? BillingLeaveMobileTheme.bg : BillingTheme.scaffoldBg;
 
+  /// Full-page canvas — mobile keeps its own bg, desktop gets the mint shell.
+  static Color canvas(BuildContext context) =>
+      isMobile(context) ? BillingLeaveMobileTheme.bg : BillingTheme.canvas;
+
   static Color surface(BuildContext context) =>
       isMobile(context) ? BillingLeaveMobileTheme.surface : BillingTheme.surface;
 

@@ -1,128 +1,92 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../theme/payroll_colors.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
+/// Icon-only rail — mirrors the main dashboard's DesktopSidebar. Payroll is
+/// currently a single-page module, so the one icon just marks "you are here"
+/// (no page switching); a hover tooltip still names it.
 class PayrollSidebar extends StatelessWidget {
   const PayrollSidebar({super.key});
 
-  static const _bg          = Color(0xFF000000); // Pure Black
-  static const _activeBg    = Color(0xFF1A1A1A); // Dark Grey Surface
-  static const _textPrimary = Color(0xFFFFFFFF);
-  static const _textMuted   = Color(0xFF71717A);
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 256,
-      decoration: const BoxDecoration(
-        color: _bg,
-        border: Border(
-          right: BorderSide(color: Color(0xFF1A1A1A), width: 1),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _activeBg,
-                    borderRadius: BorderRadius.circular(12),
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 16, 10, 16),
+        child: Column(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AdminDashboardTheme.tealLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.payments_rounded,
+                color: AdminDashboardTheme.teal,
+                size: 22,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AdminDashboardTheme.iconRailBg,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: _RailButton(
+                    icon: Icons.payments_outlined,
+                    tooltip: 'Payroll Records',
+                    selected: true,
                   ),
-                  child: const Icon(Icons.payments, color: PayrollColors.purple, size: 22),
                 ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Payrolls',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: _textPrimary,
-                      ),
-                    ),
-                    Text(
-                      'PAYROLL ADMIN',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                        color: _textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                _NavRow(
-                  icon: Icons.dashboard_outlined,
-                  label: 'Dashboard',
-                  active: false,
-                ),
-                const SizedBox(height: 4),
-                _NavRow(
-                  icon: Icons.payments_outlined,
-                  label: 'Payroll Records',
-                  active: true,
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _NavRow extends StatelessWidget {
-  const _NavRow({
-    required this.icon,
-    required this.label,
-    required this.active,
-  });
-
+class _RailButton extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final bool active;
+  final String tooltip;
+  final bool selected;
+
+  const _RailButton({
+    required this.icon,
+    required this.tooltip,
+    required this.selected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final bg = active ? const Color(0xFF1A1A1A) : Colors.transparent;
-    final fg = active ? Colors.white : const Color(0xFFE4E4E7);
-    final iconColor = active ? const Color(0xFFA78BFA) : const Color(0xFFE4E4E7);
+    final color = selected
+        ? AdminDashboardTheme.textDark
+        : AdminDashboardTheme.iconInactive;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Icon(icon, size: 22, color: iconColor),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: active ? FontWeight.w800 : FontWeight.w700,
-              color: fg,
-            ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Tooltip(
+        message: tooltip,
+        waitDuration: const Duration(milliseconds: 400),
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AdminDashboardTheme.accentYellow : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
           ),
-        ],
+          child: Icon(icon, size: 22, color: color),
+        ),
       ),
     );
   }

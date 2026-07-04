@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 import '../bloc/payroll_dashboard_bloc.dart';
@@ -8,18 +9,17 @@ import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
 import '../widget/payroll_header.dart';
 import '../widget/payroll_kpi_cards.dart';
-import '../widget/payroll_sidebar.dart';
 import '../widget/payroll_filter_section.dart';
 import '../widget/payroll_table_section.dart';
 import 'mobile_screen/payroll_mobile_dashboard.dart';
 
 
 class WorkspaceTheme {
-  static const Color scaffoldBg = Color(0xFFFBFBFE);
-  static const Color primaryPurple = Color(0xFF6F34DC);
-  static const Color cardSurface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE8E9F1);
-  static const Color textMain = Color(0xFF1E1E24);
+  static const Color scaffoldBg = AdminDashboardTheme.shellMint;
+  static const Color primaryPurple = AdminDashboardTheme.teal;
+  static const Color cardSurface = AdminDashboardTheme.surface;
+  static const Color borderSubtle = AdminDashboardTheme.border;
+  static const Color textMain = AdminDashboardTheme.textDark;
 }
 
 class PayrollAdminScreen extends StatelessWidget {
@@ -67,21 +67,13 @@ class PayrollAdminScreen extends StatelessWidget {
                 textTheme: GoogleFonts.interTextTheme(),
               ),
               child: Scaffold(
-                body: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const PayrollSidebar(),
-                    const VerticalDivider(
-                      width: 1,
-                      color: WorkspaceTheme.borderSubtle,
-                    ),
-                    Expanded(
-                      child: _MainColumn(
-                        showDrawerBtn: false,
-                        state: state,
-                      ),
-                    ),
-                  ],
+                backgroundColor: WorkspaceTheme.scaffoldBg,
+                body: Padding(
+                  padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+                  child: _MainColumn(
+                    showDrawerBtn: false,
+                    state: state,
+                  ),
                 ),
               ),
             );
@@ -137,10 +129,12 @@ class _MainColumn extends StatelessWidget {
                 ),
               ],
             ),
+          )
+        else
+          AdminDashboardPanel(
+            margin: const EdgeInsets.only(bottom: AdminDashboardTheme.panelGap),
+            child: PayrollHeader(showTitle: !showDrawerBtn),
           ),
-
-
-        PayrollHeader(showTitle: !showDrawerBtn),
 
         // Content Area
         Expanded(

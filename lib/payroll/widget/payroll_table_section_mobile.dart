@@ -7,347 +7,645 @@ import '../bloc/payroll_dashboard_bloc.dart';
 import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
 import '../models/payroll_merged_row.dart';
+import '../theme/payroll_mobile_theme.dart';
+import 'payroll_mobile_edit_panel.dart';
 
-class ZaaturnMobileTheme {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color cardColor = Color(0xFFEADBC8); // Terracotta-Beige
-  static const Color subBoxColor = Color(0xFFF2E6D6);
-  static const Color accentOrange = Color(0xFFF3924C);
-  static const Color textMain = Color(0xFF1A1A1A);
-  static const Color textMuted = Color(0xFF5D4037);
+const int _kPageSize = 20;
 
-  static const Color successBg = Color(0xFFD0F4E0);
-  static const Color successText = Color(0xFF00695C);
-  static const Color warningBg = Color(0xFFFCF5BF);
-  static const Color warningText = Color(0xFF857000);
+class PayrollTableMobile extends StatefulWidget {
+  const PayrollTableMobile({
+    super.key,
+    required this.selectedIds,
+    required this.onSelectionChanged,
+  });
+
+  final Set<int> selectedIds;
+  final ValueChanged<Set<int>> onSelectionChanged;
+
+  @override
+  State<PayrollTableMobile> createState() => _PayrollTableMobileState();
 }
 
-class PayrollTableMobile extends StatelessWidget {
-  const PayrollTableMobile({super.key});
+class _PayrollTableMobileState extends State<PayrollTableMobile> {
+  int _page = 0;
+
+  void _toggleSelect(int employeeId) {
+    final next = Set<int>.from(widget.selectedIds);
+    if (next.contains(employeeId)) {
+      next.remove(employeeId);
+    } else {
+      next.add(employeeId);
+    }
+    widget.onSelectionChanged(next);
+  }
+
+  void _toggleSelectAllPage(List<PayrollMergedRow> pageRows) {
+    final ids = pageRows.map((r) => r.employeeId).toSet();
+    final allSelected = ids.every(widget.selectedIds.contains);
+    final next = Set<int>.from(widget.selectedIds);
+    if (allSelected) {
+      next.removeAll(ids);
+    } else {
+      next.addAll(ids);
+    }
+    widget.onSelectionChanged(next);
+  }
+
+  void _markBulkPaid(bool notify) async {
+    final bloc = context.read<PayrollDashboardBloc>();
+    final state = bloc.state;
+    for (final id in widget.selectedIds) {
+      if (notify) {
+        await _writeNotifyPref(
+          employeeId: id,
+          state: state,
+          value: true,
+        );
+      }
+    }
+    if (!mounted) return;
+    bloc.add(
+      PayrollBulkUpdateRequested(
+        employeeIds: widget.selectedIds.toList(),
+        paid: true,
+        amountRaw: '',
+        notifySalaryCredited: notify,
+      ),
+    );
+    widget.onSelectionChanged({});
+  }
+
+  void _saveIndividual(
+    PayrollMergedRow row,
+    PayrollDashboardBloc bloc,
+    bool? paid,
+    String amount,
+    bool notify,
+  ) {
+    final notifyArg = paid == true ? notify : null;
+    if (row.recordId != null) {
+      bloc.add(PayrollInlinePatchRequested(
+        recordId: row.recordId!,
+        paid: paid,
+        amountRaw: amount,
+        notifySalaryCredited: notifyArg,
+      ));
+    } else {
+      bloc.add(PayrollInlineCreateRequested(
+        employeeId: row.employeeId,
+        paid: paid,
+        amountRaw: amount,
+        notifySalaryCredited: notifyArg,
+      ));
+    }
+  }
+
+  Future<void> _openEmployeeSheet(PayrollMergedRow row) async {
+    final bloc = context.read<PayrollDashboardBloc>();
+    final notify = await _readNotifyPref(
+      employeeId: row.employeeId,
+      state: bloc.state,
+    );
+    if (!mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: PayrollMobileTheme.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return BlocProvider.value(
+          value: bloc,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              16,
+              20,
+              24 + MediaQuery.paddingOf(sheetCtx).bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: PayrollMobileTheme.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  row.employeeName,
+                  style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: PayrollMobileTheme.textDark,
+                  ),
+                ),
+                if (row.jobTitle.isNotEmpty)
+                  Text(
+                    row.jobTitle,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      color: PayrollMobileTheme.textMuted,
+                    ),
+                  ),
+                const SizedBox(height: 14),
+                PayrollMobileEditPanel(
+                  applyLabel: 'Save',
+                  initialPaid: row.paid,
+                  initialAmount: row.amountRaw,
+                  initialNotify: notify,
+                  onApply: (paid, amount, n) async {
+                    if (paid == true) {
+                      await _writeNotifyPref(
+                        employeeId: row.employeeId,
+                        state: bloc.state,
+                        value: n,
+                      );
+                    }
+                    _saveIndividual(row, bloc, paid, amount, n);
+                    if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
-      builder: (context, state) {
-        final rows = state.tableRows;
+    return BlocListener<PayrollDashboardBloc, PayrollDashboardState>(
+      listenWhen: (p, c) =>
+          p.monthIndex != c.monthIndex ||
+          p.year != c.year ||
+          p.searchQuery != c.searchQuery ||
+          p.recordsPaidFilter != c.recordsPaidFilter,
+      listener: (context, state) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onSelectionChanged({});
+          setState(() => _page = 0);
+        });
+      },
+      child: BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
+        builder: (context, state) {
+          final rows = state.tableRows;
 
-        if (rows.isEmpty && state.loadStatus == PayrollDashboardLoadStatus.success) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(40),
-              child: Text(
-                'No records found.',
-                style: GoogleFonts.manrope(color: ZaaturnMobileTheme.textMuted),
+        if (state.loadStatus == PayrollDashboardLoadStatus.loading &&
+            rows.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: PayrollMobileTheme.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: PayrollMobileTheme.border),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: PayrollMobileTheme.terracotta,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Loading employees…',
+                    style: GoogleFonts.manrope(
+                      color: PayrollMobileTheme.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         }
 
+        if (rows.isEmpty &&
+            state.loadStatus == PayrollDashboardLoadStatus.success) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: PayrollMobileTheme.card,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: PayrollMobileTheme.border),
+            ),
+            child: Center(
+              child: Text(
+                'No records found.',
+                style: GoogleFonts.manrope(
+                  color: PayrollMobileTheme.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final pageCount = (rows.length / _kPageSize).ceil().clamp(1, 9999);
+        final safePage = _page.clamp(0, pageCount - 1);
+        if (safePage != _page) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _page = safePage);
+          });
+        }
+        final start = safePage * _kPageSize;
+        final pageRows = rows.skip(start).take(_kPageSize).toList();
+        final pageIds = pageRows.map((r) => r.employeeId).toSet();
+        final allPageSelected =
+            pageRows.isNotEmpty && pageIds.every(widget.selectedIds.contains);
+        final hasBulk = widget.selectedIds.isNotEmpty;
+
         return Column(
-          children: rows.asMap().entries.map((entry) {
-            return _PayrollEmployeeCard(
-              row: entry.value,
-              index: entry.key + 1,
-              rowSaving: state.savingRecordId == entry.value.recordId ||
-                  state.savingEmployeeId == entry.value.employeeId,
-            );
-          }).toList(),
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: PayrollMobileTheme.card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: PayrollMobileTheme.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 14, 14, 10),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 40,
+                          child: Checkbox(
+                            value: allPageSelected,
+                            tristate: true,
+                            activeColor: PayrollMobileTheme.terracotta,
+                            side: const BorderSide(
+                              color: PayrollMobileTheme.border,
+                            ),
+                            onChanged: pageRows.isEmpty
+                                ? null
+                                : (_) => _toggleSelectAllPage(pageRows),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'EMPLOYEE',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: PayrollMobileTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 72,
+                          child: Text(
+                            'AMOUNT',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: PayrollMobileTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            'STATUS',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.6,
+                              color: PayrollMobileTheme.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (hasBulk)
+                    PayrollMobileBulkPaidBar(
+                      count: widget.selectedIds.length,
+                      onClear: () => widget.onSelectionChanged({}),
+                      onMarkPaid: _markBulkPaid,
+                    ),
+                  const Divider(height: 1, color: PayrollMobileTheme.border),
+                  ...pageRows.asMap().entries.map((entry) {
+                    final row = entry.value;
+                    final isLast = entry.key == pageRows.length - 1;
+                    final selected =
+                        widget.selectedIds.contains(row.employeeId);
+                    return Column(
+                      children: [
+                        _PayrollEmployeeRow(
+                          row: row,
+                          selected: selected,
+                          onSelectChanged: () => _toggleSelect(row.employeeId),
+                          onNameTap: () => _openEmployeeSheet(row),
+                        ),
+                        if (!isLast)
+                          const Divider(
+                            height: 1,
+                            color: PayrollMobileTheme.border,
+                          ),
+                      ],
+                    );
+                  }),
+                ],
+              ),
+            ),
+            if (rows.length > _kPageSize) ...[
+              const SizedBox(height: 12),
+              _PaginationBar(
+                page: safePage,
+                pageCount: pageCount,
+                total: rows.length,
+                onPrev: safePage > 0
+                    ? () => setState(() => _page = safePage - 1)
+                    : null,
+                onNext: safePage < pageCount - 1
+                    ? () => setState(() => _page = safePage + 1)
+                    : null,
+              ),
+            ],
+          ],
         );
-      },
+        },
+      ),
     );
   }
 }
 
-class _PayrollEmployeeCard extends StatefulWidget {
-  const _PayrollEmployeeCard({
-    required this.row,
-    required this.index,
-    required this.rowSaving,
+Future<bool> _readNotifyPref({
+  required int employeeId,
+  required PayrollDashboardState state,
+}) async {
+  final storage = SecureStorageService();
+  final uid = await storage.readUserId();
+  if (uid == null || uid.trim().isEmpty) return false;
+  final month = state.monthIndex.clamp(1, 12);
+  final key =
+      'payroll_notify_salary_credited:$uid:${state.year}-${month.toString().padLeft(2, '0')}:$employeeId';
+  final v = await storage.readBool(key);
+  return v ?? false;
+}
+
+Future<void> _writeNotifyPref({
+  required int employeeId,
+  required PayrollDashboardState state,
+  required bool value,
+}) async {
+  final storage = SecureStorageService();
+  final uid = await storage.readUserId();
+  if (uid == null || uid.trim().isEmpty) return;
+  final month = state.monthIndex.clamp(1, 12);
+  final key =
+      'payroll_notify_salary_credited:$uid:${state.year}-${month.toString().padLeft(2, '0')}:$employeeId';
+  await storage.writeBool(key, value);
+}
+
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.page,
+    required this.pageCount,
+    required this.total,
+    required this.onPrev,
+    required this.onNext,
   });
-  final PayrollMergedRow row;
-  final int index;
-  final bool rowSaving;
 
-  @override
-  State<_PayrollEmployeeCard> createState() => _PayrollEmployeeCardState();
-}
-
-class _PayrollEmployeeCardState extends State<_PayrollEmployeeCard> {
-  late TextEditingController _amountCtrl;
-  final _amountFocus = FocusNode();
-  bool _notifySalaryCredited = false;
-  bool _paidSelectionPending = false;
-  bool? _pendingPaid;
-  String? _notifyKey;
-  int? _lastYear;
-  int? _lastMonth;
-
-  bool? _effectivePaid() => _paidSelectionPending ? _pendingPaid : widget.row.paid;
-
-  String _buildNotifyKey({
-    required String userId,
-    required int year,
-    required int month,
-    required int employeeId,
-  }) {
-    return 'payroll_notify_salary_credited:$userId:$year-${month.toString().padLeft(2, '0')}:$employeeId';
-  }
-
-  Future<void> _loadPersistedNotifyPref() async {
-    final storage = SecureStorageService();
-    final uid = await storage.readUserId();
-    if (!mounted) return;
-    if (uid == null || uid.trim().isEmpty) return;
-
-    final st = context.read<PayrollDashboardBloc>().state;
-    final month = st.monthIndex.clamp(1, 12);
-    final year = st.year;
-    _lastMonth = month;
-    _lastYear = year;
-
-    final key = _buildNotifyKey(
-      userId: uid,
-      year: year,
-      month: month,
-      employeeId: widget.row.employeeId,
-    );
-    _notifyKey = key;
-
-    final v = await storage.readBool(key);
-    if (!mounted || v == null) return;
-    setState(() => _notifySalaryCredited = v);
-  }
-
-  Future<void> _persistNotifyPref(bool v) async {
-    final storage = SecureStorageService();
-    final uid = await storage.readUserId();
-    if (uid == null || uid.trim().isEmpty) return;
-    if (!mounted) return;
-
-    final st = context.read<PayrollDashboardBloc>().state;
-    final month = st.monthIndex.clamp(1, 12);
-    final year = st.year;
-    final key = _notifyKey ??
-        _buildNotifyKey(
-          userId: uid,
-          year: year,
-          month: month,
-          employeeId: widget.row.employeeId,
-        );
-    _notifyKey = key;
-    await storage.writeBool(key, v);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _amountCtrl = TextEditingController(text: widget.row.amountRaw);
-    _amountFocus.addListener(() {
-      if (!_amountFocus.hasFocus) _push();
-    });
-    _loadPersistedNotifyPref();
-  }
-
-  @override
-  void didUpdateWidget(covariant _PayrollEmployeeCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.row.amountRaw != widget.row.amountRaw &&
-        widget.row.amountRaw != _amountCtrl.text) {
-      _amountCtrl.text = widget.row.amountRaw;
-    }
-    if (oldWidget.row.employeeId != widget.row.employeeId ||
-        oldWidget.row.recordId != widget.row.recordId) {
-      _notifyKey = null;
-      _paidSelectionPending = false;
-      _pendingPaid = null;
-      _loadPersistedNotifyPref();
-    }
-    final st = context.read<PayrollDashboardBloc>().state;
-    final month = st.monthIndex.clamp(1, 12);
-    final year = st.year;
-    if (_lastMonth != null &&
-        _lastYear != null &&
-        (month != _lastMonth || year != _lastYear)) {
-      _notifyKey = null;
-      _loadPersistedNotifyPref();
-    }
-    if (_paidSelectionPending && widget.row.paid == _pendingPaid) {
-      _paidSelectionPending = false;
-      _pendingPaid = null;
-    }
-  }
-
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    _amountFocus.dispose();
-    super.dispose();
-  }
-
-  void _push() {
-    final rid = widget.row.recordId;
-    final bloc = context.read<PayrollDashboardBloc>();
-    final paid = _effectivePaid();
-    if (rid != null) {
-      bloc.add(PayrollInlinePatchRequested(
-        recordId: rid,
-        paid: paid,
-        amountRaw: _amountCtrl.text,
-        notifySalaryCredited: paid == true ? _notifySalaryCredited : null,
-      ));
-    } else {
-      bloc.add(PayrollInlineCreateRequested(
-        employeeId: widget.row.employeeId,
-        paid: paid,
-        amountRaw: _amountCtrl.text,
-        notifySalaryCredited: paid == true ? _notifySalaryCredited : null,
-      ));
-    }
-  }
+  final int page;
+  final int pageCount;
+  final int total;
+  final VoidCallback? onPrev;
+  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
-    final r = widget.row;
-    final statusPaid = _effectivePaid();
+    final from = page * _kPageSize + 1;
+    final to = ((page + 1) * _kPageSize).clamp(0, total);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: ZaaturnMobileTheme.cardColor,
-        borderRadius: BorderRadius.circular(24),
+        color: PayrollMobileTheme.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: PayrollMobileTheme.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // Name and Status Row
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: ZaaturnMobileTheme.subBoxColor,
-                child: Text(r.avatarInitials,
-                    style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.bold, color: ZaaturnMobileTheme.textMain)),
+          _PageBtn(icon: Icons.chevron_left_rounded, onTap: onPrev),
+          Expanded(
+            child: Text(
+              '$from–$to of $total',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: PayrollMobileTheme.textMuted,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(r.employeeName,
-                        style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: ZaaturnMobileTheme.textMain, fontSize: 15)),
-                    Text(r.jobTitle,
-                        style: GoogleFonts.manrope(fontSize: 11, color: ZaaturnMobileTheme.textMuted)),
-                  ],
-                ),
-              ),
-              _StatusDropdown(
-                value: statusPaid,
-                onChanged: (v) {
-                  setState(() { _paidSelectionPending = true; _pendingPaid = v; });
-                  _push();
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Amount and Last Update Row
-          Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('AMOUNT', style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: ZaaturnMobileTheme.textMuted)),
-                    const SizedBox(height: 4),
-                    Container(
-                      height: 40,
-                      decoration: BoxDecoration(color: ZaaturnMobileTheme.subBoxColor, borderRadius: BorderRadius.circular(12)),
-                      child: TextField(
-                        controller: _amountCtrl,
-                        focusNode: _amountFocus,
-                        keyboardType: TextInputType.number,
-                        style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.bold),
-                        decoration: const InputDecoration(
-                          hintText: '0.00',
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('LAST UPDATE', style: GoogleFonts.manrope(fontSize: 9, fontWeight: FontWeight.w900, color: ZaaturnMobileTheme.textMuted)),
-                    const SizedBox(height: 8),
-                    Text(r.updatedDateLabel,
-                        style: GoogleFonts.jetBrainsMono(fontSize: 10, fontWeight: FontWeight.bold, color: ZaaturnMobileTheme.textMain)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Notification Switch
-          if (statusPaid == true) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Transform.scale(
-                  scale: 0.7,
-                  child: Switch.adaptive(
-                    value: _notifySalaryCredited,
-                    activeColor: ZaaturnMobileTheme.accentOrange,
-                    onChanged: (v) {
-                      setState(() => _notifySalaryCredited = v);
-                      _persistNotifyPref(v);
-                      _push();
-                    },
-                  ),
-                ),
-                Text('Notify employee',
-                    style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.bold, color: ZaaturnMobileTheme.textMuted)),
-              ],
             ),
-          ],
+          ),
+          Text(
+            '${page + 1}/$pageCount',
+            style: GoogleFonts.manrope(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: PayrollMobileTheme.textDark,
+            ),
+          ),
+          _PageBtn(icon: Icons.chevron_right_rounded, onTap: onNext),
         ],
       ),
     );
   }
 }
 
-class _StatusDropdown extends StatelessWidget {
-  const _StatusDropdown({required this.value, required this.onChanged});
-  final bool? value;
-  final ValueChanged<bool?> onChanged;
+class _PageBtn extends StatelessWidget {
+  const _PageBtn({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final bool isPaid = value == true;
-    final bool isPending = value == false;
-    final Color bg = isPaid ? ZaaturnMobileTheme.successBg : isPending ? ZaaturnMobileTheme.warningBg : ZaaturnMobileTheme.subBoxColor;
-    final Color fg = isPaid ? ZaaturnMobileTheme.successText : isPending ? ZaaturnMobileTheme.warningText : ZaaturnMobileTheme.textMain;
+    return Material(
+      color: onTap == null
+          ? PayrollMobileTheme.segmentBg.withValues(alpha: 0.5)
+          : PayrollMobileTheme.segmentBg,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            icon,
+            size: 22,
+            color: onTap == null
+                ? PayrollMobileTheme.border
+                : PayrollMobileTheme.terracotta,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<bool?>(
-          value: value,
-          icon: Icon(Icons.keyboard_arrow_down, color: fg, size: 16),
-          items: const [
-            DropdownMenuItem(value: null, child: Text('SELECT')),
-            DropdownMenuItem(value: true, child: Text('PAID')),
-            DropdownMenuItem(value: false, child: Text('PENDING')),
+class _PayrollEmployeeRow extends StatelessWidget {
+  const _PayrollEmployeeRow({
+    required this.row,
+    required this.selected,
+    required this.onSelectChanged,
+    required this.onNameTap,
+  });
+
+  final PayrollMergedRow row;
+  final bool selected;
+  final VoidCallback onSelectChanged;
+  final VoidCallback onNameTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = row;
+    final avatarBg = PayrollMobileTheme.avatarBg(r.employeeId);
+    final paid = r.paid;
+
+    return Material(
+      color: selected
+          ? PayrollMobileTheme.terracotta.withValues(alpha: 0.07)
+          : Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 40,
+              child: Checkbox(
+                value: selected,
+                activeColor: PayrollMobileTheme.terracotta,
+                side: const BorderSide(color: PayrollMobileTheme.border),
+                onChanged: (_) => onSelectChanged(),
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: onNameTap,
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: avatarBg,
+                        child: Text(
+                          r.avatarInitials,
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: PayrollMobileTheme.textDark,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              r.employeeName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: PayrollMobileTheme.textDark,
+                              ),
+                            ),
+                            if (r.jobTitle.isNotEmpty)
+                              Text(
+                                r.jobTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.manrope(
+                                  fontSize: 10,
+                                  color: PayrollMobileTheme.textMuted,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 72,
+              child: Text(
+                displayPayrollAmount(r.amountRaw),
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: PayrollMobileTheme.textDark,
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 80,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: payrollStatusDot(paid),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      payrollStatusLabel(paid),
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: payrollStatusText(paid),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
-          style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w900, color: fg),
-          onChanged: onChanged,
         ),
       ),
     );

@@ -19,7 +19,7 @@ class BillingHomeScreen extends StatelessWidget {
     final bool isMobile = BillingAdaptiveTheme.isMobile(context);
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Billing',
         onBack: () => BillingFlowController.backToAdminDashboard(context),

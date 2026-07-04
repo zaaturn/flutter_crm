@@ -1,6 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'admin_top_bar_mobile.dart';
 
 class BottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -14,9 +15,7 @@ class BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const Color pastelBlue = Color(0xFFC1DBE8);
-    const Color activeColor = Color(0xFF0F172A); // Dark Slate for readability
-    const Color inactiveColor = Color(0xFF64748B);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final items = [
       _BottomNavItem(
@@ -43,70 +42,87 @@ class BottomNav extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: pastelBlue,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        color: AdminMobileTerracottaTheme.terracotta,
         boxShadow: [
           BoxShadow(
-            color: activeColor.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: AdminMobileTerracottaTheme.terracottaDark
+                .withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isSelected = selectedIndex == index;
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(8, 6, 8, 6 + bottomInset),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: List.generate(items.length, (index) {
+            final item = items[index];
+            final isSelected = selectedIndex == index;
 
-              return InkWell(
-                onTap: () {
-                  if (index == 2) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Feature launching soon'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-                  onTap(index);
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withOpacity(0.4) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isSelected ? item.activeIcon : item.icon,
-                        size: 24,
-                        color: isSelected ? activeColor : inactiveColor,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                          color: isSelected ? activeColor : inactiveColor,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
+            return InkWell(
+              onTap: () {
+                if (index == 2) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Feature launching soon'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  return;
+                }
+                onTap(index);
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AdminMobileTerracottaTheme.cream
+                          .withValues(alpha: 0.95)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
                 ),
-              );
-            }),
-          ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isSelected ? item.activeIcon : item.icon,
+                      size: 20,
+                      color: isSelected
+                          ? AdminMobileTerracottaTheme.terracotta
+                          : AdminMobileTerracottaTheme.onTerracottaMuted,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      item.label,
+                      style: GoogleFonts.manrope(
+                        fontSize: 9,
+                        fontWeight:
+                            isSelected ? FontWeight.w900 : FontWeight.w700,
+                        color: isSelected
+                            ? AdminMobileTerracottaTheme.terracotta
+                            : AdminMobileTerracottaTheme.onTerracottaMuted,
+                        letterSpacing: 0.4,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );
@@ -120,6 +136,6 @@ class _BottomNavItem {
   const _BottomNavItem({
     required this.icon,
     required this.activeIcon,
-    required this.label
+    required this.label,
   });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'employee_detail_shared.dart';
 
 class EmployeeContactSection extends StatelessWidget {
@@ -12,7 +13,7 @@ class EmployeeContactSection extends StatelessWidget {
     return SectionCard(
       title: 'Contact Information',
       icon: Icons.contact_phone_outlined,
-      iconColor: const Color(0xFF6366F1),
+      iconColor: AdminDashboardTheme.teal,
       children: [
         InfoRow(
           icon: Icons.email_outlined,

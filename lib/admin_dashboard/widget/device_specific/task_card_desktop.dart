@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
 class ModrenLevelTaskRow extends StatefulWidget {
   final Task task;
@@ -25,18 +26,18 @@ class ModrenLevelTaskRow extends StatefulWidget {
 class _ModrenLevelTaskRowState extends State<ModrenLevelTaskRow> {
   bool _isHovered = false;
 
-  // --- Daxarrow Premium Colors ---
-  static const _brandPurple = Color(0xFF7C3AED); // Your main purple
-  static const _purpleLight = Color(0xFFF5F3FF); // Hover background
-  static const _borderPurple = Color(0xFFEDE9FE); // Subtle border
-  static const _textPrimary = Color(0xFF0F172A);
-  static const _textMuted = Color(0xFF64748B);
+  // --- Matches the mint/teal admin dashboard shell ---
+  static const _brandPurple = AdminDashboardTheme.teal;
+  static const _purpleLight = AdminDashboardTheme.tealLight;
+  static const _borderPurple = AdminDashboardTheme.border;
+  static const _textPrimary = AdminDashboardTheme.textDark;
+  static const _textMuted = AdminDashboardTheme.textMuted;
 
   Color get _priorityColor {
     switch (widget.task.priority.toLowerCase()) {
       case 'high': return const Color(0xFFEF4444); // Red
       case 'low': return const Color(0xFF10B981); // Green
-      default: return _brandPurple; // Purple for Medium/Default
+      default: return _brandPurple; // Teal for Medium/Default
     }
   }
 

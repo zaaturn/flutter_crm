@@ -70,6 +70,36 @@ class PayrollInlinePatchRequested extends PayrollDashboardEvent {
   List<Object?> get props => [recordId, paid, amountRaw, notifySalaryCredited];
 }
 
+class PayrollBulkUpdateRequested extends PayrollDashboardEvent {
+  const PayrollBulkUpdateRequested({
+    required this.employeeIds,
+    required this.paid,
+    required this.amountRaw,
+    this.notifySalaryCredited,
+    this.amountOverridesExisting = false,
+  });
+
+  final List<int> employeeIds;
+  final bool? paid;
+  final String amountRaw;
+  final bool? notifySalaryCredited;
+  /// When false, empty [amountRaw] keeps each row's current amount.
+  final bool amountOverridesExisting;
+
+  @override
+  List<Object?> get props =>
+      [employeeIds, paid, amountRaw, notifySalaryCredited, amountOverridesExisting];
+}
+
+class PayrollBulkMarkPaidRequested extends PayrollDashboardEvent {
+  const PayrollBulkMarkPaidRequested(this.employeeIds);
+
+  final List<int> employeeIds;
+
+  @override
+  List<Object?> get props => [employeeIds];
+}
+
 class PayrollInlineCreateRequested extends PayrollDashboardEvent {
   const PayrollInlineCreateRequested({
     required this.employeeId,

@@ -1,32 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 
 import '../../bloc/payroll_dashboard_bloc.dart';
 import '../../bloc/payroll_dashboard_event.dart';
 import '../../bloc/payroll_dashboard_state.dart';
 import '../../models/payroll_records_paid_filter.dart';
-
-class ZaaturnUI {
-  static const Color background = Color(0xFFFAF3E0); // Light Cream
-  static const Color cardColor = Color(0xFFEADBC8);   // Terracotta/Beige box
-  static const Color fieldColor = Color(0xFFF2E6D6);  // Organic input fill
-  static const Color accentOrange = Color(0xFFF3924C);
-  static const Color darkTerracotta = Color(0xFFC05E41); // Dark Terracotta
-  static const Color textMain = Color(0xFF1A1A1A);
-  static const Color textMuted = Color(0xFF5D4037);
-}
+import '../../theme/payroll_mobile_theme.dart';
 
 class PayrollMobileFiltersColumn extends StatefulWidget {
   const PayrollMobileFiltersColumn({super.key});
 
   @override
-  State<PayrollMobileFiltersColumn> createState() => _PayrollMobileFiltersColumnState();
+  State<PayrollMobileFiltersColumn> createState() =>
+      _PayrollMobileFiltersColumnState();
 }
 
 class _PayrollMobileFiltersColumnState extends State<PayrollMobileFiltersColumn> {
   final _searchCtrl = TextEditingController();
+  String _lastSyncedSearch = '';
 
   @override
   void dispose() {
@@ -34,157 +26,150 @@ class _PayrollMobileFiltersColumnState extends State<PayrollMobileFiltersColumn>
     super.dispose();
   }
 
-  static BoxDecoration _cardDecoration() => BoxDecoration(
-    color: ZaaturnUI.cardColor,
-    borderRadius: BorderRadius.circular(24),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.03),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  );
+  void _syncSearchField(String query) {
+    if (_lastSyncedSearch == query) return;
+    _lastSyncedSearch = query;
+    if (_searchCtrl.text != query) {
+      _searchCtrl.text = query;
+    }
+  }
+
+  void _applySearch(BuildContext context) {
+    final bloc = context.read<PayrollDashboardBloc>();
+    if (bloc.state.loadStatus == PayrollDashboardLoadStatus.loading) return;
+    bloc.add(PayrollDashboardSearchSubmitted(_searchCtrl.text.trim()));
+  }
+
+  void _applyStatusFilter(
+    BuildContext context,
+    PayrollRecordsPaidFilter filter,
+  ) {
+    final bloc = context.read<PayrollDashboardBloc>();
+    if (bloc.state.loadStatus == PayrollDashboardLoadStatus.loading) return;
+    if (bloc.state.recordsPaidFilter == filter) return;
+    bloc.add(PayrollRecordsPaidFilterChanged(filter));
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
+    return BlocConsumer<PayrollDashboardBloc, PayrollDashboardState>(
+      listenWhen: (p, c) =>
+          p.searchQuery != c.searchQuery ||
+          p.monthIndex != c.monthIndex ||
+          p.year != c.year,
+      listener: (context, state) => _syncSearchField(state.searchQuery),
       builder: (context, state) {
+        _syncSearchField(state.searchQuery);
+
+        final loading = state.loadStatus == PayrollDashboardLoadStatus.loading;
+        final rows = state.allTableRows;
+        final allCount = rows.length;
+        final pendingCount = rows.where((r) => r.paid == false).length;
+        final paidCount = rows.where((r) => r.paid == true).length;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: _cardDecoration(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: PayrollMobileTheme.terracotta,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    'FILTER BY PERIOD',
-                    style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                      color: ZaaturnUI.darkTerracotta,
+                  _TabChip(
+                    label: 'All',
+                    count: allCount,
+                    selected:
+                        state.recordsPaidFilter == PayrollRecordsPaidFilter.all,
+                    enabled: !loading,
+                    onTap: () => _applyStatusFilter(
+                      context,
+                      PayrollRecordsPaidFilter.all,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 22,
-                        child: _LeaveDropdown<PayrollRecordsPaidFilter>(
-                          value: state.recordsPaidFilter,
-                          items: PayrollRecordsPaidFilter.values,
-                          labelBuilder: (f) {
-                            switch (f) {
-                              case PayrollRecordsPaidFilter.all: return 'All';
-                              case PayrollRecordsPaidFilter.paid: return 'Paid';
-                              case PayrollRecordsPaidFilter.unpaid: return 'Unpaid';
-                              case PayrollRecordsPaidFilter.unset: return 'Unset';
-                            }
-                          },
-                          onChanged: (f) {
-                            if (f == null) return;
-                            context.read<PayrollDashboardBloc>().add(PayrollRecordsPaidFilterChanged(f));
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 18,
-                        child: _LeaveDropdown<int>(
-                          value: state.monthIndex.clamp(1, 12),
-                          items: List.generate(12, (i) => i + 1),
-                          labelBuilder: (m) => DateFormat('MMM').format(DateTime(2024, m)),
-                          onChanged: (m) {
-                            if (m == null) return;
-                            context.read<PayrollDashboardBloc>().add(PayrollDashboardMonthChanged(m));
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 14,
-                        child: _LeaveDropdown<int>(
-                          value: state.year,
-                          items: List.generate(5, (i) => DateTime.now().year - i),
-                          labelBuilder: (y) => '$y',
-                          onChanged: (y) {
-                            if (y == null) return;
-                            context.read<PayrollDashboardBloc>().add(PayrollDashboardYearChanged(y));
-                          },
-                        ),
-                      ),
-                    ],
+                  _TabChip(
+                    label: 'Pending',
+                    count: pendingCount,
+                    selected: state.recordsPaidFilter ==
+                        PayrollRecordsPaidFilter.unpaid,
+                    enabled: !loading,
+                    onTap: () => _applyStatusFilter(
+                      context,
+                      PayrollRecordsPaidFilter.unpaid,
+                    ),
+                  ),
+                  _TabChip(
+                    label: 'Paid',
+                    count: paidCount,
+                    selected:
+                        state.recordsPaidFilter == PayrollRecordsPaidFilter.paid,
+                    enabled: !loading,
+                    onTap: () => _applyStatusFilter(
+                      context,
+                      PayrollRecordsPaidFilter.paid,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: _cardDecoration(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'SEARCH',
-                    style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                      color: ZaaturnUI.darkTerracotta,
-                    ),
+            TextField(
+              controller: _searchCtrl,
+              enabled: !loading,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => _applySearch(context),
+              onChanged: (v) {
+                setState(() {});
+                if (v.trim().isEmpty && state.searchQuery.isNotEmpty) {
+                  _applySearch(context);
+                }
+              },
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w600,
+                color: PayrollMobileTheme.textDark,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Search name or email',
+                hintStyle: GoogleFonts.manrope(
+                  color: PayrollMobileTheme.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+                filled: true,
+                fillColor: PayrollMobileTheme.card,
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: PayrollMobileTheme.textMuted,
+                ),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        color: PayrollMobileTheme.textMuted,
+                        onPressed: loading
+                            ? null
+                            : () {
+                                _searchCtrl.clear();
+                                _applySearch(context);
+                              },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: PayrollMobileTheme.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: PayrollMobileTheme.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: PayrollMobileTheme.terracotta,
+                    width: 1.5,
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: _searchCtrl,
-                    cursorColor: ZaaturnUI.darkTerracotta,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (v) => context.read<PayrollDashboardBloc>().add(
-                      PayrollDashboardSearchSubmitted(v.trim()),
-                    ),
-                    style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: ZaaturnUI.textMain,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Employee name…',
-                      hintStyle: GoogleFonts.manrope(
-                        fontSize: 13,
-                        color: ZaaturnUI.textMuted.withOpacity(0.5),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      filled: true,
-                      fillColor: ZaaturnUI.fieldColor,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                      prefixIcon: const Icon(Icons.search_rounded, size: 20, color: ZaaturnUI.darkTerracotta),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.arrow_forward_rounded, color: ZaaturnUI.darkTerracotta),
-                        onPressed: () => context.read<PayrollDashboardBloc>().add(
-                          PayrollDashboardSearchSubmitted(_searchCtrl.text.trim()),
-                        ),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: const BorderSide(color: ZaaturnUI.darkTerracotta, width: 1.5),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
           ],
@@ -194,47 +179,79 @@ class _PayrollMobileFiltersColumnState extends State<PayrollMobileFiltersColumn>
   }
 }
 
-class _LeaveDropdown<T> extends StatelessWidget {
-  const _LeaveDropdown({
-    required this.value,
-    required this.items,
-    required this.labelBuilder,
-    required this.onChanged,
+class _TabChip extends StatelessWidget {
+  const _TabChip({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
   });
 
-  final T value;
-  final List<T> items;
-  final String Function(T) labelBuilder;
-  final ValueChanged<T?> onChanged;
+  final String label;
+  final int count;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      decoration: BoxDecoration(
-        color: ZaaturnUI.fieldColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<T>(
-          value: value,
-          isDense: true,
-          isExpanded: true,
-          borderRadius: BorderRadius.circular(16),
-          dropdownColor: ZaaturnUI.fieldColor,
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: ZaaturnUI.darkTerracotta),
-          style: GoogleFonts.manrope(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: ZaaturnUI.textMain,
+    return Expanded(
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected
+                ? PayrollMobileTheme.card
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-          items: items.map((item) {
-            return DropdownMenuItem<T>(
-              value: item,
-              child: Text(labelBuilder(item), overflow: TextOverflow.ellipsis),
-            );
-          }).toList(),
-          onChanged: onChanged,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  color: selected
+                      ? PayrollMobileTheme.terracotta
+                      : PayrollMobileTheme.onTerracotta,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? PayrollMobileTheme.terracotta.withValues(alpha: 0.15)
+                      : Colors.white.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: selected
+                        ? PayrollMobileTheme.terracotta
+                        : PayrollMobileTheme.onTerracotta,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

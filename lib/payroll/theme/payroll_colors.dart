@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// Payroll admin UI palette (per product spec).
+/// Payroll admin UI palette — matches the mint/teal admin dashboard shell.
 abstract final class PayrollColors {
-  static const Color purple = Color(0xFF7C3AED);
-  static const Color purpleLight = Color(0xFFF5F3FF);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color border = Color(0xFFEDE9FE);
+  static const Color purple = Color(0xFF2F7D6D);
+  static const Color purpleLight = Color(0xFFE3F2EE);
+  static const Color textPrimary = Color(0xFF1C2B26);
+  static const Color border = Color(0xFFE3EAE6);
 
-  static const Color surface = Color(0xFFF8F9FC);
+  static const Color canvas = Color(0xFFD0E3D8);
+  static const Color surface = Color(0xFFF4F7F5);
   static const Color surfaceCard = Color(0xFFFFFFFF);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color textHint = Color(0xFF94A3B8);
+  static const Color textMuted = Color(0xFF6B7F78);
+  static const Color textHint = Color(0xFF9AABA3);
 
   static const Color paidBadgeBg = Color(0xFFFFEDD5);
   static const Color paidBadgeFg = Color(0xFFC2410C);

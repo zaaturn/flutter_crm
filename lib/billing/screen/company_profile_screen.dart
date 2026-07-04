@@ -194,7 +194,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     final wide = MediaQuery.sizeOf(context).width >= 840;
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Company Profile',
         onBack: () => Navigator.of(context).maybePop(),

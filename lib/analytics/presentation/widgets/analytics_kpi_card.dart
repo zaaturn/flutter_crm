@@ -8,6 +8,7 @@ class AnalyticsKpiCard extends StatelessWidget {
   final String value;
   final AnalyticsIconType icon;
   final Color? accent;
+  final bool mobile;
 
   const AnalyticsKpiCard({
     super.key,
@@ -15,17 +16,21 @@ class AnalyticsKpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     this.accent,
+    this.mobile = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = accent ?? AnalyticsDesktopTheme.purple;
+    final color = accent ??
+        (mobile ? AnalyticsMobileTheme.terracotta : AnalyticsDesktopTheme.purple);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AnalyticsDesktopTheme.surface,
+        color: mobile ? AnalyticsMobileTheme.card : AnalyticsDesktopTheme.surface,
         borderRadius: BorderRadius.circular(AnalyticsDesktopTheme.cardRadius),
-        border: Border.all(color: AnalyticsDesktopTheme.border),
+        border: Border.all(
+          color: mobile ? AnalyticsMobileTheme.border : AnalyticsDesktopTheme.border,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

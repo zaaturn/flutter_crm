@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
 class EmployeeProfileHeader extends StatelessWidget {
   final Employee employee;
@@ -10,19 +11,24 @@ class EmployeeProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
+      decoration: BoxDecoration(
+        color: AdminDashboardTheme.surface,
+        borderRadius: BorderRadius.circular(AdminDashboardTheme.panelRadius),
+        border: Border.all(color: AdminDashboardTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
       child: Column(
         children: [
           CircleAvatar(
             radius: 52,
-            backgroundColor: const Color(0xFFEEF2FF),
+            backgroundColor: AdminDashboardTheme.tealLight,
             backgroundImage: employee.profilePhoto != null
                 ? NetworkImage(employee.profilePhoto!)
                 : null,
@@ -33,7 +39,7 @@ class EmployeeProfileHeader extends StatelessWidget {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+              color: AdminDashboardTheme.textDark,
             ),
           ),
         ],

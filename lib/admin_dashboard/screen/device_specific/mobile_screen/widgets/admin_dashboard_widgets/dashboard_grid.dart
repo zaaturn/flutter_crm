@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/screen/project_and_task_options_screen.dart';
 import 'dashboard_card.dart';
 import 'dashboard_item.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/mobile_employee_section.dart';
-import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/employee_card_mobile.dart';
 import 'package:my_app/leave_management/screens/mobile_screen/screen/leave_manager_mobile_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/mobile_screen/screen/share_dashboard_mobile_screen.dart';
 import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
@@ -17,6 +14,7 @@ import 'package:my_app/survey/navigation/survey_flow_controller.dart';
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_mobile.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/admin_dashboard/presentation/mobile/live_attendance_mobile_screen.dart';
 import 'package:my_app/auth/manage_users_navigation.dart';
 
 class DashboardGrid extends StatelessWidget {
@@ -76,54 +74,12 @@ class DashboardGrid extends StatelessWidget {
         bgColor: palette[colorIdx++],
         iconColor: getContrast(palette[colorIdx - 1]),
         onTap: () {
-          const Color lightCream = Color(0xFFFAF9F6);
-          const Color darkSlate = Color(0xFF0F172A);
-
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => Theme(
-                data: Theme.of(context).copyWith(
-                  appBarTheme: const AppBarTheme(
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    surfaceTintColor: Colors.transparent,
-                  ),
-                ),
-                child: Scaffold(
-                  backgroundColor: lightCream,
-                  appBar: AppBar(
-                    backgroundColor: lightCream,
-                    elevation: 0,
-                    scrolledUnderElevation: 0,
-                    surfaceTintColor: Colors.transparent,
-                    iconTheme: const IconThemeData(color: darkSlate),
-                    title: Text(
-                      "Employee Directory",
-                      style: GoogleFonts.manrope(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 20,
-                        color: darkSlate,
-                      ),
-                    ),
-                    centerTitle: true,
-                  ),
-                  body: Container(
-                    color: lightCream,
-                    child: MobileEmployeeSection(
-                      totalEmployeeCount: totalEmployeeCount,
-                      employees: employees,
-                      onEmployeeTap: (employee) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EmployeeCardMobile(employee: employee),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+              builder: (_) => LiveAttendanceMobileScreen(
+                employees: employees,
+                totalEmployeeCount: totalEmployeeCount,
               ),
             ),
           );

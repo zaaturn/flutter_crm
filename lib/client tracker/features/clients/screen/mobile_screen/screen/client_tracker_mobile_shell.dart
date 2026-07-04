@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-
+import 'package:my_app/admin_dashboard/cubit/client_dashboard_summary_cubit.dart';
+import 'package:my_app/admin_dashboard/presentation/mobile/client_billing/client_billing_mobile_dashboard.dart';
+import 'package:my_app/admin_dashboard/repository/client_dashboard_summary_repository.dart';
 import 'package:my_app/client tracker/features/clients/bloc/dashboard_bloc.dart';
-import 'package:my_app/client tracker/features/payment/bloc/payment_bloc.dart';
 import 'package:my_app/client tracker/features/clients/bloc/dashboard_event.dart';
 import 'package:my_app/client tracker/features/clients/bloc/dashboard_state.dart';
 import 'package:my_app/client tracker/features/clients/repository/dashboard_repository.dart';
-import 'package:my_app/client tracker/features/payment/repository/payment_repository.dart';
-
 
 import 'client_tracker_mobile_add_client.dart';
 import 'client_tracker_mobile_clients_list.dart';
-import 'client_tracker_mobile_payments.dart';
 
 // --- THE SHELL (MAIN WRAPPER) ---
 class ClientTrackerMobileShell extends StatefulWidget {
@@ -41,8 +39,10 @@ class _ClientTrackerMobileShellState extends State<ClientTrackerMobileShell> {
           const ClientTrackerMobileClientsList(),
 
           BlocProvider(
-            create: (_) => PaymentBloc( PaymentRepository()),
-            child: const ClientTrackerMobilePayments(),
+            create: (_) => ClientDashboardSummaryCubit(
+              ClientDashboardSummaryRepository(),
+            )..initialize(),
+            child: const ClientBillingMobileDashboard(embeddedInShell: true),
           ),
         ],
       ),

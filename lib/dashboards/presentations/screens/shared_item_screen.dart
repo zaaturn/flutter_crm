@@ -239,7 +239,7 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
                             children: [
                               Checkbox(
                                 value: _allUsers,
-                                activeColor: const Color(0xFF604EB8),
+                                activeColor: const Color(0xFF2F7D6D),
                                 onChanged: (v) =>
                                     setState(() => _allUsers = v ?? true),
                               ),
@@ -261,7 +261,7 @@ class _SharedItemsScreenState extends State<SharedItemsScreen> {
                                 return ElevatedButton(
                                   onPressed: busy ? null : _submit,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF604EB8),
+                                    backgroundColor: const Color(0xFF2F7D6D),
                                     foregroundColor: Colors.white,
                                     elevation: 0,
                                     padding: const EdgeInsets.symmetric(
@@ -315,7 +315,7 @@ class _GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFF8A79E5), width: 2),
+        border: Border.all(color: const Color(0xFF6FA99A), width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -443,7 +443,7 @@ class _DropZoneBodyState extends State<_DropZoneBody> {
   @override
   Widget build(BuildContext context) {
     final borderColor =
-        _hovering ? const Color(0xFF604EB8) : const Color(0xFF8A79E5);
+        _hovering ? const Color(0xFF2F7D6D) : const Color(0xFF6FA99A);
     final bg = _hovering
         ? const Color(0xFF7C6DE6).withValues(alpha: 0.18)
         : const Color(0xFF7C6DE6).withValues(alpha: 0.12);
@@ -536,7 +536,7 @@ class _DropZoneBodyState extends State<_DropZoneBody> {
                       Icon(
                         Icons.upload_rounded,
                         size: 34,
-                        color: const Color(0xFF604EB8).withValues(alpha: 0.85),
+                        color: const Color(0xFF2F7D6D).withValues(alpha: 0.85),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -601,7 +601,7 @@ class _Field extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF8A79E5), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF6FA99A), width: 2),
         ),
       ),
     );
@@ -626,7 +626,7 @@ class _FileChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(Icons.insert_drive_file_outlined,
-              size: 16, color: Color(0xFF604EB8)),
+              size: 16, color: Color(0xFF2F7D6D)),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 220),

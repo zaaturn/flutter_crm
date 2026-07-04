@@ -7,22 +7,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
+import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
-import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
-import 'package:my_app/services/secure_storage_service.dart';
-
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
-
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_edit_screen_mobile.dart';
-class ZaaturnUI {
-  static const Color background = DashboardUiTheme.pageBackground;
-  static const Color terracotta = DashboardUiTheme.primary;
-  static const Color cardBeige = DashboardUiTheme.primaryLight;
-  static const Color textDark = DashboardUiTheme.textDark;
-  static const Color textMuted = DashboardUiTheme.textMuted;
-  static const Color meetingBlue = DashboardUiTheme.statTodayLight;
-}
+import 'package:my_app/services/secure_storage_service.dart';
 
 class EventDetailMobileScreen extends StatefulWidget {
   final String eventId;
@@ -101,7 +92,9 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<EventBloc, EventState>(
+    return MobileEventTheme.wrap(
+      context,
+      BlocConsumer<EventBloc, EventState>(
       listener: (context, state) {
         if (!mounted) return;
         final fromState = _eventFromState(state, widget.eventId);
@@ -124,9 +117,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
           }
         }
         if (state is EventError && _resolvedEvent != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message)),
-          );
+          EventSnackBars.show(state.message);
         }
       },
       builder: (context, state) {
@@ -142,9 +133,9 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
 
         if (state is EventLoading && display == null) {
           return const Scaffold(
-            backgroundColor: ZaaturnUI.background,
+            backgroundColor: MobileEventTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: ZaaturnUI.terracotta),
+              child: CircularProgressIndicator(color: MobileEventTheme.terracotta),
             ),
           );
         }
@@ -152,25 +143,27 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
         // RSVP / accept in progress: never flash "Event not found" while the API runs.
         if (display == null && inFlight) {
           return const Scaffold(
-            backgroundColor: ZaaturnUI.background,
+            backgroundColor: MobileEventTheme.background,
             body: Center(
-              child: CircularProgressIndicator(color: ZaaturnUI.terracotta),
+              child: CircularProgressIndicator(color: MobileEventTheme.terracotta),
             ),
           );
         }
 
         if (display == null) {
           return Scaffold(
-            backgroundColor: ZaaturnUI.background,
+            backgroundColor: MobileEventTheme.background,
             body: Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  state is EventError ? state.message : 'Event not found',
+                  state is EventError
+                      ? 'Unable to load this event.'
+                      : 'Event not found',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.manrope(
                     fontWeight: FontWeight.w600,
-                    color: ZaaturnUI.textDark,
+                    color: MobileEventTheme.textDark,
                   ),
                 ),
               ),
@@ -180,7 +173,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
 
         final event = display;
         return Scaffold(
-          backgroundColor: ZaaturnUI.background,
+          backgroundColor: MobileEventTheme.background,
           body: Stack(
             children: [
               _buildBody(context, event),
@@ -191,7 +184,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                   right: 0,
                   child: LinearProgressIndicator(
                     minHeight: 3,
-                    color: ZaaturnUI.terracotta,
+                    color: MobileEventTheme.terracotta,
                     backgroundColor: Colors.transparent,
                   ),
                 ),
@@ -199,6 +192,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
           ),
         );
       },
+      ),
     );
   }
 
@@ -236,7 +230,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                         _buildParticipantsList(event),
 
                         const SizedBox(height: 32),
-                        Text("Description", style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w800, color: ZaaturnUI.textDark)),
+                        Text("Description", style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w800, color: MobileEventTheme.textDark)),
                         const SizedBox(height: 12),
                         Text(
                           event.description.trim().isEmpty
@@ -244,7 +238,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                               : event.description.trim(),
                           style: GoogleFonts.inter(
                             fontSize: 15,
-                            color: ZaaturnUI.textMuted,
+                            color: MobileEventTheme.textMuted,
                             height: 1.6,
                           ),
                         ),
@@ -267,8 +261,8 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
     return SliverAppBar(
       pinned: true,
       elevation: 0,
-      backgroundColor: ZaaturnUI.background,
-      foregroundColor: ZaaturnUI.textDark,
+      backgroundColor: MobileEventTheme.background,
+      foregroundColor: MobileEventTheme.textDark,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         onPressed: () => Navigator.pop(context),
@@ -327,7 +321,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
-                  color: ZaaturnUI.textDark,
+                  color: MobileEventTheme.textDark,
                   letterSpacing: 0.9,
                 ),
               ),
@@ -340,14 +334,14 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
           style: GoogleFonts.manrope(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: ZaaturnUI.textDark,
+            color: MobileEventTheme.textDark,
             height: 1.15,
           ),
           softWrap: true,
           overflow: TextOverflow.visible,
         ),
         const SizedBox(height: 6),
-        Text("Hosted by ${event.createdBy.username}", style: GoogleFonts.inter(fontSize: 14, color: ZaaturnUI.textMuted, fontWeight: FontWeight.w600)),
+        Text("Hosted by ${event.createdBy.username}", style: GoogleFonts.inter(fontSize: 14, color: MobileEventTheme.textMuted, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -364,7 +358,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                 width: 4,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: ZaaturnUI.terracotta,
+                  color: MobileEventTheme.terracotta,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -374,7 +368,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                 style: GoogleFonts.manrope(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: ZaaturnUI.textDark,
+                  color: MobileEventTheme.textDark,
                 ),
               ),
             ],
@@ -385,14 +379,14 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
             borderRadius: BorderRadius.circular(12),
             child: Row(
               children: [
-                Icon(Icons.videocam_rounded, color: ZaaturnUI.terracotta, size: 24),
+                Icon(Icons.videocam_rounded, color: MobileEventTheme.terracotta, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     url,
                     style: GoogleFonts.manrope(
                       fontWeight: FontWeight.w700,
-                      color: ZaaturnUI.terracotta,
+                      color: MobileEventTheme.terracotta,
                       fontSize: 13,
                     ),
                   ),
@@ -419,7 +413,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                 style: GoogleFonts.manrope(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: ZaaturnUI.textDark,
+                  color: MobileEventTheme.textDark,
                 ),
               ),
             ),
@@ -427,7 +421,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
               TextButton(
                 onPressed: () => _ParticipantsSheet.show(context, participants),
                 style: TextButton.styleFrom(
-                  foregroundColor: ZaaturnUI.terracotta,
+                  foregroundColor: MobileEventTheme.terracotta,
                   textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w900),
                 ),
                 child: const Text('View all'),
@@ -439,7 +433,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
           Text(
             "No participants",
             style: GoogleFonts.inter(
-              color: ZaaturnUI.textMuted,
+              color: MobileEventTheme.textMuted,
               fontWeight: FontWeight.w600,
             ),
           )
@@ -458,15 +452,15 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: ZaaturnUI.terracotta, size: 20),
+          Icon(icon, color: MobileEventTheme.terracotta, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.manrope(fontSize: 11, color: ZaaturnUI.textMuted, fontWeight: FontWeight.w800)),
+                Text(label, style: GoogleFonts.manrope(fontSize: 11, color: MobileEventTheme.textMuted, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 2),
-                Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: ZaaturnUI.textDark)),
+                Text(value, style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: MobileEventTheme.textDark)),
               ],
             ),
           ),
@@ -481,7 +475,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
       child: Container(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
         decoration: const BoxDecoration(
-          color: ZaaturnUI.background,
+          color: MobileEventTheme.background,
           border: Border(top: BorderSide(color: Colors.black12, width: 0.5)),
         ),
         child: Row(
@@ -495,8 +489,8 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                   });
                   context.read<EventBloc>().add(DeclineEventInviteRequested(id));
                 },
-                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56), side: const BorderSide(color: ZaaturnUI.terracotta), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                child: const Text("Decline", style: TextStyle(color: ZaaturnUI.terracotta, fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56), side: const BorderSide(color: MobileEventTheme.terracotta), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                child: const Text("Decline", style: TextStyle(color: MobileEventTheme.terracotta, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(width: 12),
@@ -509,7 +503,7 @@ class _EventDetailMobileScreenState extends State<EventDetailMobileScreen> {
                   });
                   context.read<EventBloc>().add(AcceptEventInviteRequested(id));
                 },
-                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56), backgroundColor: ZaaturnUI.terracotta, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: ElevatedButton.styleFrom(minimumSize: const Size(0, 56), backgroundColor: MobileEventTheme.terracotta, foregroundColor: Colors.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                 child: const Text("Accept", style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
@@ -587,13 +581,13 @@ class _ParticipantsPreview extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: ZaaturnUI.textMuted,
+                  color: MobileEventTheme.textMuted,
                 ),
               ),
             ),
             const Icon(
               Icons.chevron_right_rounded,
-              color: ZaaturnUI.textMuted,
+              color: MobileEventTheme.textMuted,
               size: 22,
             ),
           ],
@@ -617,13 +611,13 @@ class _AvatarBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.65),
         shape: BoxShape.circle,
-        border: Border.all(color: ZaaturnUI.background, width: 2),
+        border: Border.all(color: MobileEventTheme.background, width: 2),
       ),
       alignment: Alignment.center,
       child: Text(
         letter,
         style: GoogleFonts.manrope(
-          color: ZaaturnUI.terracotta,
+          color: MobileEventTheme.terracotta,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -674,9 +668,9 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
       builder: (ctx, controller) {
         return Container(
           decoration: BoxDecoration(
-            color: ZaaturnUI.background,
+            color: MobileEventTheme.background,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: ZaaturnUI.terracotta.withOpacity(0.12)),
+            border: Border.all(color: MobileEventTheme.terracotta.withOpacity(0.12)),
           ),
           child: Column(
             children: [
@@ -685,7 +679,7 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                 width: 44,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: ZaaturnUI.textMuted.withOpacity(0.25),
+                  color: MobileEventTheme.textMuted.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -699,7 +693,7 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                         style: GoogleFonts.manrope(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: ZaaturnUI.textDark,
+                          color: MobileEventTheme.textDark,
                         ),
                       ),
                     ),
@@ -707,7 +701,7 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                       '${widget.participants.length}',
                       style: GoogleFonts.manrope(
                         fontWeight: FontWeight.w900,
-                        color: ZaaturnUI.textMuted,
+                        color: MobileEventTheme.textMuted,
                       ),
                     ),
                   ],
@@ -717,17 +711,17 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: ZaaturnUI.cardBeige,
+                    color: MobileEventTheme.field,
                     borderRadius: BorderRadius.circular(16),
                     border:
-                        Border.all(color: ZaaturnUI.terracotta.withOpacity(0.14)),
+                        Border.all(color: MobileEventTheme.terracotta.withOpacity(0.14)),
                   ),
                   child: TextField(
                     controller: _search,
                     onChanged: (v) => setState(() => _query = v),
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search_rounded,
-                          color: ZaaturnUI.terracotta),
+                          color: MobileEventTheme.terracotta),
                       hintText: 'Search username',
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
@@ -735,12 +729,12 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                         vertical: 14,
                       ),
                       hintStyle: GoogleFonts.inter(
-                        color: ZaaturnUI.textMuted,
+                        color: MobileEventTheme.textMuted,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     style: GoogleFonts.inter(
-                      color: ZaaturnUI.textDark,
+                      color: MobileEventTheme.textDark,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -758,9 +752,9 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: ZaaturnUI.cardBeige,
+                        color: MobileEventTheme.field,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: ZaaturnUI.terracotta.withOpacity(0.10)),
+                        border: Border.all(color: MobileEventTheme.terracotta.withOpacity(0.10)),
                       ),
                       child: Row(
                         children: [
@@ -772,7 +766,7 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w900,
-                                color: ZaaturnUI.textDark,
+                                color: MobileEventTheme.textDark,
                               ),
                             ),
                           ),
@@ -784,7 +778,7 @@ class _ParticipantsSheetState extends State<_ParticipantsSheet> {
                                 const SnackBar(content: Text('Copied')),
                               );
                             },
-                            icon: const Icon(Icons.copy_rounded, size: 18, color: ZaaturnUI.textMuted),
+                            icon: const Icon(Icons.copy_rounded, size: 18, color: MobileEventTheme.textMuted),
                           ),
                         ],
                       ),

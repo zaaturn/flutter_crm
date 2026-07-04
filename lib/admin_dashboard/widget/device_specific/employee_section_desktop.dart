@@ -305,6 +305,9 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
     final employees = _visibleEmployees;
     final listView = ListView.separated(
       controller: _scrollController,
+      physics: widget.compact
+          ? const NeverScrollableScrollPhysics()
+          : const ClampingScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         widget.compact ? 16 : 20,
         widget.compact ? 10 : 16,

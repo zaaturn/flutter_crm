@@ -31,7 +31,7 @@ class ShareDashboardCards extends StatelessWidget {
         if (onCreateSurvey != null)
           _HeroCard(
             title: 'Surveys',
-            subtitle: 'Create polls and collect employee feedback.',
+            subtitle: 'Polls & employee responses',
             iconWidget: const SurveyIcon(
               type: SurveyIconType.poll,
               size: 26,
@@ -129,10 +129,14 @@ class _HeroCard extends StatelessWidget {
                       color: const Color(0xFF1A1C1E),
                       letterSpacing: -0.4,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 abstract final class BillingTheme {
-  static const Color purple = Color(0xFF7C3AED);
-  static const Color purpleDark = Color(0xFF4C1D95);
-  static const Color purpleLight = Color(0xFFF5F3FF);
-  static const Color border = Color(0xFFEDE9FE);
-  static const Color textPrimary = Color(0xFF0F172A);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color scaffoldBg = Color(0xFFF8FAFC);
+  static const Color purple = Color(0xFF2F7D6D);
+  static const Color purpleDark = Color(0xFF1F5F52);
+  static const Color purpleLight = Color(0xFFE3F2EE);
+  static const Color border = Color(0xFFE3EAE6);
+  static const Color textPrimary = Color(0xFF1C2B26);
+  static const Color textMuted = Color(0xFF6B7F78);
+
+  /// Full-page canvas — matches the main admin dashboard's mint shell.
+  static const Color canvas = Color(0xFFD0E3D8);
+  /// Muted secondary-surface tint (inputs, hover states) — not the page bg.
+  static const Color scaffoldBg = Color(0xFFF4F7F5);
   static const Color surface = Colors.white;
 
   static ThemeData datePickerTheme(BuildContext context) {

@@ -71,7 +71,7 @@ class _EditClientScreenState extends State<EditClientScreen> {
     final narrow = MediaQuery.sizeOf(context).width < 900;
     final scaffold = Scaffold(
       backgroundColor:
-          narrow ? LeaveManagerColors.background : const Color(0xFFF8FAFC),
+          narrow ? LeaveManagerColors.background : AppColors.canvas,
       appBar: AppBar(
         title: Text(
           'Edit Client',
@@ -80,8 +80,8 @@ class _EditClientScreenState extends State<EditClientScreen> {
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: narrow ? LeaveManagerColors.primary : Colors.black,
+        backgroundColor: narrow ? Colors.white : AppColors.canvas,
+        foregroundColor: narrow ? LeaveManagerColors.primary : AppColors.text,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(28),

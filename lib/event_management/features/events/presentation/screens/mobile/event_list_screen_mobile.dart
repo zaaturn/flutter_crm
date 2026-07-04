@@ -3,15 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
+import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'package:my_app/event_management/features/events/presentation/widgets/event_card_mobile.dart';
-
-class ZaaturnUI {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color cardBeige = Color(0xFFEADBC8);
-  static const Color accentOrange = Color(0xFFF3924C);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
-}
 
 class EventsListScreenMobile extends StatefulWidget {
   const EventsListScreenMobile({super.key});
@@ -38,10 +32,15 @@ class _EventsListScreenState extends State<EventsListScreenMobile> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: ZaaturnUI.background,
+    return BlocListener<EventBloc, EventState>(
+      listenWhen: (_, s) => s is EventError,
+      listener: (_, state) {
+        if (state is EventError) EventSnackBars.show(state.message);
+      },
+      child: Container(
+      color: MobileEventTheme.background,
       child: RefreshIndicator(
-        color: ZaaturnUI.accentOrange,
+        color: MobileEventTheme.terracotta,
         backgroundColor: Colors.white,
         onRefresh: () async {
           _load();
@@ -51,17 +50,17 @@ class _EventsListScreenState extends State<EventsListScreenMobile> {
           builder: (context, state) {
             if (state is EventInitial || state is EventLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: ZaaturnUI.accentOrange),
+                child: CircularProgressIndicator(color: MobileEventTheme.terracotta),
               );
             }
 
             if (state is EventError) {
               return _buildStateOverlay(
                 icon: Icons.error_outline_rounded,
-                message: state.message,
+                message: 'Unable to load events. Pull to retry.',
                 action: FilledButton(
                   onPressed: _load,
-                  style: FilledButton.styleFrom(backgroundColor: ZaaturnUI.accentOrange),
+                  style: FilledButton.styleFrom(backgroundColor: MobileEventTheme.terracotta),
                   child: const Text('Retry'),
                 ),
               );
@@ -91,6 +90,7 @@ class _EventsListScreenState extends State<EventsListScreenMobile> {
           },
         ),
       ),
+      ),
     );
   }
 
@@ -108,14 +108,14 @@ class _EventsListScreenState extends State<EventsListScreenMobile> {
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: ZaaturnUI.cardBeige.withOpacity(0.4),
+              color: MobileEventTheme.field.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: ZaaturnUI.textMuted.withOpacity(0.1)),
+              border: Border.all(color: MobileEventTheme.textMuted.withOpacity(0.1)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 48, color: ZaaturnUI.textMuted.withOpacity(0.5)),
+                Icon(icon, size: 48, color: MobileEventTheme.textMuted.withOpacity(0.5)),
                 const SizedBox(height: 16),
                 Text(
                   message,
@@ -123,7 +123,7 @@ class _EventsListScreenState extends State<EventsListScreenMobile> {
                   style: GoogleFonts.manrope(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: ZaaturnUI.textDark,
+                    color: MobileEventTheme.textDark,
                   ),
                 ),
                 if (action != null) ...[

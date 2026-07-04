@@ -8,7 +8,15 @@ import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/client tracker/features/payment/model/payment_model.dart';
 
 class AdminClientSummaryPanel extends StatelessWidget {
-  const AdminClientSummaryPanel({super.key});
+  /// When true (sidebar Client Billing screen), each zone gets its own panel
+  /// on the mint canvas. When false (main dashboard embed), uses the compact
+  /// single-box layout inside the parent panel.
+  final bool separatePanels;
+
+  const AdminClientSummaryPanel({
+    super.key,
+    this.separatePanels = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -24,42 +32,132 @@ class AdminClientSummaryPanel extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.isLoading && state.summary.results.isEmpty) {
+          if (separatePanels) {
+            return const AdminDashboardPanel(
+              child: Center(
+                child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
+              ),
+            );
+          }
           return const Center(
             child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
           );
         }
 
         if (state.error != null && state.summary.results.isEmpty) {
-          return _ErrorView(
+          final error = _ErrorView(
             message: state.error!,
             onRetry: () => context.read<ClientDashboardSummaryCubit>().load(),
           );
+          if (separatePanels) {
+            return AdminDashboardPanel(child: error);
+          }
+          return error;
         }
 
         final total = state.summary.totalClients;
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _HeaderRow(state: state),
-              const SizedBox(height: 10),
-              _StatRow(summary: state.summary, total: total),
-              const SizedBox(height: 10),
-              _FilterRow(state: state),
-              const SizedBox(height: 8),
-              Expanded(
-                child: state.summary.results.isEmpty
-                    ? _EmptyClients(month: state.month, year: state.year)
-                    : _ClientSlider(rows: state.summary.results),
-              ),
-              const SizedBox(height: 6),
-              _PaginationBar(state: state),
-            ],
-          ),
-        );
+        if (separatePanels) {
+          return _SeparatePanelsBody(
+            state: state,
+            total: total,
+          );
+        }
+
+        return _EmbeddedBody(state: state, total: total);
       },
+    );
+  }
+}
+
+/// Compact layout used inside the main dashboard's single client panel.
+class _EmbeddedBody extends StatelessWidget {
+  final ClientDashboardSummaryState state;
+  final int total;
+
+  const _EmbeddedBody({required this.state, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _HeaderRow(state: state),
+          const SizedBox(height: 10),
+          _StatRow(
+            summary: state.summary,
+            total: total,
+            separatePanels: false,
+          ),
+          const SizedBox(height: 10),
+          _FilterRow(state: state),
+          const SizedBox(height: 8),
+          Expanded(
+            child: state.summary.results.isEmpty
+                ? _EmptyClients(month: state.month, year: state.year)
+                : _ClientSlider(rows: state.summary.results),
+          ),
+          const SizedBox(height: 6),
+          _PaginationBar(state: state),
+        ],
+      ),
+    );
+  }
+}
+
+/// Analytics-style layout — separate panel per zone (sidebar Client Billing).
+class _SeparatePanelsBody extends StatelessWidget {
+  final ClientDashboardSummaryState state;
+  final int total;
+
+  const _SeparatePanelsBody({required this.state, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    const gap = AdminDashboardTheme.panelGap;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _HeaderRow(state: state),
+        const SizedBox(height: gap),
+        _StatRow(
+          summary: state.summary,
+          total: total,
+          separatePanels: true,
+        ),
+        const SizedBox(height: gap),
+        AdminDashboardPanel(
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: _FilterRow(state: state),
+          ),
+        ),
+        const SizedBox(height: gap),
+        Expanded(
+          child: AdminDashboardPanel(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: state.summary.results.isEmpty
+                        ? _EmptyClients(
+                            month: state.month,
+                            year: state.year,
+                          )
+                        : _ClientSlider(rows: state.summary.results),
+                  ),
+                  _PaginationBar(state: state),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -132,45 +230,74 @@ class _HeaderRow extends StatelessWidget {
 class _StatRow extends StatelessWidget {
   final ClientDashboardSummary summary;
   final int total;
+  final bool separatePanels;
 
-  const _StatRow({required this.summary, required this.total});
+  const _StatRow({
+    required this.summary,
+    required this.total,
+    required this.separatePanels,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _MiniStatCard(
-            label: 'Total',
-            value: '$total',
-            color: const Color(0xFF1976D2),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: _MiniStatCard(
-            label: 'Inv Sent',
-            value: '${summary.invoicesSentCount} / $total',
-            color: const Color(0xFF2E7D32),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: _MiniStatCard(
-            label: 'Inv Pend',
-            value: '${summary.invoicesPendingCount} / $total',
-            color: const Color(0xFFF57F17),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: _MiniStatCard(
-            label: 'Paid',
-            value: '${summary.paymentsReceivedCount} / $total',
-            color: const Color(0xFF2E7D32),
-          ),
-        ),
-      ],
+    final stats = <({String label, String value, Color color})>[
+      (label: 'Total', value: '$total', color: const Color(0xFF1976D2)),
+      (
+        label: 'Inv Sent',
+        value: '${summary.invoicesSentCount} / $total',
+        color: const Color(0xFF2E7D32),
+      ),
+      (
+        label: 'Inv Pend',
+        value: '${summary.invoicesPendingCount} / $total',
+        color: const Color(0xFFF57F17),
+      ),
+      (
+        label: 'Paid',
+        value: '${summary.paymentsReceivedCount} / $total',
+        color: const Color(0xFF2E7D32),
+      ),
+    ];
+
+    if (!separatePanels) {
+      return Row(
+        children: [
+          for (var i = 0; i < stats.length; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: _MiniStatCard(
+                label: stats[i].label,
+                value: stats[i].value,
+                color: stats[i].color,
+                separatePanels: false,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    const gap = AdminDashboardTheme.panelGap;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < stats.length; i++)
+            Expanded(
+              child: AdminDashboardPanel(
+                margin: i < stats.length - 1
+                    ? const EdgeInsets.only(right: gap)
+                    : null,
+                child: _MiniStatCard(
+                  label: stats[i].label,
+                  value: stats[i].value,
+                  color: stats[i].color,
+                  separatePanels: true,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -179,24 +306,34 @@ class _MiniStatCard extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
+  final bool separatePanels;
 
   const _MiniStatCard({
     required this.label,
     required this.value,
     required this.color,
+    this.separatePanels = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+    final card = Container(
+      width: separatePanels ? double.infinity : null,
+      padding: EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: separatePanels ? 8 : 7,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(
+          separatePanels ? AdminDashboardTheme.panelRadius - 4 : 10,
+        ),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            separatePanels ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
           Text(
             label,
@@ -222,6 +359,9 @@ class _MiniStatCard extends StatelessWidget {
         ],
       ),
     );
+
+    if (!separatePanels) return card;
+    return Padding(padding: const EdgeInsets.all(10), child: card);
   }
 }
 

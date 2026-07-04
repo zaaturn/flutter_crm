@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const Color cyan = Color(0xFF00BCD4);
-  static const Color cyanLight = Color(0xFFE0F7FA);
+  static const Color cyan = Color(0xFF2F7D6D);
+  static const Color cyanLight = Color(0xFFE3F2EE);
+  /// Full-page canvas — matches the main admin dashboard's mint shell.
+  static const Color canvas = Color(0xFFD0E3D8);
   static const Color pageBg = Color(0xFFF3F6F8);
   static const Color surface = Colors.white;
   static const Color border = Color(0xFFE5E7EB);

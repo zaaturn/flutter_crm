@@ -77,7 +77,7 @@ class _CultureBoardsScreenState extends State<CultureBoardsScreen> {
             children: [
               Checkbox(
                 value: _allUsers,
-                activeColor: const Color(0xFF604EB8),
+                activeColor: const Color(0xFF2F7D6D),
                 onChanged: (v) => setState(() => _allUsers = v ?? true),
               ),
               const Text(
@@ -193,11 +193,11 @@ class _BoardsLeftState extends State<_BoardsLeft> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: const Color(0xFFE3F2EE),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.format_quote_rounded,
-                    color: Color(0xFF6C63FF)),
+                    color: Color(0xFF3D8C7A)),
               ),
               const SizedBox(width: 14),
               const Expanded(
@@ -250,7 +250,7 @@ class _BoardsLeftState extends State<_BoardsLeft> {
                 return ElevatedButton(
                   onPressed: busy ? null : _submitQuote,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF604EB8),
+                    backgroundColor: const Color(0xFF2F7D6D),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
@@ -488,7 +488,7 @@ class _GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.62),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: const Color(0xFF8A79E5), width: 2),
+        border: Border.all(color: const Color(0xFF6FA99A), width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -533,7 +533,7 @@ class _Field extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF8A79E5), width: 2),
+          borderSide: const BorderSide(color: Color(0xFF6FA99A), width: 2),
         ),
       ),
     );

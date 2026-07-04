@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 
-/// Date / time pickers for the event composer (local wall time; respects all-day).
+/// Terracotta-themed date/time pickers on mobile.
 abstract final class EventCreateDateTimePicker {
   static Future<void> pick({
     required BuildContext context,
@@ -14,11 +16,13 @@ abstract final class EventCreateDateTimePicker {
     if (isAllDay && timeOnly) return;
 
     final initial = isStart ? startTime : endTime;
+    final mobile = AdaptiveLayout.useMobileUi(context);
 
     if (timeOnly) {
       final time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(initial),
+        builder: mobile ? _themedPicker : null,
       );
       if (time == null || !context.mounted) return;
 
@@ -64,6 +68,7 @@ abstract final class EventCreateDateTimePicker {
       initialDate: DateTime(initial.year, initial.month, initial.day),
       firstDate: DateTime(2020),
       lastDate: DateTime(2035),
+      builder: mobile ? _themedPicker : null,
     );
     if (date == null || !context.mounted) return;
 
@@ -127,5 +132,12 @@ abstract final class EventCreateDateTimePicker {
       }
     }
     onApply(nextStart, nextEnd);
+  }
+
+  static Widget _themedPicker(BuildContext context, Widget? child) {
+    return Theme(
+      data: MobileEventTheme.themeData(context),
+      child: child ?? const SizedBox.shrink(),
+    );
   }
 }

@@ -11,14 +11,7 @@ import 'package:my_app/event_management/features/events/presentation/screens/mob
 import 'package:my_app/services/secure_storage_service.dart';
 import '../../domain/entities/event.dart';
 
-class ZaaturnUI {
-  static const Color background = Color(0xFFFAF3E0);
-  static const Color cardBeige = Color(0xFFEADBC8);
-  static const Color accentOrange = Color(0xFFF3924C);
-  static const Color textDark = Color(0xFF3E2723);
-  static const Color textMuted = Color(0xFF8D6E63);
-  static const Color alertAmber = Color(0xFFB45309);
-}
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 
 class EventCardMobile extends StatelessWidget {
   final Event event;
@@ -38,7 +31,7 @@ class EventCardMobile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: ZaaturnUI.cardBeige,
+        color: MobileEventTheme.card,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -91,7 +84,7 @@ class EventCardMobile extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: ZaaturnUI.textDark,
+                  color: MobileEventTheme.textDark,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -143,7 +136,7 @@ class EventCardMobile extends StatelessWidget {
             style: GoogleFonts.manrope(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: ZaaturnUI.textDark,
+              color: MobileEventTheme.textDark,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -153,7 +146,7 @@ class EventCardMobile extends StatelessWidget {
           event.isAllDay ? "All Day" : DateFormat.jm().format(event.startTime.toLocal()),
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: ZaaturnUI.textMuted,
+            color: MobileEventTheme.textMuted,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -179,7 +172,7 @@ class _Badge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: ZaaturnUI.accentOrange),
+          Icon(icon, size: 14, color: MobileEventTheme.terracotta),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -187,7 +180,7 @@ class _Badge extends StatelessWidget {
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: ZaaturnUI.textMuted,
+                color: MobileEventTheme.textMuted,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -221,16 +214,18 @@ class _DynamicCardActions extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: ZaaturnUI.alertAmber.withOpacity(0.15),
+                  color: MobileEventTheme.terracottaDark.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: ZaaturnUI.alertAmber.withOpacity(0.3)),
+                  border: Border.all(
+                    color: MobileEventTheme.terracottaDark.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Text(
                   'RSVP',
                   style: GoogleFonts.manrope(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
-                    color: ZaaturnUI.alertAmber,
+                    color: MobileEventTheme.terracottaDark,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -257,17 +252,17 @@ class _DynamicCardActions extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: ZaaturnUI.background,
+        backgroundColor: MobileEventTheme.background,
         title: Text('Delete Event?',
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: ZaaturnUI.textDark)
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: MobileEventTheme.textDark)
         ),
         content: Text('Do you want to remove "${event.title}"?',
-            style: GoogleFonts.inter(color: ZaaturnUI.textDark)
+            style: GoogleFonts.inter(color: MobileEventTheme.textDark)
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: GoogleFonts.manrope(color: ZaaturnUI.textMuted)),
+            child: Text('Cancel', style: GoogleFonts.manrope(color: MobileEventTheme.textMuted)),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),

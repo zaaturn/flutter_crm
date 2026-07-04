@@ -13,6 +13,7 @@ class PayrollDashboardState extends Equatable {
     required this.loadStatus,
     required this.dashboard,
     required this.tableRows,
+    required this.allTableRows,
     required this.searchQuery,
     required this.monthIndex,
     required this.year,
@@ -30,6 +31,7 @@ class PayrollDashboardState extends Equatable {
       loadStatus: PayrollDashboardLoadStatus.initial,
       dashboard: PayrollDashboardModel.empty(now.year),
       tableRows: const [],
+      allTableRows: const [],
       searchQuery: '',
       monthIndex: now.month,
       year: now.year,
@@ -43,8 +45,10 @@ class PayrollDashboardState extends Equatable {
 
   final PayrollDashboardLoadStatus loadStatus;
   final PayrollDashboardModel dashboard;
-  /// One row per employee for [monthIndex] + [year], merged with API records.
+  /// Filtered rows for current [recordsPaidFilter] + [searchQuery].
   final List<PayrollMergedRow> tableRows;
+  /// Full merge for period (before paid-status tab filter).
+  final List<PayrollMergedRow> allTableRows;
   final String searchQuery;
   /// 1–12 only (set from top bar).
   final int monthIndex;
@@ -61,6 +65,7 @@ class PayrollDashboardState extends Equatable {
     PayrollDashboardLoadStatus? loadStatus,
     PayrollDashboardModel? dashboard,
     List<PayrollMergedRow>? tableRows,
+    List<PayrollMergedRow>? allTableRows,
     String? searchQuery,
     int? monthIndex,
     int? year,
@@ -78,6 +83,7 @@ class PayrollDashboardState extends Equatable {
       loadStatus: loadStatus ?? this.loadStatus,
       dashboard: dashboard ?? this.dashboard,
       tableRows: tableRows ?? this.tableRows,
+      allTableRows: allTableRows ?? this.allTableRows,
       searchQuery: searchQuery ?? this.searchQuery,
       monthIndex: monthIndex ?? this.monthIndex,
       year: year ?? this.year,
@@ -99,6 +105,7 @@ class PayrollDashboardState extends Equatable {
         loadStatus,
         dashboard,
         tableRows,
+        allTableRows,
         searchQuery,
         monthIndex,
         year,

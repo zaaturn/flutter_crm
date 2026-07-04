@@ -13,7 +13,7 @@ class AdminSeenByScreen extends StatelessWidget {
     final repo = context.read<PostRepository>();
 
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: AppColors.canvas,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

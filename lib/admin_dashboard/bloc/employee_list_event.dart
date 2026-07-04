@@ -16,6 +16,15 @@ class LoadMoreEmployees extends EmployeeListEvent {
   const LoadMoreEmployees();
 }
 
+/// Jumps to an explicit page and replaces the current results (desktop table pagination).
+class GoToPage extends EmployeeListEvent {
+  final int page;
+  const GoToPage(this.page);
+
+  @override
+  List<Object?> get props => [page];
+}
+
 class RefreshEmployees extends EmployeeListEvent {
   const RefreshEmployees();
 }

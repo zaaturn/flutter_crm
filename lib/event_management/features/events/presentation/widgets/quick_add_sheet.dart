@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_create_screen.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/event_detail_screen.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_create_screen_mobile.dart';
+import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_detail_screen_mobile.dart';
 import 'package:my_app/event_management/shared/themes/app_theme.dart';
 
 import '../bloc/event_bloc.dart';
-import '../utils/event_snackbar.dart';
+import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'event_create/event_create_dialogs.dart';
 
 class QuickAddSheet extends StatefulWidget {
@@ -18,10 +23,9 @@ class QuickAddSheet extends StatefulWidget {
   const QuickAddSheet({required this.selectedDate, super.key});
 
   static Future<void> show(BuildContext context, DateTime date) {
-    final width = MediaQuery.of(context).size.width;
-    final isDesktop = width > 768;
+    final mobile = AdaptiveLayout.useMobileUi(context);
 
-    if (isDesktop) {
+    if (!mobile) {
       return showDialog(
         context: context,
         barrierColor: Colors.black.withValues(alpha: 0.35),
@@ -93,9 +97,9 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final mobile = AdaptiveLayout.useMobileUi(context);
 
-    return BlocListener<EventBloc, EventState>(
+    final content = BlocListener<EventBloc, EventState>(
       listenWhen: (_, s) =>
           s is EventCreated ||
           s is EventError ||
@@ -104,9 +108,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         if (!ctx.mounted) return;
         if (state is EventCreated) {
           setState(() => _isSaving = false);
-          final createdId = state.event.id;
           final createdTitle = state.event.title;
-          final nav = Navigator.of(ctx);
           try {
             ctx.read<CalendarBloc>().add(CalendarRefreshRequested());
           } catch (_) {}
@@ -121,21 +123,7 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
 
           popRouteThenShowSnackBar(
             ctx,
-            SnackBar(
-              content: Text('Event "$createdTitle" created'),
-              action: SnackBarAction(
-                label: 'View',
-                onPressed: () {
-                  if (!nav.mounted) return;
-                  nav.push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => EventDetailScreen(eventId: createdId),
-                    ),
-                  );
-                },
-              ),
-              duration: const Duration(seconds: 3),
-            ),
+            EventSnackBars.terracotta('Event "$createdTitle" created'),
           );
         } else if (state is EventConflictDetected) {
           setState(() => _isSaving = false);
@@ -143,51 +131,61 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         } else if (state is EventError) {
           setState(() {
             _isSaving = false;
-            _error = state.message;
+            _error = null;
           });
+          EventSnackBars.show(state.message);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: isDesktop
-              ? BorderRadius.circular(16)
-              : const BorderRadius.vertical(top: Radius.circular(20)),
+          color: mobile ? MobileEventTheme.background : Theme.of(context).cardColor,
+          borderRadius: mobile
+              ? const BorderRadius.vertical(top: Radius.circular(24))
+              : BorderRadius.circular(16),
         ),
         padding: EdgeInsets.fromLTRB(
           20,
-          isDesktop ? 20 : 12,
+          mobile ? 12 : 20,
           20,
-          isDesktop ? 20 : (MediaQuery.of(context).viewInsets.bottom + 24),
+          mobile ? (MediaQuery.of(context).viewInsets.bottom + 24) : 20,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!isDesktop)
+            if (mobile)
               Center(
                 child: Container(
-                  width: 36,
+                  width: 44,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: MobileEventTheme.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
             Row(
               children: [
-                const Icon(Icons.calendar_today,
-                    size: 14, color: AppTheme.primaryBlue),
-                const SizedBox(width: 6),
+                Icon(
+                  Icons.calendar_today_rounded,
+                  size: 16,
+                  color: mobile ? MobileEventTheme.terracotta : AppTheme.primaryBlue,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   DateFormat('EEEE, MMMM d').format(widget.selectedDate),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.primaryBlue,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: mobile
+                      ? GoogleFonts.manrope(
+                          fontSize: 13,
+                          color: MobileEventTheme.terracotta,
+                          fontWeight: FontWeight.w800,
+                        )
+                      : const TextStyle(
+                          fontSize: 13,
+                          color: AppTheme.primaryBlue,
+                          fontWeight: FontWeight.w500,
+                        ),
                 ),
               ],
             ),
@@ -196,26 +194,43 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
               controller: _titleController,
               focusNode: _focusNode,
               textCapitalization: TextCapitalization.sentences,
+              style: mobile
+                  ? GoogleFonts.manrope(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: MobileEventTheme.textDark,
+                    )
+                  : const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textPrimary,
+                    ),
               decoration: InputDecoration(
                 hintText: 'Event title',
-                hintStyle: const TextStyle(
-                  fontSize: 22,
-                  color: AppTheme.textHint,
-                  fontWeight: FontWeight.w400,
-                ),
+                hintStyle: mobile
+                    ? GoogleFonts.manrope(
+                        fontSize: 22,
+                        color: MobileEventTheme.textMuted,
+                        fontWeight: FontWeight.w600,
+                      )
+                    : const TextStyle(
+                        fontSize: 22,
+                        color: AppTheme.textHint,
+                        fontWeight: FontWeight.w400,
+                      ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: AppTheme.primaryBlue, width: 2),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: mobile
+                        ? MobileEventTheme.terracotta
+                        : AppTheme.primaryBlue,
+                    width: 2,
+                  ),
                 ),
                 fillColor: Colors.transparent,
                 filled: false,
                 errorText: _error,
-              ),
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textPrimary,
               ),
               onSubmitted: (_) => _quickSave(),
             ),
@@ -225,9 +240,13 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _quickSave,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
+                    style: mobile
+                        ? MobileEventTheme.filledButton(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          )
+                        : ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
                     child: _isSaving
                         ? const SizedBox(
                             width: 18,
@@ -253,15 +272,30 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
                           if (!context.mounted) return;
                           Navigator.of(context, rootNavigator: true).push<void>(
                             MaterialPageRoute<void>(
-                              builder: (_) => EventCreateScreen(
-                                prefillDate: widget.selectedDate,
-                                prefillTitle: _titleController.text.trim(),
-                              ),
+                              builder: (_) => mobile
+                                  ? EventCreateScreenMobile(
+                                      prefillDate: widget.selectedDate,
+                                      prefillTitle: _titleController.text.trim(),
+                                    )
+                                  : EventCreateScreen(
+                                      prefillDate: widget.selectedDate,
+                                      prefillTitle: _titleController.text.trim(),
+                                    ),
                             ),
                           );
                         });
                       });
                     },
+                    style: mobile
+                        ? OutlinedButton.styleFrom(
+                            foregroundColor: MobileEventTheme.terracotta,
+                            side: const BorderSide(color: MobileEventTheme.terracotta),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          )
+                        : null,
                     icon: const Icon(Icons.tune, size: 16),
                     label: const Text('More options'),
                   ),
@@ -272,6 +306,11 @@ class _QuickAddSheetState extends State<QuickAddSheet> {
         ),
       ),
     );
+
+    if (mobile) {
+      return MobileEventTheme.wrap(context, content);
+    }
+    return content;
   }
 
   void _quickSave() {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_state.dart';
@@ -87,12 +88,12 @@ class AdminLeaveApprovePanel extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: Colors.indigo.shade50,
+          backgroundColor: AdminDashboardTheme.tealLight,
           child: Text(
             leave.employeeName?[0].toUpperCase() ?? "E",
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.indigo,
+              color: AdminDashboardTheme.teal,
             ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
 class SectionCard extends StatelessWidget {
   final String title;
@@ -20,14 +21,14 @@ class SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: AdminDashboardTheme.surface,
+        borderRadius: BorderRadius.circular(AdminDashboardTheme.panelRadius),
+        border: Border.all(color: AdminDashboardTheme.border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -52,7 +53,7 @@ class SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A1A),
+                    color: AdminDashboardTheme.textDark,
                   ),
                 ),
               ],
@@ -93,7 +94,7 @@ class InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
+          Icon(icon, size: 18, color: AdminDashboardTheme.iconInactive),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -103,7 +104,7 @@ class InfoRow extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF6B7280))),
+                        color: AdminDashboardTheme.textMuted)),
                 const SizedBox(height: 4),
                 valueWidget ??
                     Text(
@@ -111,7 +112,7 @@ class InfoRow extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A)),
+                          color: AdminDashboardTheme.textDark),
                       maxLines: maxLines,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -136,7 +137,7 @@ class CustomDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(height: 1, color: Color(0xFFE5E7EB));
+    return const Divider(height: 1, color: AdminDashboardTheme.borderSoft);
   }
 }
 

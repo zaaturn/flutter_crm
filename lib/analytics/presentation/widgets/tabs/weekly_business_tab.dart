@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../models/weekly_business_model.dart';
 import '../../../theme/analytics_theme.dart';
 import '../../../utils/iso_week.dart';
-import '../analytics_kpi_card.dart';
+import '../analytics_compact_stat_card.dart';
 import '../analytics_loading_widgets.dart';
-import 'package:my_app/core/widgets/analytics_icons.dart';
 
 class WeeklyBusinessTab extends StatelessWidget {
   final WeeklyBusinessModel? data;
@@ -26,9 +25,57 @@ class WeeklyBusinessTab extends StatelessWidget {
       return const Center(child: Text('No business data'));
     }
 
+    final tiles = <({String label, String value, Color color})>[
+      (
+        label: 'New CRM clients',
+        value: '${model.newCrmClients}',
+        color: AnalyticsOverviewPalette.mutedTeal,
+      ),
+      (
+        label: 'New billing clients',
+        value: '${model.newBillingClients}',
+        color: AnalyticsOverviewPalette.slateBlue,
+      ),
+      (
+        label: 'Clients invoiced',
+        value: '${model.billingClientsInvoiced}',
+        color: AnalyticsOverviewPalette.softMauve,
+      ),
+      (
+        label: 'Invoices issued',
+        value: '${model.invoicesIssued}',
+        color: AnalyticsOverviewPalette.warmBeige,
+      ),
+      (
+        label: 'Invoices paid',
+        value: '${model.invoicesPaid}',
+        color: AnalyticsOverviewPalette.sageGreen,
+      ),
+      (
+        label: 'Invoices pending',
+        value: '${model.invoicesPending}',
+        color: AnalyticsOverviewPalette.mustard,
+      ),
+      (
+        label: 'Amount invoiced',
+        value: model.formatInvoiced(),
+        color: AnalyticsOverviewPalette.berry,
+      ),
+      (
+        label: 'Amount received',
+        value: model.formatReceived(),
+        color: AnalyticsOverviewPalette.terracotta,
+      ),
+      (
+        label: 'Amount pending',
+        value: model.formatPending(),
+        color: AnalyticsOverviewPalette.charcoal,
+      ),
+    ];
+
     final content = SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(mobile ? 14 : 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -41,68 +88,28 @@ class WeeklyBusinessTab extends StatelessWidget {
             'Weekly business metrics',
             style: AnalyticsDesktopTheme.bodySm,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           LayoutBuilder(
             builder: (context, c) {
-              final cols = c.maxWidth > 900 ? 3 : (c.maxWidth > 500 ? 2 : 1);
-              return GridView.count(
-                crossAxisCount: cols,
+              final cols = mobile ? 2 : (c.maxWidth > 900 ? 3 : 2);
+              return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                childAspectRatio: 1.45,
-                children: [
-                  AnalyticsKpiCard(
-                    label: 'New CRM clients',
-                    value: '${model.newCrmClients}',
-                    icon: AnalyticsIconType.personAdd,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'New billing clients',
-                    value: '${model.newBillingClients}',
-                    icon: AnalyticsIconType.building,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Clients invoiced',
-                    value: '${model.billingClientsInvoiced}',
-                    icon: AnalyticsIconType.receipt,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Invoices issued',
-                    value: '${model.invoicesIssued}',
-                    icon: AnalyticsIconType.document,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Invoices paid',
-                    value: '${model.invoicesPaid}',
-                    icon: AnalyticsIconType.checkCircle,
-                    accent: AnalyticsDesktopTheme.success,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Invoices pending',
-                    value: '${model.invoicesPending}',
-                    icon: AnalyticsIconType.pending,
-                    accent: AnalyticsDesktopTheme.warning,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Amount invoiced',
-                    value: model.formatInvoiced(),
-                    icon: AnalyticsIconType.business,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Amount received',
-                    value: model.formatReceived(),
-                    icon: AnalyticsIconType.payments,
-                    accent: AnalyticsDesktopTheme.success,
-                  ),
-                  AnalyticsKpiCard(
-                    label: 'Amount pending',
-                    value: model.formatPending(),
-                    icon: AnalyticsIconType.hourglass,
-                    accent: AnalyticsDesktopTheme.danger,
-                  ),
-                ],
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  mainAxisExtent: mobile ? 86 : 92,
+                ),
+                itemCount: tiles.length,
+                itemBuilder: (context, index) {
+                  final tile = tiles[index];
+                  return AnalyticsCompactStatCard(
+                    label: tile.label,
+                    value: tile.value,
+                    background: tile.color,
+                  );
+                },
               );
             },
           ),

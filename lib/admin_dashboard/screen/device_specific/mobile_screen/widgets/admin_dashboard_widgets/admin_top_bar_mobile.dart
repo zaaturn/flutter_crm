@@ -7,6 +7,22 @@ import 'package:my_app/event_management/features/notification/presentation/scree
 import 'package:my_app/screens/device_specific/welcome_mobile.dart';
 import 'package:my_app/services/api_client.dart';
 
+abstract final class AdminMobileTerracottaTheme {
+  static const terracotta = Color(0xFFC05C39);
+  static const terracottaDark = Color(0xFFA84A2E);
+  static const cream = Color(0xFFFAF9F6);
+  static const creamMuted = Color(0xFFF2EDE4);
+  static const onTerracotta = Color(0xFFFAF9F6);
+  static const onTerracottaMuted = Color(0xFFEADBC8);
+
+  /// Admin workspace switch — darker lavender purple.
+  static const adminSwitch = Color(0xFF9580D6);
+  /// Bell notification chip — vibrant green.
+  static const bellFill = Color(0xFF4CD137);
+  /// Logout action fill.
+  static const logoutFill = Color(0xFFE11D48);
+}
+
 class AdminTopBarMobile extends StatelessWidget {
   const AdminTopBarMobile({super.key});
 
@@ -34,8 +50,14 @@ class AdminTopBarMobile extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text('Sign Out', style: GoogleFonts.manrope(fontWeight: FontWeight.w800)),
-        content: Text('Are you sure you want to leave?', style: GoogleFonts.manrope()),
+        title: Text(
+          'Sign Out',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'Are you sure you want to leave?',
+          style: GoogleFonts.manrope(),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -44,9 +66,11 @@ class AdminTopBarMobile extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE11D48),
+              backgroundColor: AdminMobileTerracottaTheme.logoutFill,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 0,
             ),
             child: const Text('Logout'),
@@ -60,120 +84,120 @@ class AdminTopBarMobile extends StatelessWidget {
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreenmobile()),
-          (route) => false,
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const Color pastelBlue = Color(0xFFC1DBE8);
-    const Color darkSlate = Color(0xFF0F172A);
+    final topInset = MediaQuery.paddingOf(context).top;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      decoration: const BoxDecoration(
-        color: pastelBlue,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(32),
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, topInset + 8, 16, 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AdminMobileTerracottaTheme.terracotta.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AdminMobileTerracottaTheme.terracotta.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              height: 24,
+              width: 24,
+              fit: BoxFit.contain,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Daxarrow',
+            style: GoogleFonts.manrope(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: AdminMobileTerracottaTheme.terracotta,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () => MobileWorkspaceSwitchSheet.show(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: darkSlate.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  )
+                color: AdminMobileTerracottaTheme.adminSwitch,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.sync_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Admin',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
                 ],
               ),
-              child: Image.asset(
-                'assets/images/logo.png',
-                height: 24,
-                width: 24,
-                fit: BoxFit.contain,
-              ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              'Daxarrow',
-              style: GoogleFonts.manrope(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: darkSlate,
-                letterSpacing: -0.5,
-              ),
+          ),
+          const SizedBox(width: 8),
+          BlocBuilder<NotificationBloc, NotificationState>(
+            builder: (ctx, nState) => _CircleAction(
+              icon: Icons.notifications_none_rounded,
+              onTap: () => _openNotifications(context),
+              badgeCount: nState.unreadCount,
+              backgroundColor: AdminMobileTerracottaTheme.bellFill,
+              iconColor: Colors.white,
             ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => MobileWorkspaceSwitchSheet.show(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: darkSlate.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.sync_rounded, size: 16, color: darkSlate),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Admin',
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: darkSlate,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            BlocBuilder<NotificationBloc, NotificationState>(
-              builder: (ctx, nState) => _CircleAction(
-                icon: Icons.notifications_none_rounded,
-                onTap: () => _openNotifications(context),
-                badgeCount: nState.unreadCount,
-              ),
-            ),
-            const SizedBox(width: 8),
-            _CircleAction(
-              icon: Icons.power_settings_new_rounded,
-              onTap: () => _handleLogout(context),
-              isDestructive: true,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 8),
+          _CircleAction(
+            icon: Icons.power_settings_new_rounded,
+            onTap: () => _handleLogout(context),
+            backgroundColor: AdminMobileTerracottaTheme.logoutFill,
+            iconColor: Colors.white,
+          ),
+        ],
       ),
     );
   }
 }
 
 class _CircleAction extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final int badgeCount;
-  final bool isDestructive;
-
   const _CircleAction({
     required this.icon,
     required this.onTap,
     this.badgeCount = 0,
-    this.isDestructive = false,
+    this.backgroundColor,
+    this.iconColor,
+    this.noFill = false,
   });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final int badgeCount;
+  final Color? backgroundColor;
+  final Color? iconColor;
+  final bool noFill;
 
   @override
   Widget build(BuildContext context) {
-    const Color darkSlate = Color(0xFF0F172A);
-    const Color rose = Color(0xFFE11D48);
+    final bg = noFill
+        ? Colors.transparent
+        : (backgroundColor ??
+            AdminMobileTerracottaTheme.terracotta.withValues(alpha: 0.1));
+    final fg = iconColor ?? AdminMobileTerracottaTheme.terracotta;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -185,14 +209,20 @@ class _CircleAction extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.5),
+              color: bg,
               borderRadius: BorderRadius.circular(14),
+              border: !noFill && backgroundColor == null
+                  ? Border.all(
+                      color: AdminMobileTerracottaTheme.terracotta
+                          .withValues(alpha: 0.35),
+                    )
+                  : null,
             ),
             alignment: Alignment.center,
             child: Icon(
               icon,
               size: 22,
-              color: isDestructive ? rose : darkSlate,
+              color: fg,
             ),
           ),
         ),
@@ -204,9 +234,12 @@ class _CircleAction extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
               decoration: BoxDecoration(
-                color: rose,
+                color: AdminMobileTerracottaTheme.logoutFill,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFC1DBE8), width: 2),
+                border: Border.all(
+                  color: AdminMobileTerracottaTheme.cream,
+                  width: 2,
+                ),
               ),
               child: Center(
                 child: Text(

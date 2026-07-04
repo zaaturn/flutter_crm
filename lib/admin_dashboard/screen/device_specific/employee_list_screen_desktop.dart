@@ -5,13 +5,13 @@ import 'package:my_app/admin_dashboard/bloc/employee_list_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_event.dart';
 import 'package:my_app/admin_dashboard/bloc/employee_list_state.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
-import 'package:my_app/admin_dashboard/utils/app_theme.dart';
-import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_card.dart';
-import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_card_shimmer.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/app_theme.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_pagination_bar.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_table.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_filter_sheet.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_states.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/employee_detail_screen_desktop.dart';
-import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_card_shimmer.dart';
 
 
 class EmployeeListScreen extends StatefulWidget {
@@ -22,26 +22,16 @@ class EmployeeListScreen extends StatefulWidget {
 }
 
 class _EmployeeListScreenState extends State<EmployeeListScreen> {
-  final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-
     context.read<EmployeeListBloc>().add(const FetchEmployees());
-
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 300) {
-        context.read<EmployeeListBloc>().add(const LoadMoreEmployees());
-      }
-    });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -77,34 +67,59 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       ..sort();
   }
 
-  int _getCrossAxisCount(double width) {
-    if (width >= 1400) return 4;
-    if (width >= 1100) return 3;
-    if (width >= 800) return 2;
-    return 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F8),
+      backgroundColor: AdminDashboardTheme.shellMint,
       body: SafeArea(
-        child: BlocBuilder<EmployeeListBloc, EmployeeListState>(
-          builder: (context, state) {
-            final employees = state.employeesWithStatus;
-            final onlineCount =
-                state.liveStatusMap.values.where((e) => e).length;
+        child: Padding(
+          padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+          child: BlocBuilder<EmployeeListBloc, EmployeeListState>(
+            builder: (context, state) {
+              final employees = state.employeesWithStatus;
+              final onlineCount =
+                  state.liveStatusMap.values.where((e) => e).length;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(state, employees, onlineCount),
-                _buildSearchBar(),
-                const Divider(height: 1),
-                Expanded(child: _buildBody(state, employees)),
-              ],
-            );
-          },
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AdminDashboardPanel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(state, employees, onlineCount),
+                        Container(
+                            height: 1, color: AdminDashboardTheme.borderSoft),
+                        _buildSearchBar(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AdminDashboardTheme.panelGap),
+                  Expanded(
+                    child: AdminDashboardPanel(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(child: _buildBody(state, employees)),
+                          if (state.status != EmployeeListStatus.loading &&
+                              employees.isNotEmpty)
+                            EmployeePaginationBar(
+                              currentPage: state.currentPage,
+                              rowCount: employees.length,
+                              totalCount: state.totalCount,
+                              pageSize: EmployeeListBloc.pageSize,
+                              onPageChanged: (page) => context
+                                  .read<EmployeeListBloc>()
+                                  .add(GoToPage(page)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -115,74 +130,87 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       List<Employee> employees,
       int onlineCount,
       ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 "Directory",
-                style: TextStyle(
+                style: AdminDashboardTheme.companyTitle().copyWith(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
                 ),
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.tune_rounded),
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => EmployeeFilterSheet(
-                      designations: _getDesignations(employees),
-                      selected: state.selectedRole,
-                      onSelected: (val) => context
-                          .read<EmployeeListBloc>()
-                          .add(val == null
-                          ? const ClearFilters()
-                          : FilterByRole(val)),
-                    ),
-                  );
-                },
+              Container(
+                decoration: BoxDecoration(
+                  color: AdminDashboardTheme.surfaceMuted,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.tune_rounded,
+                      color: AdminDashboardTheme.teal),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => EmployeeFilterSheet(
+                        designations: _getDesignations(employees),
+                        selected: state.selectedRole,
+                        onSelected: (val) => context
+                            .read<EmployeeListBloc>()
+                            .add(val == null
+                            ? const ClearFilters()
+                            : FilterByRole(val)),
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Row(
             children: [
               Text(
                 "${state.totalCount} employees",
                 style: const TextStyle(
                   fontSize: 13,
-                  color: Colors.grey,
+                  color: AdminDashboardTheme.textMuted,
                 ),
               ),
               const SizedBox(width: 16),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.active.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.active,
+                        shape: BoxShape.circle,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "$onlineCount online",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green,
+                    const SizedBox(width: 6),
+                    Text(
+                      "$onlineCount online",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.active,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -192,16 +220,17 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
   }
 
   Widget _buildSearchBar() {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      color: Colors.white,
       child: TextField(
         controller: _searchController,
         onChanged: (value) =>
             context.read<EmployeeListBloc>().add(SearchEmployees(value)),
         decoration: InputDecoration(
           hintText: 'Search by name, role, or ID...',
-          prefixIcon: const Icon(Icons.search),
+          hintStyle: const TextStyle(color: AdminDashboardTheme.textMuted),
+          prefixIcon:
+              const Icon(Icons.search, color: AdminDashboardTheme.textMuted),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
             icon: const Icon(Icons.clear),
@@ -213,9 +242,18 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
             },
           )
               : null,
+          filled: true,
+          fillColor: AdminDashboardTheme.surfaceMuted,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
           ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: AdminDashboardTheme.teal),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
     );
@@ -226,7 +264,9 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       List<Employee> employees,
       ) {
     if (state.status == EmployeeListStatus.loading) {
-      return const EmployeeShimmerList();
+      return const Center(
+        child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
+      );
     }
 
     if (state.status == EmployeeListStatus.failure &&
@@ -247,38 +287,11 @@ class _EmployeeListScreenState extends State<EmployeeListScreen> {
       );
     }
 
-    final crossAxisCount =
-    _getCrossAxisCount(MediaQuery.of(context).size.width);
-
-    return GridView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(20),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.1, // Adjusted from 1.5 to provide more vertical space
-      ),
-      itemCount: employees.length +
-          (state.status == EmployeeListStatus.loadingMore ? 1 : 0),
-      itemBuilder: (_, index) {
-        if (index >= employees.length) {
-          return const EmployeeShimmerCard();
-        }
-
-        final employee = employees[index];
-        print("EMPLOYEE ID: ${employee.id}");
-        print("LIVE STATUS MAP: ${state.liveStatusMap}");
-
-        final isOnline = state.liveStatusMap[employee.id] ?? false;
-
-        return EmployeeCard(
-          employee: employee,
-          isOnline: isOnline,
-          onViewProfile: () => _goToProfile(employee),
-          onEmail: () => _emailSnack(employee.email),
-        );
-      },
+    return EmployeeTable(
+      employees: employees,
+      liveStatusMap: state.liveStatusMap,
+      onViewProfile: _goToProfile,
+      onEmail: (employee) => _emailSnack(employee.email),
     );
   }
 }

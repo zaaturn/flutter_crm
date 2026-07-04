@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
 import '../bloc/payroll_dashboard_bloc.dart';
 import '../bloc/payroll_dashboard_event.dart';
@@ -10,12 +11,12 @@ import '../models/payroll_records_paid_filter.dart';
 
 
 class WorkspaceTheme {
-  static const Color primaryPurple = Color(0xFF6F34DC);
-  static const Color cardSurface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE8E9F1);
-  static const Color textMain = Color(0xFF222329);
-  static const Color textMuted = Color(0xFF6A6B74);
-  static const Color inputBg = Color(0xFFF8F9FE);
+  static const Color primaryPurple = AdminDashboardTheme.teal;
+  static const Color cardSurface = AdminDashboardTheme.surface;
+  static const Color borderSubtle = AdminDashboardTheme.border;
+  static const Color textMain = AdminDashboardTheme.textDark;
+  static const Color textMuted = AdminDashboardTheme.textMuted;
+  static const Color inputBg = AdminDashboardTheme.surfaceMuted;
 }
 
 class PayrollFilterSection extends StatefulWidget {

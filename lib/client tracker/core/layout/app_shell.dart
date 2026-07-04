@@ -11,16 +11,20 @@ import '../../features/clients/bloc/client_bloc.dart';
 import '../../features/clients/bloc/client_event.dart';
 
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
+/// Kept for the few call sites in this file that reference it directly;
+/// values now mirror [AdminDashboardTheme] so Client Tracker matches the
+/// rest of the admin shell.
 class AppColors {
-  static const Color brandPurple   = Color(0xFF7C3AED); // Main Purple
-  static const Color sidebar       = Color(0xFF000000); // Deep Black
-  static const Color sidebarActive = Color(0xFF1A1A1A); // Active Dark Grey
-  static const Color bg            = Color(0xFFF8FAFC); // Light Slate BG
-  static const Color surface       = Color(0xFFFFFFFF); // White
-  static const Color border        = Color(0xFFEDE9FE); // Lavender Border
-  static const Color textMain      = Color(0xFF0F172A); // Dark Slate
-  static const Color textMuted     = Color(0xFF64748B); // Slate Grey
+  static const Color brandPurple   = AdminDashboardTheme.teal;
+  static const Color sidebar       = AdminDashboardTheme.iconRailBg;
+  static const Color sidebarActive = AdminDashboardTheme.accentYellow;
+  static const Color bg            = AdminDashboardTheme.shellMint;
+  static const Color surface       = AdminDashboardTheme.surface;
+  static const Color border        = AdminDashboardTheme.border;
+  static const Color textMain      = AdminDashboardTheme.textDark;
+  static const Color textMuted     = AdminDashboardTheme.textMuted;
 }
 
 class AppShell extends StatefulWidget {
@@ -57,25 +61,35 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Row(
-        children: [
-
-          _Sidebar(selected: _idx, onTap: _go),
-
-          Expanded(
-            child: Column(
-              children: [
-                _TopBar(
-                  idx: _idx,
-                  onAdd: () => _go(1),
-                  onBack: _handleBack,
-                ),
-                Expanded(child: _page()),
-              ],
+      backgroundColor: AdminDashboardTheme.shellMint,
+      body: Padding(
+        padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AdminDashboardPanel(
+              width: AdminDashboardTheme.railWidth,
+              margin: const EdgeInsets.only(right: AdminDashboardTheme.panelGap),
+              child: _Sidebar(selected: _idx, onTap: _go),
             ),
-          ),
-        ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AdminDashboardPanel(
+                    child: _TopBar(
+                      idx: _idx,
+                      onAdd: () => _go(1),
+                      onBack: _handleBack,
+                    ),
+                  ),
+                  const SizedBox(height: AdminDashboardTheme.panelGap),
+                  Expanded(child: _page()),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -96,7 +110,7 @@ class _TopBar extends StatelessWidget {
   });
 
   static const _titles = ['Dashboard', 'Add New Client', 'All Clients', 'Payment Tracker'];
-  static const _subs   = ['Overview of your Clients', 'Clients › Add Client', 'Clients › List', 'Finance › Monthly Payments'];
+  static const _subs   = ['', 'Clients › Add Client', 'Clients › List', 'Finance › Monthly Payments'];
 
   @override
   Widget build(BuildContext context) {
@@ -104,8 +118,8 @@ class _TopBar extends StatelessWidget {
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1.5)),
+        color: AdminDashboardTheme.surface,
+        border: Border(bottom: BorderSide(color: AdminDashboardTheme.borderSoft, width: 1.5)),
       ),
       child: Row(
         children: [
@@ -129,15 +143,17 @@ class _TopBar extends StatelessWidget {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                _subs[idx],
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMuted,
+              if (_subs[idx].isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _subs[idx],
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           const Spacer(),
@@ -170,7 +186,7 @@ class _PurpleCrmButtonState extends State<_PurpleCrmButton> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
-            color: _hover ? const Color(0xFF6D28D9) : AppColors.brandPurple,
+            color: _hover ? AdminDashboardTheme.tealDark : AppColors.brandPurple,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -192,7 +208,7 @@ class _PurpleCrmButtonState extends State<_PurpleCrmButton> {
 }
 
 // ════════════════════════════════════════════════════
-// SIDEBAR (Deep Black & Rounded Highlights)
+// SIDEBAR — icon-only rail, matches the main dashboard's DesktopSidebar
 // ════════════════════════════════════════════════════
 class _Sidebar extends StatelessWidget {
   final int selected;
@@ -201,55 +217,27 @@ class _Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 260,
-      child: Container(
-        color: AppColors.sidebar,
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 16, 10, 16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42, height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.auto_awesome_motion_rounded, color: AppColors.brandPurple, size: 22),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Client Tracker', style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
-                      Text('Daxarrow ', style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Navigation Items
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                children: [
-                  _label('MAIN'),
-                  _tile(0, Icons.grid_view_rounded, 'Dashboard', null),
-                  const SizedBox(height: 12),
-                  _label('CLIENTS'),
-                  _tile(1, Icons.person_add_alt_1_rounded, 'Add Client', null),
-                  _tile(2, Icons.group_rounded, 'All Clients',null),
-                  const SizedBox(height: 12),
-                  _label('FINANCE'),
-                  _tile(3, Icons.account_balance_wallet_rounded, 'Payment Tracker', null),
-                ],
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AdminDashboardTheme.iconRailBg,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  children: [
+                    _tile(0, Icons.grid_view_rounded, 'Dashboard'),
+                    _tile(2, Icons.group_rounded, 'All Clients'),
+                    _tile(3, Icons.account_balance_wallet_rounded, 'Payments'),
+                  ],
+                ),
               ),
             ),
           ],
@@ -258,87 +246,56 @@ class _Sidebar extends StatelessWidget {
     );
   }
 
-  Widget _label(String text) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-    child: Text(text, style: GoogleFonts.plusJakartaSans(
-        color: Colors.white24, fontSize: 10,
-        fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-  );
-
-  Widget _tile(int idx, IconData icon, String label, String? badge) {
-    return _SidebarTile(
-      idx: idx, icon: icon, label: label, badge: badge,
-      selected: selected, onTap: onTap,
+  Widget _tile(int pageIdx, IconData icon, String tooltip) {
+    return _RailButton(
+      icon: icon,
+      tooltip: tooltip,
+      selected: selected == pageIdx,
+      onTap: () => onTap(pageIdx),
     );
   }
 }
 
-class _SidebarTile extends StatefulWidget {
-  final int idx, selected;
+class _RailButton extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String? badge;
-  final ValueChanged<int> onTap;
+  final String tooltip;
+  final bool selected;
+  final VoidCallback onTap;
 
-  const _SidebarTile({
-    required this.idx, required this.selected,
-    required this.icon, required this.label,
-    required this.badge, required this.onTap,
+  const _RailButton({
+    required this.icon,
+    required this.tooltip,
+    required this.selected,
+    required this.onTap,
   });
 
   @override
-  State<_SidebarTile> createState() => _SidebarTileState();
-}
-
-class _SidebarTileState extends State<_SidebarTile> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
-    final active = widget.selected == widget.idx;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit:  (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: () => widget.onTap(widget.idx),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: active
-                ? AppColors.sidebarActive
-                : _hover ? Colors.white.withOpacity(0.05) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                  widget.icon,
-                  size: 20,
-                  color: active ? AppColors.brandPurple : Colors.white54
+    final color = selected
+        ? AdminDashboardTheme.textDark
+        : AdminDashboardTheme.iconInactive;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Tooltip(
+        message: tooltip,
+        waitDuration: const Duration(milliseconds: 400),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? AdminDashboardTheme.accentYellow : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(widget.label,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: active ? Colors.white : Colors.white60,
-                      fontSize: 14,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    )),
-              ),
-              if (widget.badge != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandPurple.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(widget.badge!, style: GoogleFonts.plusJakartaSans(
-                      color: AppColors.brandPurple, fontSize: 10, fontWeight: FontWeight.w800)),
-                ),
-            ],
+              child: Icon(icon, size: 22, color: color),
+            ),
           ),
         ),
       ),

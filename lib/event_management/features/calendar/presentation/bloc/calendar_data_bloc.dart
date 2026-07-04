@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 import '../../data/datasources/calendar_remote_datasource.dart';
 import '../../domain/entities/calendar_grid_event.dart';
@@ -161,14 +162,15 @@ class CalendarDataBloc extends Bloc<CalendarDataEvent, CalendarDataState> {
   }
 
   String _messageFrom(Object e) {
-    if (e is DioException) {
-      final data = e.response?.data;
-      if (data is Map) {
-        final detail = data['detail'] ?? data['message'];
-        if (detail != null) return detail.toString();
-      }
-      return e.message ?? 'Request failed';
+    if (AuthSessionRedirect.handleIfAuthFailure(
+      e,
+      statusCode: AuthSessionRedirect.extractStatusCode(e),
+    )) {
+      return 'Session expired. Please login.';
     }
-    return e.toString();
+    return AuthSessionRedirect.displayMessage(
+      e,
+      statusCode: AuthSessionRedirect.extractStatusCode(e),
+    );
   }
 }

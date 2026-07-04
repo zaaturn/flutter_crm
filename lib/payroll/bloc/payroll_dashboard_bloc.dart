@@ -9,6 +9,36 @@ import '../repository/payroll_repository.dart';
 import 'payroll_dashboard_event.dart';
 import 'payroll_dashboard_state.dart';
 
+List<PayrollEmployeeOption> _employeesFromRecords(List<PayrollRecordModel> records) {
+  final byId = <int, PayrollEmployeeOption>{};
+  for (final r in records) {
+    final id = r.employeeId ?? r.crmUserId;
+    if (id == null || id <= 0) continue;
+    byId.putIfAbsent(
+      id,
+      () => PayrollEmployeeOption(
+        id: id,
+        label: r.employeeName == '—' ? 'Employee #$id' : r.employeeName,
+        subtitle: r.mergeEmail,
+      ),
+    );
+  }
+  return byId.values.toList();
+}
+
+List<PayrollRecordModel> filterPayrollRecordsForPeriod(
+  List<PayrollRecordModel> records, {
+  required int year,
+  required int month,
+}) {
+  return records.where((r) {
+    if (r.year != null && r.month != null) {
+      return r.year == year && r.month == month;
+    }
+    return true;
+  }).toList();
+}
+
 List<PayrollMergedRow> mergePayrollTableRows({
   required List<PayrollEmployeeOption> employees,
   required List<PayrollRecordModel> records,
@@ -48,7 +78,8 @@ List<PayrollMergedRow> mergePayrollTableRows({
   }
 
   final q = searchQuery.trim().toLowerCase();
-  final sorted = [...employees]
+  final empList = employees.isNotEmpty ? employees : _employeesFromRecords(records);
+  final sorted = [...empList]
     ..sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
 
   final rows = <PayrollMergedRow>[];
@@ -75,6 +106,22 @@ List<PayrollMergedRow> mergePayrollTableRows({
   return rows;
 }
 
+List<PayrollMergedRow> applyPayrollPaidFilter(
+  List<PayrollMergedRow> rows,
+  PayrollRecordsPaidFilter filter,
+) {
+  switch (filter) {
+    case PayrollRecordsPaidFilter.all:
+      return rows;
+    case PayrollRecordsPaidFilter.paid:
+      return rows.where((r) => r.paid == true).toList();
+    case PayrollRecordsPaidFilter.unpaid:
+      return rows.where((r) => r.paid == false).toList();
+    case PayrollRecordsPaidFilter.unset:
+      return rows.where((r) => r.paid == null).toList();
+  }
+}
+
 class PayrollDashboardBloc
     extends Bloc<PayrollDashboardEvent, PayrollDashboardState> {
   PayrollDashboardBloc({required PayrollRepository repository})
@@ -88,9 +135,20 @@ class PayrollDashboardBloc
     on<PayrollRecordsPaidFilterChanged>(_onPaidFilterChanged);
     on<PayrollInlinePatchRequested>(_onInlinePatch);
     on<PayrollInlineCreateRequested>(_onInlineCreate);
+    on<PayrollBulkMarkPaidRequested>(_onBulkMarkPaid);
+    on<PayrollBulkUpdateRequested>(_onBulkUpdate);
   }
 
   final PayrollRepository _repository;
+  int _loadSeq = 0;
+
+  Future<List<PayrollEmployeeOption>> _resolveEmployees() async {
+    try {
+      final fetched = await _repository.fetchEmployeesForPicker();
+      if (fetched.isNotEmpty) return fetched;
+    } catch (_) {}
+    return state.employeeOptions;
+  }
 
   Future<void> _onStarted(
     PayrollDashboardStarted event,
@@ -109,7 +167,14 @@ class PayrollDashboardBloc
     Emitter<PayrollDashboardState> emit,
   ) async {
     final m = event.monthIndex.clamp(1, 12);
-    emit(state.copyWith(monthIndex: m, clearError: true));
+    emit(
+      state.copyWith(
+        monthIndex: m,
+        recordsPaidFilter: PayrollRecordsPaidFilter.all,
+        searchQuery: '',
+        clearError: true,
+      ),
+    );
     await _load(emit);
   }
 
@@ -117,7 +182,14 @@ class PayrollDashboardBloc
     PayrollDashboardYearChanged event,
     Emitter<PayrollDashboardState> emit,
   ) async {
-    emit(state.copyWith(year: event.year, clearError: true));
+    emit(
+      state.copyWith(
+        year: event.year,
+        recordsPaidFilter: PayrollRecordsPaidFilter.all,
+        searchQuery: '',
+        clearError: true,
+      ),
+    );
     await _load(emit);
   }
 
@@ -125,28 +197,32 @@ class PayrollDashboardBloc
     PayrollRecordsPaidFilterChanged event,
     Emitter<PayrollDashboardState> emit,
   ) async {
+    if (state.loadStatus == PayrollDashboardLoadStatus.loading) return;
     emit(
       state.copyWith(
         recordsPaidFilter: event.filter,
+        tableRows: applyPayrollPaidFilter(state.allTableRows, event.filter),
         clearError: true,
       ),
     );
-    await _load(emit);
   }
 
   Future<void> _onSearch(
     PayrollDashboardSearchSubmitted event,
     Emitter<PayrollDashboardState> emit,
   ) async {
+    if (state.loadStatus == PayrollDashboardLoadStatus.loading) return;
+    final all = mergePayrollTableRows(
+      employees: state.employeeOptions,
+      records: state.periodRecords,
+      searchQuery: event.query,
+    );
     emit(
       state.copyWith(
         searchQuery: event.query,
         clearError: true,
-        tableRows: mergePayrollTableRows(
-          employees: state.employeeOptions,
-          records: state.periodRecords,
-          searchQuery: event.query,
-        ),
+        allTableRows: all,
+        tableRows: applyPayrollPaidFilter(all, state.recordsPaidFilter),
       ),
     );
   }
@@ -177,47 +253,66 @@ class PayrollDashboardBloc
   }
 
   Future<void> _load(Emitter<PayrollDashboardState> emit) async {
+    final seq = ++_loadSeq;
     final month = state.monthIndex.clamp(1, 12);
     final year = state.year;
+    final searchQuery = state.searchQuery;
+    final paidFilter = state.recordsPaidFilter;
 
     emit(
       state.copyWith(
         loadStatus: PayrollDashboardLoadStatus.loading,
         monthIndex: month,
+        tableRows: const [],
+        allTableRows: const [],
+        periodRecords: const [],
         clearError: true,
       ),
     );
 
     try {
       final dashFuture = _repository.loadDashboard(year: year, month: month);
-      final empFuture = _repository.fetchEmployeesForPicker();
-      final recFuture =
-          _fetchAllRecordsForPeriod(year, month, state.recordsPaidFilter);
+      final empFuture = _resolveEmployees();
+      final recFuture = _fetchAllRecordsForPeriod(
+        year,
+        month,
+        PayrollRecordsPaidFilter.all,
+      );
 
       final dashboard = await dashFuture;
-      var employees = state.employeeOptions;
-      try {
-        employees = await empFuture;
-      } catch (_) {}
-      final records = await recFuture;
+      final employees = await empFuture;
+      final rawRecords = await recFuture;
 
-      final tableRows = mergePayrollTableRows(
+      if (seq != _loadSeq) return;
+
+      final records = filterPayrollRecordsForPeriod(
+        rawRecords,
+        year: year,
+        month: month,
+      );
+
+      final allRows = mergePayrollTableRows(
         employees: employees,
         records: records,
-        searchQuery: state.searchQuery,
+        searchQuery: searchQuery,
       );
+      final tableRows = applyPayrollPaidFilter(allRows, paidFilter);
 
       emit(
         state.copyWith(
           loadStatus: PayrollDashboardLoadStatus.success,
           dashboard: dashboard,
           tableRows: tableRows,
-          employeeOptions: employees,
+          allTableRows: allRows,
+          employeeOptions: employees.isNotEmpty
+              ? employees
+              : state.employeeOptions,
           periodRecords: records,
           clearError: true,
         ),
       );
     } on DioException catch (e) {
+      if (seq != _loadSeq) return;
       emit(
         state.copyWith(
           loadStatus: PayrollDashboardLoadStatus.failure,
@@ -225,6 +320,7 @@ class PayrollDashboardBloc
         ),
       );
     } catch (e) {
+      if (seq != _loadSeq) return;
       emit(
         state.copyWith(
           loadStatus: PayrollDashboardLoadStatus.failure,
@@ -395,32 +491,183 @@ class PayrollDashboardBloc
     }
   }
 
-  Future<void> _silentReload(Emitter<PayrollDashboardState> emit) async {
-    final month = state.monthIndex.clamp(1, 12);
-    final year = state.year;
+  Future<void> _upsertPayrollRow({
+    required PayrollMergedRow row,
+    required int year,
+    required int month,
+    required bool? paid,
+    required String amountRaw,
+    bool? notifySalaryCredited,
+  }) async {
+    if (row.recordId != null) {
+      await _repository.patchPayrollRecord(
+        row.recordId!,
+        paid: paid,
+        amountRaw: amountRaw,
+        notifySalaryCredited:
+            paid == true ? notifySalaryCredited : null,
+      );
+      return;
+    }
+
     try {
-      final dash = await _repository.loadDashboard(year: year, month: month);
+      await _repository.createPayrollRecord(
+        employeeId: row.employeeId,
+        year: year,
+        month: month,
+        paid: paid,
+        amount: amountRaw.trim().isEmpty ? null : amountRaw.trim(),
+        note: null,
+        notifySalaryCredited:
+            paid == true ? notifySalaryCredited : null,
+      );
+    } on DioException catch (e) {
+      if (!_isUniquePayrollPeriodError(e)) rethrow;
       final records = await _fetchAllRecordsForPeriod(
         year,
         month,
-        state.recordsPaidFilter,
+        PayrollRecordsPaidFilter.all,
       );
-      final tableRows = mergePayrollTableRows(
-        employees: state.employeeOptions,
+      final existing = _findRecordForCrmUser(
+        records,
+        row.employeeId,
+        state.employeeOptions,
+      );
+      if (existing == null) rethrow;
+      await _repository.patchPayrollRecord(
+        existing.id,
+        paid: paid,
+        amountRaw: amountRaw,
+        notifySalaryCredited:
+            paid == true ? notifySalaryCredited : null,
+      );
+    }
+  }
+
+  Future<void> _onBulkMarkPaid(
+    PayrollBulkMarkPaidRequested event,
+    Emitter<PayrollDashboardState> emit,
+  ) async {
+    await _onBulkUpdate(
+      PayrollBulkUpdateRequested(
+        employeeIds: event.employeeIds,
+        paid: true,
+        amountRaw: '',
+        notifySalaryCredited: null,
+      ),
+      emit,
+    );
+  }
+
+  Future<void> _onBulkUpdate(
+    PayrollBulkUpdateRequested event,
+    Emitter<PayrollDashboardState> emit,
+  ) async {
+    if (event.employeeIds.isEmpty) return;
+    if (event.paid == null) {
+      emit(
+        state.copyWith(
+          errorMessage: 'Select Paid status before applying bulk update.',
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(clearError: true));
+    final month = state.monthIndex.clamp(1, 12);
+    final year = state.year;
+    final useAmount = event.amountOverridesExisting ||
+        event.amountRaw.trim().isNotEmpty;
+
+    try {
+      for (final employeeId in event.employeeIds.toSet()) {
+        PayrollMergedRow? row;
+        for (final r in state.allTableRows) {
+          if (r.employeeId == employeeId) {
+            row = r;
+            break;
+          }
+        }
+        if (row == null) continue;
+
+        final amountRaw = useAmount ? event.amountRaw : row.amountRaw;
+
+        emit(state.copyWith(
+          savingEmployeeId: employeeId,
+          savingRecordId: row.recordId,
+        ));
+
+        await _upsertPayrollRow(
+          row: row,
+          year: year,
+          month: month,
+          paid: event.paid,
+          amountRaw: amountRaw,
+          notifySalaryCredited: event.notifySalaryCredited,
+        );
+      }
+      await _silentReload(emit);
+    } on DioException catch (e) {
+      emit(
+        state.copyWith(
+          errorMessage: _dioMessage(e),
+          clearSavingRecordId: true,
+          clearSavingEmployeeId: true,
+        ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+          errorMessage: e.toString(),
+          clearSavingRecordId: true,
+          clearSavingEmployeeId: true,
+        ),
+      );
+    }
+  }
+
+  Future<void> _silentReload(Emitter<PayrollDashboardState> emit) async {
+    final seq = ++_loadSeq;
+    final month = state.monthIndex.clamp(1, 12);
+    final year = state.year;
+    final searchQuery = state.searchQuery;
+    final paidFilter = state.recordsPaidFilter;
+    try {
+      final dash = await _repository.loadDashboard(year: year, month: month);
+      final employees = await _resolveEmployees();
+      final rawRecords = await _fetchAllRecordsForPeriod(
+        year,
+        month,
+        PayrollRecordsPaidFilter.all,
+      );
+      if (seq != _loadSeq) return;
+      final records = filterPayrollRecordsForPeriod(
+        rawRecords,
+        year: year,
+        month: month,
+      );
+      final allRows = mergePayrollTableRows(
+        employees: employees,
         records: records,
-        searchQuery: state.searchQuery,
+        searchQuery: searchQuery,
       );
+      final tableRows = applyPayrollPaidFilter(allRows, paidFilter);
       emit(
         state.copyWith(
           loadStatus: PayrollDashboardLoadStatus.success,
           dashboard: dash,
           tableRows: tableRows,
+          allTableRows: allRows,
+          employeeOptions: employees.isNotEmpty
+              ? employees
+              : state.employeeOptions,
           periodRecords: records,
           clearSavingRecordId: true,
           clearSavingEmployeeId: true,
         ),
       );
     } catch (_) {
+      if (seq != _loadSeq) return;
       emit(
         state.copyWith(
           clearSavingRecordId: true,

@@ -40,7 +40,7 @@ class _AdminPostsManagerScreenState extends State<AdminPostsManagerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: AppColors.canvas,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

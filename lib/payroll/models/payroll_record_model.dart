@@ -9,6 +9,8 @@ class PayrollRecordModel {
     required this.employeeName,
     required this.jobTitle,
     required this.monthYearLabel,
+    this.month,
+    this.year,
     this.paid,
     required this.amountDisplay,
     required this.amountRaw,
@@ -26,6 +28,8 @@ class PayrollRecordModel {
   final String employeeName;
   final String jobTitle;
   final String monthYearLabel;
+  final int? month;
+  final int? year;
   /// `null` = not set (Select); `false` = pending; `true` = paid.
   final bool? paid;
   final String amountDisplay;
@@ -151,6 +155,8 @@ class PayrollRecordModel {
       employeeName: name.isEmpty ? '—' : name,
       jobTitle: title,
       monthYearLabel: monthYear.isEmpty ? '—' : monthYear,
+      month: month,
+      year: year,
       paid: paid,
       amountDisplay: amountDisplay,
       amountRaw: amountRaw,

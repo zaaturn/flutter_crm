@@ -15,7 +15,7 @@ class AuthSessionRedirect {
 
   static const String loginRoute = '/employeeLogin';
 
-  static const String defaultMessage = 'Session expired';
+  static const String defaultMessage = 'Session expired. Please login.';
 
   static const String defaultSubtitle = 'Redirecting you to sign in…';
 
@@ -74,7 +74,42 @@ class AuthSessionRedirect {
     if (isAuthFailure(error, statusCode: statusCode)) {
       return defaultMessage;
     }
-    return messageFrom(error) ?? 'Something went wrong. Please try again.';
+    final raw = messageFrom(error);
+    return _friendlyMessage(raw, statusCode: statusCode);
+  }
+
+  static String _friendlyMessage(String? raw, {int? statusCode}) {
+    if (raw == null || raw.trim().isEmpty) {
+      return 'Something went wrong. Please try again.';
+    }
+    final m = raw.toLowerCase();
+
+    if (m.contains('failed host lookup') ||
+        m.contains('connection refused') ||
+        m.contains('network is unreachable') ||
+        m.contains('socketexception') ||
+        m.contains('connection errored') ||
+        m.contains('connection error')) {
+      return 'Unable to reach the server. Check your internet or API URL.';
+    }
+    if (m.contains('formatexception') ||
+        m.contains('unexpected character') ||
+        m.contains('is not valid json') ||
+        m.contains('syntaxerror')) {
+      return 'Invalid server response. Please check the API URL.';
+    }
+    if (statusCode != null && statusCode >= 500) {
+      return 'Server error. Please try again later.';
+    }
+    if (statusCode == 404) {
+      return 'Service not found. Please check the API URL.';
+    }
+    if (raw.startsWith('DioException') ||
+        raw.contains('DioException [') ||
+        raw.contains('ApiException(')) {
+      return 'Request failed. Please check your connection and try again.';
+    }
+    return raw;
   }
 
   /// Returns `true` when [error] is an auth failure and redirect was triggered.
@@ -199,7 +234,7 @@ class AuthSessionRedirect {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         elevation: 8,
-        backgroundColor: const Color(0xFFB71C1C),
+        backgroundColor: const Color(0xFFC05C39),
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -238,9 +273,9 @@ class AuthSessionRedirect {
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFFFFCDD2),
+                      color: Colors.white.withValues(alpha: 0.85),
                     ),
                   ),
                 ],

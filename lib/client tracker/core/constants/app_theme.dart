@@ -5,10 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 // DAXARROW BRAND COLOR PALETTE
 // ══════════════════════════════════════════════
 class AppColors {
-  // Brand Core
-  static const primary       = Color(0xFF7C3AED); // Purple
-  static const primaryLight  = Color(0xFFF5F3FF); // Lavender Tint
-  static const primaryDark   = Color(0xFF5B21B6); // Deep Purple
+  // Brand Core — matches the mint/teal admin dashboard shell
+  static const primary       = Color(0xFF2F7D6D); // Teal
+  static const primaryLight  = Color(0xFFE3F2EE); // Teal Tint
+  static const primaryDark   = Color(0xFF1F5F52); // Deep Teal
 
   // Status Colors
   static const accent        = Color(0xFF10B981); // Success Green
@@ -18,21 +18,23 @@ class AppColors {
   static const danger        = Color(0xFFEF4444); // Red
   static const dangerLight   = Color(0xFFFEF2F2);
 
-  // Sidebar (Deep Black Theme)
-  static const sidebar       = Color(0xFF000000); // Pure Black
-  static const sidebarHover  = Color(0xFF1A1A1A); // Dark Grey
+  // Sidebar — kept for backward compatibility; the actual rail in
+  // app_shell.dart now mirrors the main dashboard's icon rail directly.
+  static const sidebar       = Color(0xFF000000);
+  static const sidebarHover  = Color(0xFF1A1A1A);
   static const sidebarActive = Color(0xFF1A1A1A);
 
   // Surfaces & Backgrounds
-  static const bg            = Color(0xFFF8FAFC); // Main Slate BG
+  static const canvas        = Color(0xFFD0E3D8); // Mint shell canvas
+  static const bg            = Color(0xFFF4F7F5); // Muted surface tint (inputs, hover)
   static const surface       = Color(0xFFFFFFFF); // Card Surface
-  static const border        = Color(0xFFEDE9FE); // Lavender Border
-  static const tableHead     = Color(0xFFF9FAFB);
+  static const border        = Color(0xFFE3EAE6); // Border
+  static const tableHead     = Color(0xFFF4F7F5);
 
   // Neutral Text
-  static const text          = Color(0xFF0F172A); // Ultra Dark Slate
-  static const textMuted     = Color(0xFF64748B); // Slate Grey
-  static const textLight     = Color(0xFF94A3B8); // Muted Grey
+  static const text          = Color(0xFF1C2B26); // Dark Slate
+  static const textMuted     = Color(0xFF6B7F78); // Muted Slate
+  static const textLight     = Color(0xFF9AABA3); // Light Muted
 }
 
 // ══════════════════════════════════════════════
@@ -56,7 +58,7 @@ class AppTextStyles {
 class AppTheme {
   static ThemeData get theme => ThemeData(
     useMaterial3: true,
-    scaffoldBackgroundColor: AppColors.bg,
+    scaffoldBackgroundColor: AppColors.canvas,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,

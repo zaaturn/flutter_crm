@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_pagination_bar.dart';
+import 'package:my_app/analytics/presentation/widgets/analytics_compact_stat_card.dart';
+import 'package:my_app/analytics/theme/analytics_theme.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_bloc.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_event.dart';
 import 'package:my_app/leave_management/block/leave_dashboard_state.dart';
@@ -16,6 +20,9 @@ class AdminLeaveDashboard extends StatefulWidget {
 }
 
 class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
+  static const _pageSize = 10;
+  int _currentPage = 1;
+
   @override
   void initState() {
     super.initState();
@@ -28,22 +35,19 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // Modern light grey background
+      backgroundColor: AdminDashboardTheme.shellMint,
       appBar: AppBar(
         elevation: 0,
         centerTitle: false,
-        backgroundColor: Colors.white,
+        backgroundColor: AdminDashboardTheme.shellMint,
         title: const Text(
           "Leave Management",
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () => context.read<LeaveDashboardBloc>().add(FetchAllLeaves()),
-            icon: const Icon(Icons.refresh, color: Color(0xFF64748B)),
+          style: TextStyle(
+            color: AdminDashboardTheme.textDark,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
           ),
-          const SizedBox(width: 16),
-        ],
+        ),
       ),
       body: BlocListener<LeaveDashboardBloc, LeaveDashboardState>(
         // Listen for Success Messages to show SnackBar
@@ -93,29 +97,29 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
   }
 
   Widget _buildMainDashboard(LeaveDashboardState state) {
+    final all = state.filteredLeaves;
+    final totalPages = all.isEmpty ? 1 : (all.length / _pageSize).ceil();
+    final page = _currentPage.clamp(1, totalPages);
+    final start = (page - 1) * _pageSize;
+    final end = (start + _pageSize) > all.length ? all.length : start + _pageSize;
+    final pageLeaves = all.isEmpty ? const <LeaveRequest>[] : all.sublist(start, end);
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Stats Row
+          // 1. Stats Row — colorful KPI tiles, matching the Analytics Overview tab
           _buildSummaryCards(
             pending: state.pending,
             approved: state.approved,
             rejected: state.rejected,
+            total: state.allLeaves.length,
           ),
           const SizedBox(height: 32),
 
-          // 2. Table Container
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20, offset: const Offset(0, 4)),
-              ],
-            ),
+          // 2. Table Container — a separate white box below the stat cards
+          AdminDashboardPanel(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -124,34 +128,42 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
 
                 // Data Table
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: const Color(0xFFF1F5F9)),
+                  data: Theme.of(context).copyWith(dividerColor: AdminDashboardTheme.borderSoft),
                   child: DataTable(
                     headingRowHeight: 56,
                     dataRowMaxHeight: 80,
                     horizontalMargin: 24,
                     columns: const [
-                      DataColumn(label: Text("EMPLOYEE", style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("TYPE", style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("DATES", style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("STATUS", style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold))),
-                      DataColumn(label: Text("ACTION", style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("EMPLOYEE", style: TextStyle(color: AdminDashboardTheme.textMuted, fontSize: 12, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("TYPE", style: TextStyle(color: AdminDashboardTheme.textMuted, fontSize: 12, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("DATES", style: TextStyle(color: AdminDashboardTheme.textMuted, fontSize: 12, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("STATUS", style: TextStyle(color: AdminDashboardTheme.textMuted, fontSize: 12, fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text("ACTION", style: TextStyle(color: AdminDashboardTheme.textMuted, fontSize: 12, fontWeight: FontWeight.bold))),
                     ],
-                    rows: state.filteredLeaves.map((leave) => _buildDataRow(leave)).toList(),
+                    rows: pageLeaves.map((leave) => _buildDataRow(leave)).toList(),
                   ),
                 ),
 
-                if (state.filteredLeaves.isEmpty)
+                if (all.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 60),
                     child: Center(
                       child: Column(
                         children: [
-                          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade300),
+                          const Icon(Icons.inbox_outlined, size: 48, color: AdminDashboardTheme.iconInactive),
                           const SizedBox(height: 16),
-                          Text("No leave requests found.", style: TextStyle(color: Colors.grey.shade500)),
+                          const Text("No leave requests found.", style: TextStyle(color: AdminDashboardTheme.textMuted)),
                         ],
                       ),
                     ),
+                  )
+                else
+                  EmployeePaginationBar(
+                    currentPage: page,
+                    rowCount: pageLeaves.length,
+                    totalCount: all.length,
+                    pageSize: _pageSize,
+                    onPageChanged: (p) => setState(() => _currentPage = p),
                   ),
               ],
             ),
@@ -168,9 +180,9 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.indigo.shade50,
+              backgroundColor: AdminDashboardTheme.tealLight,
               child: Text(leave.employeeName?[0].toUpperCase() ?? "E",
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AdminDashboardTheme.teal)),
             ),
             const SizedBox(width: 12),
             Text(leave.employeeName ?? "N/A", style: const TextStyle(fontWeight: FontWeight.w500)),
@@ -196,8 +208,8 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
             ElevatedButton(
               onPressed: () => _showQuickView(leave),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF1F5F9),
-                foregroundColor: const Color(0xFF475569),
+                backgroundColor: AdminDashboardTheme.surfaceMuted,
+                foregroundColor: AdminDashboardTheme.textMuted,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -221,7 +233,7 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text("Recent Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+          const Text("Recent Requests", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AdminDashboardTheme.textDark)),
           Row(
             children: ['All', 'Pending', 'Approved', 'Rejected'].map((f) {
               final value = f.toLowerCase();
@@ -231,10 +243,13 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
                 child: ChoiceChip(
                   label: Text(f),
                   selected: selected,
-                  selectedColor: Colors.indigo.shade600,
-                  labelStyle: TextStyle(color: selected ? Colors.white : const Color(0xFF64748B), fontWeight: FontWeight.w600),
-                  backgroundColor: const Color(0xFFF1F5F9),
-                  onSelected: (_) => context.read<LeaveDashboardBloc>().add(FilterLeaves(value)),
+                  selectedColor: AdminDashboardTheme.teal,
+                  labelStyle: TextStyle(color: selected ? Colors.white : AdminDashboardTheme.textMuted, fontWeight: FontWeight.w600),
+                  backgroundColor: AdminDashboardTheme.surfaceMuted,
+                  onSelected: (_) {
+                    setState(() => _currentPage = 1);
+                    context.read<LeaveDashboardBloc>().add(FilterLeaves(value));
+                  },
                 ),
               );
             }).toList(),
@@ -244,45 +259,34 @@ class _AdminLeaveDashboardState extends State<AdminLeaveDashboard> {
     );
   }
 
-  Widget _buildSummaryCards({required int pending, required int approved, required int rejected}) {
+  Widget _buildSummaryCards({
+    required int pending,
+    required int approved,
+    required int rejected,
+    required int total,
+  }) {
+    final tiles = <({String label, String value, Color color})>[
+      (label: 'Total Requests', value: '$total', color: AnalyticsOverviewPalette.mutedTeal),
+      (label: 'Pending', value: '$pending', color: AnalyticsOverviewPalette.mustard),
+      (label: 'Approved', value: '$approved', color: AnalyticsOverviewPalette.sageGreen),
+      (label: 'Rejected', value: '$rejected', color: AnalyticsOverviewPalette.berry),
+    ];
     return Row(
       children: [
-        _statCard("Pending", pending.toString(), Colors.orange, Icons.hourglass_empty),
-        const SizedBox(width: 24),
-        _statCard("Approved", approved.toString(), Colors.green, Icons.check_circle_outline),
-        const SizedBox(width: 24),
-        _statCard("Rejected", rejected.toString(), Colors.red, Icons.cancel_outlined),
-      ],
-    );
-  }
-
-  Widget _statCard(String label, String count, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-              child: Icon(icon, color: color),
+        for (var i = 0; i < tiles.length; i++) ...[
+          if (i > 0) const SizedBox(width: 16),
+          Expanded(
+            child: SizedBox(
+              height: 96,
+              child: AnalyticsCompactStatCard(
+                label: tiles[i].label,
+                value: tiles[i].value,
+                background: tiles[i].color,
+              ),
             ),
-            const SizedBox(width: 20),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-                Text(count, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-              ],
-            )
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 

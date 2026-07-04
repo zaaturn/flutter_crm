@@ -68,6 +68,10 @@ class AnalyticsTabBody extends StatelessWidget {
       case AnalyticsTab.overview:
         return OverviewTab(
           overview: state.overview,
+          leaveAnalytics: state.leaveAnalytics,
+          weeklyAttendance: state.attendance,
+          overdueTasks: state.overdueTasks,
+          tasksLoading: state.tasksLoading,
           mobile: mobile,
           onRefresh: refresh,
         );

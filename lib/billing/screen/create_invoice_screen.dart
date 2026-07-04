@@ -33,7 +33,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   static const Color _accentOrange = Color(0xFFB14D1E);
   static const Color _clayFill = Color(0xFFF5E6DA);
   static const Color _paperWhite = Color(0xFFFFFDFB);
-  static const Color _zaaturnInk = Color(0xFF8D5B39);
 
   final SecureStorageService _storage = SecureStorageService();
   final _clientNameCtrl = TextEditingController();
@@ -156,13 +155,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   Widget build(BuildContext context) {
     if (_initializing) {
       return Scaffold(
-        backgroundColor: BillingAdaptiveTheme.bg(context),
+        backgroundColor: BillingAdaptiveTheme.canvas(context),
         body: const Center(child: CircularProgressIndicator(color: Color(0xFF0C56D0))),
       );
     }
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Create Invoice',
         onBack: () => Navigator.of(context).maybePop(),
@@ -204,17 +203,21 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
 
   Widget _bottomBar(bool wide) {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final mint = BillingTheme.purple;
+    final mintDark = BillingTheme.purpleDark;
+    final mintLight = BillingTheme.purpleLight;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
         padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomPadding),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: BillingTheme.surface,
           borderRadius: wide ? null : const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05))),
+          border: Border(top: BorderSide(color: BillingTheme.border)),
           boxShadow: [
             BoxShadow(
-              color: _accentOrange.withOpacity(0.06),
+              color: mint.withValues(alpha: 0.08),
               blurRadius: 18,
               offset: const Offset(0, -8),
             ),
@@ -223,13 +226,19 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
         child: Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              child: ElevatedButton(
                 onPressed: _saving ? null : () => Navigator.of(context).maybePop(),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: _inkText,
-                  side: BorderSide(color: Colors.black.withOpacity(0.1)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: mintLight,
+                  foregroundColor: mintDark,
+                  disabledBackgroundColor: mintLight.withValues(alpha: 0.6),
+                  disabledForegroundColor: mintDark.withValues(alpha: 0.5),
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: mint.withValues(alpha: 0.25)),
+                  ),
                 ),
                 child: const Text('Discard', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
@@ -239,14 +248,20 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               child: ElevatedButton(
                 onPressed: _saving ? null : _createInvoice,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: wide ? const Color(0xFF0C56D0) : _zaaturnInk,
+                  backgroundColor: mint,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: mint.withValues(alpha: 0.5),
+                  disabledForegroundColor: Colors.white70,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: _saving
-                    ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Save & Continue', style: TextStyle(fontWeight: FontWeight.w900)),
               ),
             ),

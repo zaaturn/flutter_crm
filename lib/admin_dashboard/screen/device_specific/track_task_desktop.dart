@@ -6,6 +6,7 @@ import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/task.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/task_card_desktop.dart';
 import 'package:my_app/tasks/task_dashboard_navigation.dart';
 
@@ -91,7 +92,7 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AdminDashboardTheme.shellMint,
       appBar: _buildEnterpriseAppBar(context),
       body: BlocListener<AdminDashboardBloc, AdminDashboardState>(
         listenWhen: (prev, curr) => curr.successMessage != null || curr.error != null,
@@ -106,7 +107,12 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
         child: BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
           builder: (context, state) {
             if (state.isLoading) {
-              return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF3B4DE0)));
+              return const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AdminDashboardTheme.teal,
+                ),
+              );
             }
 
             final List<Task> tasks = state.tasks;
@@ -120,29 +126,22 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
                       t.assignedToName.toLowerCase().contains(query));
             }).toList();
 
-            return Column(
-              children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1400),
-                    child: _buildControlPanel(tasks),
-                  ),
-                ),
-                const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                Expanded(
-                  child: Container(
-                    color: const Color(0xFFF8FAFC),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 1400),
-                        child: filteredTasks.isEmpty
-                            ? _buildEmptyState()
-                            : _buildTaskGrid(filteredTasks),
-                      ),
+            return Padding(
+              padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AdminDashboardPanel(child: _buildControlPanel(tasks)),
+                  const SizedBox(height: AdminDashboardTheme.panelGap),
+                  Expanded(
+                    child: AdminDashboardPanel(
+                      child: filteredTasks.isEmpty
+                          ? _buildEmptyState()
+                          : _buildTaskGrid(filteredTasks),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -153,14 +152,18 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
   PreferredSizeWidget _buildEnterpriseAppBar(BuildContext context) {
     return AppBar(
       elevation: 0,
-      backgroundColor: Colors.white,
+      backgroundColor: AdminDashboardTheme.shellMint,
       title: const Text(
         "Workspace / Management / Tasks",
-        style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: AdminDashboardTheme.textMuted,
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B), size: 20),
+          icon: const Icon(Icons.refresh_rounded, color: AdminDashboardTheme.teal, size: 20),
           onPressed: () => context.read<AdminDashboardBloc>().add(const AdminTasksRefreshed()),
         ),
         const SizedBox(width: 16),
@@ -170,7 +173,7 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
 
   Widget _buildControlPanel(List<Task> tasks) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
       child: Column(
         children: [
           Row(
@@ -181,15 +184,23 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
                 children: [
                   Text(
                     "Task Overview",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -1),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: AdminDashboardTheme.textDark,
+                      letterSpacing: -1,
+                    ),
                   ),
-                  Text("Monitor and manage team productivity", style: TextStyle(color: Color(0xFF64748B))),
+                  Text(
+                    "Monitor and manage team productivity",
+                    style: TextStyle(color: AdminDashboardTheme.textMuted),
+                  ),
                 ],
               ),
               _TaskSearchBar(onChanged: (value) => setState(() => searchQuery = value)),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
           _TaskStatusTabs(
             tasks: tasks,
             selectedStatus: selectedStatus,
@@ -202,7 +213,7 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
 
   Widget _buildTaskGrid(List<Task> filteredTasks) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       itemCount: filteredTasks.length,
       itemBuilder: (context, index) {
         final task = filteredTasks[index];
@@ -222,9 +233,12 @@ class _TaskTrackerViewState extends State<_TaskTrackerView> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.inbox_outlined, size: 48, color: Colors.grey.shade300),
+          const Icon(Icons.inbox_outlined, size: 48, color: AdminDashboardTheme.iconInactive),
           const SizedBox(height: 16),
-          const Text("No tasks found in this category", style: TextStyle(color: Color(0xFF64748B))),
+          const Text(
+            "No tasks found in this category",
+            style: TextStyle(color: AdminDashboardTheme.textMuted),
+          ),
         ],
       ),
     );
@@ -246,12 +260,12 @@ class _TaskSearchBar extends StatelessWidget {
         onChanged: onChanged,
         decoration: InputDecoration(
           hintText: "Search tasks...",
-          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
+          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AdminDashboardTheme.textMuted),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AdminDashboardTheme.surfaceMuted,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF3B4DE0), width: 1.5)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AdminDashboardTheme.border)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AdminDashboardTheme.teal, width: 1.5)),
         ),
       ),
     );

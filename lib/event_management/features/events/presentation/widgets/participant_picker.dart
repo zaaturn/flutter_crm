@@ -4,9 +4,53 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/core/ui/adaptive_layout.dart';
 import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 import 'package:my_app/event_management/features/events/data/datasources/user_directory_datasource.dart';
 
 import '../../domain/entities/event.dart';
+
+class _PickerColors {
+  const _PickerColors({
+    required this.background,
+    required this.primary,
+    required this.primaryLight,
+    required this.textDark,
+    required this.textMuted,
+    required this.border,
+    required this.cardBackground,
+  });
+
+  final Color background;
+  final Color primary;
+  final Color primaryLight;
+  final Color textDark;
+  final Color textMuted;
+  final Color border;
+  final Color cardBackground;
+
+  factory _PickerColors.of(BuildContext context) {
+    if (AdaptiveLayout.useMobileUi(context)) {
+      return const _PickerColors(
+        background: MobileEventTheme.background,
+        primary: MobileEventTheme.terracotta,
+        primaryLight: MobileEventTheme.selectedCell,
+        textDark: MobileEventTheme.textDark,
+        textMuted: MobileEventTheme.textMuted,
+        border: MobileEventTheme.border,
+        cardBackground: MobileEventTheme.card,
+      );
+    }
+    return const _PickerColors(
+      background: DashboardUiTheme.pageBackground,
+      primary: DashboardUiTheme.primary,
+      primaryLight: DashboardUiTheme.primaryLight,
+      textDark: DashboardUiTheme.textDark,
+      textMuted: DashboardUiTheme.textMuted,
+      border: DashboardUiTheme.border,
+      cardBackground: DashboardUiTheme.cardBackground,
+    );
+  }
+}
 
 /// Opens participant picker — dialog on desktop, bottom sheet on mobile.
 Future<List<Participant>?> showParticipantPicker(
@@ -205,9 +249,9 @@ class _ParticipantPickerState extends State<ParticipantPicker> {
             return false;
           },
           child: Container(
-            decoration: const BoxDecoration(
-              color: DashboardUiTheme.pageBackground,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            decoration: BoxDecoration(
+              color: _PickerColors.of(context).background,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             ),
             clipBehavior: Clip.antiAlias,
             child: _ParticipantPickerBody(
@@ -265,6 +309,7 @@ class _ParticipantPickerBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = _PickerColors.of(context);
     return Column(
       mainAxisSize: MainAxisSize.max,
       children: [
@@ -278,14 +323,14 @@ class _ParticipantPickerBody extends StatelessWidget {
                     'Add participants',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: DashboardUiTheme.textDark,
+                          color: c.textDark,
                         ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close_rounded),
-                  color: DashboardUiTheme.textMuted,
+                  color: c.textMuted,
                 ),
               ],
             ),
@@ -296,7 +341,7 @@ class _ParticipantPickerBody extends StatelessWidget {
             height: 4,
             margin: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: DashboardUiTheme.border,
+              color: c.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -306,25 +351,25 @@ class _ParticipantPickerBody extends StatelessWidget {
             controller: searchCtrl,
             decoration: InputDecoration(
               hintText: 'Search people…',
-              hintStyle: const TextStyle(color: DashboardUiTheme.textMuted),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(color: c.textMuted),
+              prefixIcon: Icon(
                 Icons.search_rounded,
-                color: DashboardUiTheme.primary,
+                color: c.primary,
               ),
               filled: true,
-              fillColor: DashboardUiTheme.cardBackground,
+              fillColor: c.cardBackground,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: DashboardUiTheme.border),
+                borderSide: BorderSide(color: c.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: DashboardUiTheme.border),
+                borderSide: BorderSide(color: c.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(
-                  color: DashboardUiTheme.primary,
+                borderSide: BorderSide(
+                  color: c.primary,
                   width: 1.5,
                 ),
               ),
@@ -339,9 +384,9 @@ class _ParticipantPickerBody extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'Selected (${selected.length})',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: DashboardUiTheme.textMuted,
+                color: c.textMuted,
               ),
             ),
           ),
@@ -349,11 +394,11 @@ class _ParticipantPickerBody extends StatelessWidget {
         SizedBox(
           height: 44,
           child: selected.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'Tap a user below to add',
                     style: TextStyle(
-                      color: DashboardUiTheme.textMuted,
+                      color: c.textMuted,
                       fontSize: 13,
                     ),
                   ),
@@ -368,16 +413,16 @@ class _ParticipantPickerBody extends StatelessWidget {
                     return Chip(
                       label: Text(p.username, maxLines: 1),
                       onDeleted: () => onRemoveSelected(i),
-                      backgroundColor: DashboardUiTheme.primaryLight,
-                      deleteIconColor: DashboardUiTheme.primary,
-                      labelStyle: const TextStyle(
-                        color: DashboardUiTheme.textDark,
+                      backgroundColor: c.primaryLight,
+                      deleteIconColor: c.primary,
+                      labelStyle: TextStyle(
+                        color: c.textDark,
                         fontWeight: FontWeight.w600,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                         side: BorderSide(
-                          color: DashboardUiTheme.primary.withValues(alpha: 0.2),
+                          color: c.primary.withValues(alpha: 0.2),
                         ),
                       ),
                     );
@@ -386,7 +431,7 @@ class _ParticipantPickerBody extends StatelessWidget {
         ),
         Divider(
           height: 1,
-          color: DashboardUiTheme.border.withValues(alpha: 0.7),
+          color: c.border.withValues(alpha: 0.7),
         ),
         if (error != null)
           ConstrainedBox(
@@ -418,9 +463,9 @@ class _ParticipantPickerBody extends StatelessWidget {
               return false;
             },
             child: loading && results.isEmpty
-                ? const Center(
+                ? Center(
                     child: CircularProgressIndicator(
-                      color: DashboardUiTheme.primary,
+                      color: c.primary,
                     ),
                   )
                 : ListView.builder(
@@ -428,11 +473,11 @@ class _ParticipantPickerBody extends StatelessWidget {
                     itemCount: results.length + (loadingMore ? 1 : 0),
                     itemBuilder: (_, i) {
                       if (i >= results.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
                           child: Center(
                             child: CircularProgressIndicator(
-                              color: DashboardUiTheme.primary,
+                              color: c.primary,
                             ),
                           ),
                         );
@@ -446,7 +491,7 @@ class _ParticipantPickerBody extends StatelessWidget {
                           vertical: 5,
                         ),
                         child: Material(
-                          color: DashboardUiTheme.cardBackground,
+                          color: c.cardBackground,
                           borderRadius: BorderRadius.circular(14),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(14),
@@ -460,9 +505,9 @@ class _ParticipantPickerBody extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: already
-                                      ? DashboardUiTheme.primary
+                                      ? c.primary
                                           .withValues(alpha: 0.35)
-                                      : DashboardUiTheme.border,
+                                      : c.border,
                                 ),
                               ),
                               child: Row(
@@ -470,14 +515,14 @@ class _ParticipantPickerBody extends StatelessWidget {
                                   CircleAvatar(
                                     radius: 18,
                                     backgroundColor:
-                                        DashboardUiTheme.primaryLight,
+                                        c.primaryLight,
                                     child: Text(
                                       (u.username.isNotEmpty
                                               ? u.username.characters.first
                                               : '?')
                                           .toUpperCase(),
-                                      style: const TextStyle(
-                                        color: DashboardUiTheme.primary,
+                                      style: TextStyle(
+                                        color: c.primary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -492,9 +537,9 @@ class _ParticipantPickerBody extends StatelessWidget {
                                           u.username,
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontWeight: FontWeight.w700,
-                                            color: DashboardUiTheme.textDark,
+                                            color: c.textDark,
                                           ),
                                         ),
                                         if (u.email != null &&
@@ -503,8 +548,8 @@ class _ParticipantPickerBody extends StatelessWidget {
                                             u.email!,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: DashboardUiTheme.textMuted,
+                                            style: TextStyle(
+                                              color: c.textMuted,
                                               fontWeight: FontWeight.w500,
                                               fontSize: 12.5,
                                             ),
@@ -518,8 +563,8 @@ class _ParticipantPickerBody extends StatelessWidget {
                                         ? Icons.check_circle_rounded
                                         : Icons.add_circle_outline_rounded,
                                     color: already
-                                        ? DashboardUiTheme.primary
-                                        : DashboardUiTheme.textMuted,
+                                        ? c.primary
+                                        : c.textMuted,
                                   ),
                                 ],
                               ),
@@ -537,7 +582,7 @@ class _ParticipantPickerBody extends StatelessWidget {
             width: double.infinity,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: DashboardUiTheme.primary,
+                backgroundColor: c.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(

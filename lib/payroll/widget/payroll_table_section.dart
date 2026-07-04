@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_pagination_bar.dart';
 
 import '../../services/secure_storage_service.dart';
 import '../bloc/payroll_dashboard_bloc.dart';
@@ -9,15 +11,15 @@ import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
 import '../models/payroll_merged_row.dart';
 
-/// THEME CONSTANTS: Signature Daxarrow/Workspace Light
+/// THEME CONSTANTS: matches the mint/teal admin dashboard shell
 class WorkspaceTheme {
-  static const Color primaryPurple = Color(0xFF6F34DC);
-  static const Color cardSurface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE8E9F1);
-  static const Color tableHeaderBg = Color(0xFFF8F9FD);
+  static const Color primaryPurple = AdminDashboardTheme.teal;
+  static const Color cardSurface = AdminDashboardTheme.surface;
+  static const Color borderSubtle = AdminDashboardTheme.border;
+  static const Color tableHeaderBg = AdminDashboardTheme.surfaceMuted;
 
-  static const Color textMain = Color(0xFF1E1E24);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color textMain = AdminDashboardTheme.textDark;
+  static const Color textMuted = AdminDashboardTheme.textMuted;
 
   static const Color successBg = Color(0xFFECFDF5);
   static const Color successText = Color(0xFF10B981);
@@ -27,8 +29,16 @@ class WorkspaceTheme {
   static const Color neutralText = Color(0xFF475569);
 }
 
-class PayrollTableSection extends StatelessWidget {
+class PayrollTableSection extends StatefulWidget {
   const PayrollTableSection({super.key});
+
+  @override
+  State<PayrollTableSection> createState() => _PayrollTableSectionState();
+}
+
+class _PayrollTableSectionState extends State<PayrollTableSection> {
+  static const _pageSize = 10;
+  int _currentPage = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -37,11 +47,28 @@ class PayrollTableSection extends StatelessWidget {
         final narrow = outerConstraints.maxWidth < 760;
         const minTableWidth = 700.0;
 
-        return BlocBuilder<PayrollDashboardBloc, PayrollDashboardState>(
+        return BlocConsumer<PayrollDashboardBloc, PayrollDashboardState>(
+          listenWhen: (p, c) =>
+              p.year != c.year ||
+              p.monthIndex != c.monthIndex ||
+              p.recordsPaidFilter != c.recordsPaidFilter ||
+              p.searchQuery != c.searchQuery,
+          listener: (context, state) => setState(() => _currentPage = 1),
           builder: (context, state) {
-            final rows = state.tableRows;
-            final paidCount = rows.where((r) => r.paid == true).length;
-            final pendingCount = rows.where((r) => r.paid == false).length;
+            final allRows = state.tableRows;
+            final paidCount = allRows.where((r) => r.paid == true).length;
+            final pendingCount = allRows.where((r) => r.paid == false).length;
+
+            final totalPages =
+                allRows.isEmpty ? 1 : (allRows.length / _pageSize).ceil();
+            final page = _currentPage.clamp(1, totalPages);
+            final start = (page - 1) * _pageSize;
+            final end = (start + _pageSize) > allRows.length
+                ? allRows.length
+                : start + _pageSize;
+            final rows = allRows.isEmpty
+                ? const <PayrollMergedRow>[]
+                : allRows.sublist(start, end);
 
             final m = state.monthIndex.clamp(1, 12);
             final periodLabel = DateFormat('MMMM').format(DateTime(state.year, m));
@@ -124,7 +151,7 @@ class PayrollTableSection extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (rows.isEmpty &&
+                if (allRows.isEmpty &&
                     state.loadStatus == PayrollDashboardLoadStatus.success)
                   _EmptyState()
                 else
@@ -140,14 +167,21 @@ class PayrollTableSection extends StatelessWidget {
                       final row = rows[index];
                       return _PayrollInlineRow(
                         row: row,
-                        index: index + 1,
+                        index: start + index + 1,
                         rowSaving: state.savingRecordId == row.recordId ||
                             state.savingEmployeeId == row.employeeId,
                         compactPadding: narrow,
                       );
                     },
                   ),
-                _TableFooter(state: state),
+                if (allRows.isNotEmpty)
+                  EmployeePaginationBar(
+                    currentPage: page,
+                    rowCount: rows.length,
+                    totalCount: allRows.length,
+                    pageSize: _pageSize,
+                    onPageChanged: (p) => setState(() => _currentPage = p),
+                  ),
               ],
             );
 
@@ -496,7 +530,7 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
                 decoration: InputDecoration(
                   hintText: '0.00',
                   filled: true,
-                  fillColor: const Color(0xFFF8F9FE),
+                  fillColor: WorkspaceTheme.tableHeaderBg,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
                 ),
@@ -567,15 +601,3 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _TableFooter extends StatelessWidget {
-  const _TableFooter({required this.state});
-  final PayrollDashboardState state;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(color: WorkspaceTheme.tableHeaderBg, borderRadius: BorderRadius.vertical(bottom: Radius.circular(16))),
-      child: Text('${state.tableRows.length} employees found in this period', style: GoogleFonts.inter(fontSize: 12, color: WorkspaceTheme.textMuted, fontWeight: FontWeight.w500)),
-    );
-  }
-}

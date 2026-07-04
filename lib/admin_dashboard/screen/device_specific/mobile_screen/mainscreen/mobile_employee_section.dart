@@ -31,7 +31,7 @@ class _MobileEmployeeSectionState extends State<MobileEmployeeSection>
   final TextEditingController _search = TextEditingController();
   final ScrollController _scroll = ScrollController();
 
-  EmployeeFilter _filter = EmployeeFilter.all;
+  EmployeeFilter _filter = EmployeeFilter.working;
   String _query = '';
   bool _searchOpen = false;
 
@@ -115,7 +115,6 @@ class _MobileEmployeeSectionState extends State<MobileEmployeeSection>
           child: FilterBar(
             selected: _filter,
             counts: {
-              EmployeeFilter.all: loggedInToday,
               EmployeeFilter.working: workingCount,
               EmployeeFilter.onBreak: breakCount,
               EmployeeFilter.absent: loggedOutCount,

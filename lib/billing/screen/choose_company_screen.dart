@@ -21,7 +21,7 @@ class ChooseCompanyScreen extends StatelessWidget {
     final storage = SecureStorageService();
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Company',
         onBack: () => Navigator.of(context).maybePop(),

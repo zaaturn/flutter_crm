@@ -119,7 +119,7 @@ class _AdminPostCreateScreenState extends State<AdminPostCreateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: AppColors.canvas,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

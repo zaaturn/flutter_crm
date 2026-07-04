@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/event_management/core/utils/indian_time.dart';
-import 'package:my_app/event_management/features/dashboard/shared/dashboard_ui_theme.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 
 class ZaaturnComposerUI {
-  static const Color background = DashboardUiTheme.pageBackground;
-  static const Color terracotta = DashboardUiTheme.primary;
-  static const Color card = Colors.transparent;
-  static const Color field = DashboardUiTheme.primaryLight;
-  static const Color textDark = DashboardUiTheme.textDark;
-  static const Color textMuted = DashboardUiTheme.textMuted;
+  static const Color background = MobileEventTheme.background;
+  static const Color terracotta = MobileEventTheme.terracotta;
+  static const Color card = MobileEventTheme.card;
+  static const Color field = MobileEventTheme.field;
+  static const Color textDark = MobileEventTheme.textDark;
+  static const Color textMuted = MobileEventTheme.textMuted;
+  static const Color border = MobileEventTheme.border;
 }
 
 class EventComposerMobileHeader extends StatelessWidget {
@@ -54,13 +55,8 @@ class EventComposerMobileHeader extends StatelessWidget {
           ),
           FilledButton(
             onPressed: isSaving ? null : onSave,
-            style: FilledButton.styleFrom(
-              backgroundColor: ZaaturnComposerUI.terracotta,
-              foregroundColor: Colors.white,
+            style: MobileEventTheme.filledButton(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
             ),
             child: isSaving
                 ? const SizedBox(
@@ -129,7 +125,7 @@ class EventComposerSectionCard extends StatelessWidget {
           const SizedBox(height: 8),
           Divider(
             height: 1,
-            color: DashboardUiTheme.border.withValues(alpha: 0.55),
+            color: ZaaturnComposerUI.border.withValues(alpha: 0.55),
           ),
         ],
       ),
@@ -190,6 +186,13 @@ class EventComposerTextField extends StatelessWidget {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: ZaaturnComposerUI.terracotta,
+            width: 1.5,
+          ),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
@@ -291,7 +294,7 @@ class EventComposerReminderChips extends StatelessWidget {
           side: BorderSide(
             color: isSel
                 ? ZaaturnComposerUI.terracotta
-                : DashboardUiTheme.border.withValues(alpha: 0.5),
+                : MobileEventTheme.border.withValues(alpha: 0.5),
           ),
           onSelected: (_) {
             final next = List<int>.from(selected);

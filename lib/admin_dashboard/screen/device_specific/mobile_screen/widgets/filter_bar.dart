@@ -14,8 +14,13 @@ class FilterBar extends StatelessWidget {
     required this.onSelect,
   });
 
+  static const _visibleFilters = [
+    EmployeeFilter.working,
+    EmployeeFilter.onBreak,
+    EmployeeFilter.absent,
+  ];
+
   static const _labels = {
-    EmployeeFilter.all: 'All',
     EmployeeFilter.working: 'Working',
     EmployeeFilter.onBreak: 'Break',
     EmployeeFilter.absent: 'Log Out',
@@ -24,10 +29,10 @@ class FilterBar extends StatelessWidget {
   // Helper to get specific colors per filter
   Color _getBoxColor(EmployeeFilter f) {
     return switch (f) {
-      EmployeeFilter.all => const Color(0xFF0F172A),     // Navy/Black
       EmployeeFilter.working => const Color(0xFF1D5603), // Deep Green
       EmployeeFilter.onBreak => const Color(0xFFC3F380), // Light Lime
       EmployeeFilter.absent => const Color(0xFFD13F13),  // Terracotta/Orange
+      EmployeeFilter.all => const Color(0xFF0F172A),
     };
   }
 
@@ -51,10 +56,10 @@ class FilterBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: EmployeeFilter.values.length,
+        itemCount: _visibleFilters.length,
         separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final f = EmployeeFilter.values[index];
+          final f = _visibleFilters[index];
           final active = f == selected;
           final boxColor = _getBoxColor(f);
           final textColor = _getTextColor(f, active);

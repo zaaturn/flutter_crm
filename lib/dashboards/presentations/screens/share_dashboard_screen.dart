@@ -39,11 +39,11 @@ class ShareDashboardScreen extends StatelessWidget {
       if (onOpenSurveys != null)
         _CardData(
           title: 'Surveys',
-          subtitle: 'Create polls & view employee responses',
+          subtitle: 'Polls & employee responses',
           iconWidget: const SurveyIcon(
             type: SurveyIconType.poll,
             size: 22,
-            color: Color(0xFF604EB8),
+            color: Color(0xFF2F7D6D),
           ),
           onTap: onOpenSurveys!,
         ),
@@ -102,7 +102,7 @@ class ShareDashboardScreen extends StatelessWidget {
                   crossAxisCount: crossAxisCount,
                   crossAxisSpacing: 14,
                   mainAxisSpacing: 14,
-                  mainAxisExtent: 96,
+                  mainAxisExtent: 108,
                 ),
                 itemBuilder: (context, index) => _Card(
                   title: items[index].title,
@@ -163,10 +163,10 @@ class _Card extends StatelessWidget {
         child: Container(
           width: double.infinity,
           height: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFF8A79E5), width: 2),
+            border: Border.all(color: const Color(0xFF6FA99A), width: 2),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -179,47 +179,49 @@ class _Card extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8A79E5).withValues(alpha: 0.12),
+                  color: const Color(0xFF6FA99A).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: iconWidget ??
-                    AppMaterialIcon(icon!, color: const Color(0xFF604EB8)),
+                    AppMaterialIcon(icon!, color: const Color(0xFF2F7D6D), size: 20),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF111827),
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Color(0xFF6B7280),
-                        height: 1.3,
+                        height: 1.25,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF)),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 20),
             ],
           ),
         ),

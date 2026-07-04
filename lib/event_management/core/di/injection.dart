@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:my_app/event_management/core/network/api_service.dart';
 import 'package:my_app/event_management/core/network/websocket_client.dart';
 import 'package:my_app/event_management/core/services/notification_service.dart';
+import 'package:my_app/event_management/features/calendar/data/datasources/calendar_remote_datasource.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/data/repositories/dashboard_repositories_impl.dart';
@@ -41,6 +42,10 @@ Future<void> configureEventManagementDependencies({Dio? dio}) async {
     () => EventRepositoryImpl(sl(), sl()),
   );
 
+  sl.registerLazySingleton<CalendarRemoteDataSource>(
+    () => CalendarRemoteDataSourceImpl(sl<Dio>(instanceName: 'events')),
+  );
+
   sl.registerLazySingleton(() => CreateEventUseCase(sl()));
   sl.registerLazySingleton(() => UpdateEventUseCase(sl()));
   sl.registerLazySingleton(() => DeleteEventUseCase(sl()));
@@ -62,11 +67,12 @@ Future<void> configureEventManagementDependencies({Dio? dio}) async {
       searchEvents: sl(),
       acceptEventInvite: sl(),
       declineEventInvite: sl(),
+      calendarConflictSource: sl<CalendarRemoteDataSource>(),
     ),
   );
 
   sl.registerLazySingleton<DashboardRepository>(
-    () => DashboardRepositoryImpl(sl()),
+    () => DashboardRepositoryImpl(sl(), sl()),
   );
   sl.registerLazySingleton(() => FetchDashboardUseCase(sl()));
   sl.registerFactory(() => DashboardBloc(fetchDashboard: sl()));

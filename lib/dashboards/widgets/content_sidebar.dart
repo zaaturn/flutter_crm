@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+
 enum NavSection { dashboard, sharedItems, cultureBoards, announcements }
 
 extension NavSectionX on NavSection {
@@ -30,6 +32,9 @@ extension NavSectionX on NavSection {
   }
 }
 
+/// Icon-only rail — mirrors the main dashboard's DesktopSidebar: a back
+/// button up top, then the section icons grouped in a mint pill, each with
+/// a hover tooltip in place of a text label.
 class ContentSidebar extends StatelessWidget {
   final NavSection active;
   final ValueChanged<NavSection> onChanged;
@@ -46,142 +51,88 @@ class ContentSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 256,
-      color: Colors.black,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 28),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Share',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                SizedBox(height: 6),
-                Text(
-                  'Enterprise Workspace',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF94A3B8),
-                  ),
-                ),
-              ],
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 16, 10, 16),
+        child: Column(
+          children: [
+            _RailButton(
+              icon: Icons.arrow_back_rounded,
+              tooltip: 'Back to dashboard',
+              selected: false,
+              onTap: onBack,
             ),
-          ),
-
-          const SizedBox(height: 18),
-
-          // Back
-          _BackRow(onTap: onBack),
-          const SizedBox(height: 10),
-
-          // ── Nav items ──────────────────────────────────────────────
-          for (final section in NavSection.values)
-            _NavItem(
-              icon: section.icon,
-              label: section.label,
-              isActive: active == section,
-              onTap: () => onChanged(section),
-            ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Nav Item ──────────────────────────────────────────────────────────────────
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  static const _activeBg = Colors.white;
-  static const _inactiveFg = Color(0xFF94A3B8);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: isActive ? _activeBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isActive ? const Color(0xFF0F172A) : _inactiveFg,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w700,
-                  color: isActive ? const Color(0xFF0F172A) : _inactiveFg,
+            const SizedBox(height: 14),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AdminDashboardTheme.iconRailBg,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  children: [
+                    for (final section in NavSection.values)
+                      _RailButton(
+                        icon: section.icon,
+                        tooltip: section.label,
+                        selected: active == section,
+                        onTap: () => onChanged(section),
+                      ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Back row (top, culture boards view) ──────────────────────────────────────
-
-class _BackRow extends StatelessWidget {
+class _RailButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final bool selected;
   final VoidCallback onTap;
-  const _BackRow({required this.onTap});
+
+  const _RailButton({
+    required this.icon,
+    required this.tooltip,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-        child: Row(
-          children: const [
-            Icon(Icons.arrow_back, size: 18, color: Color(0xFF94A3B8)),
-            SizedBox(width: 10),
-            Text(
-              'Back',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF94A3B8),
+    final color = selected
+        ? AdminDashboardTheme.textDark
+        : AdminDashboardTheme.iconInactive;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Tooltip(
+        message: tooltip,
+        waitDuration: const Duration(milliseconds: 400),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? AdminDashboardTheme.accentYellow : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
               ),
+              child: Icon(icon, size: 22, color: color),
             ),
-          ],
+          ),
         ),
       ),
     );

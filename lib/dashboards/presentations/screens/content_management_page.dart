@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/dashboards/widgets/app_color.dart';
 import 'package:my_app/dashboards/widgets/content_sidebar.dart';
 import 'package:my_app/dashboards/widgets/target_audience_panel.dart';
@@ -41,7 +42,7 @@ class _ContentManagementPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBg,
+      backgroundColor: AppColors.canvas,
       body: Stack(
         children: [
           // Background watermark (requires asset file)
@@ -58,14 +59,22 @@ class _ContentManagementPageState
           Positioned.fill(
             child: Container(color: Colors.white.withValues(alpha: 0.60)),
           ),
-          Row(
+          Padding(
+            padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+            child: Row(
             children: [
               // Sidebar
-              ContentSidebar(
-                active: _active,
-                onChanged: (s) => setState(() => _active = s),
-                onBack: () => Navigator.of(context).pop(),
-                isCultureBoardsView: _isCultureBoardsView,
+              AdminDashboardPanel(
+                width: AdminDashboardTheme.railWidth,
+                margin: const EdgeInsets.only(
+                  right: AdminDashboardTheme.panelGap,
+                ),
+                child: ContentSidebar(
+                  active: _active,
+                  onChanged: (s) => setState(() => _active = s),
+                  onBack: () => Navigator.of(context).pop(),
+                  isCultureBoardsView: _isCultureBoardsView,
+                ),
               ),
 
               // Main area + header
@@ -102,6 +111,7 @@ class _ContentManagementPageState
                       : 'Choose who should see this item',
                 ),
             ],
+            ),
           ),
         ],
       ),

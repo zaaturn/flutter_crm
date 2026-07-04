@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-
+import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 
 import '../repository/analytics_repository.dart';
 
@@ -45,6 +45,7 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
 
 
   final AnalyticsRepository _repository;
+  final AdminRepository _adminRepository = AdminRepository();
 
 
 
@@ -399,6 +400,15 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
         ),
 
       );
+
+      // Overview panel also surfaces who's on leave today, this week's
+      // attendance, and overdue tasks — all pulled from their own modules
+      // so this stays supplementary and never blocks the core KPI load.
+      await _loadLeaves(emit, force: force);
+
+      await _loadAttendance(emit, force: force);
+
+      await _loadOverdueTasks(emit, force: force);
 
     } on AnalyticsApiException catch (e) {
 
@@ -794,6 +804,38 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
 
   }
 
+
+
+  /// Overdue = due date before today and not completed. Pulled from the
+  /// admin tasks queue (not an analytics endpoint), so failures here are
+  /// swallowed rather than surfaced as an Overview-wide error.
+  Future<void> _loadOverdueTasks(
+    Emitter<AnalyticsState> emit, {
+    bool force = false,
+  }) async {
+    if (!force && state.overdueTasks != null) return;
+    emit(state.copyWith(tasksLoading: true));
+    try {
+      final tasks = await _adminRepository.fetchTasks();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final overdue = tasks.where((t) {
+        if (t.status == 'completed') return false;
+        final due = DateTime.tryParse(t.dueDate);
+        if (due == null) return false;
+        return DateTime(due.year, due.month, due.day).isBefore(today);
+      }).toList()
+        ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+      emit(state.copyWith(tasksLoading: false, overdueTasks: overdue));
+    } catch (_) {
+      emit(
+        state.copyWith(
+          tasksLoading: false,
+          overdueTasks: state.overdueTasks ?? const [],
+        ),
+      );
+    }
+  }
 }
 
 

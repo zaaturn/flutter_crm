@@ -8,6 +8,9 @@ import 'employee_list_event.dart';
 import 'employee_list_state.dart';
 
 class EmployeeListBloc extends Bloc<EmployeeListEvent, EmployeeListState> {
+  /// Must match the `page_size` requested from the backend in [EmployeeRepository.getEmployees].
+  static const int pageSize = 10;
+
   final IEmployeeRepository _repository;
   Timer? _searchDebounce;
 
@@ -16,6 +19,7 @@ class EmployeeListBloc extends Bloc<EmployeeListEvent, EmployeeListState> {
         super(const EmployeeListState()) {
     on<FetchEmployees>(_onFetchEmployees);
     on<LoadMoreEmployees>(_onLoadMoreEmployees);
+    on<GoToPage>(_onGoToPage);
     on<RefreshEmployees>(_onRefreshEmployees);
     on<FilterByRole>(_onFilterByRole);
     on<SearchEmployees>(_onSearchEmployees);
@@ -68,6 +72,37 @@ class EmployeeListBloc extends Bloc<EmployeeListEvent, EmployeeListState> {
         status: EmployeeListStatus.success,
         employees: [...state.employees, ...response.results],
         currentPage: nextPage,
+        hasMore: response.hasMore,
+        totalCount: response.count,
+      ));
+      add(const FetchLiveStatus());
+    } catch (e) {
+      emit(state.copyWith(
+        status: EmployeeListStatus.failure,
+        errorMessage: e.toString(),
+      ));
+    }
+  }
+
+  Future<void> _onGoToPage(
+      GoToPage event,
+      Emitter<EmployeeListState> emit,
+      ) async {
+    if (event.page == state.currentPage &&
+        state.status == EmployeeListStatus.success) {
+      return;
+    }
+    emit(state.copyWith(status: EmployeeListStatus.loading));
+    try {
+      final response = await _repository.getEmployees(
+        page: event.page,
+        role: state.selectedRole,
+        search: state.searchQuery.isEmpty ? null : state.searchQuery,
+      );
+      emit(state.copyWith(
+        status: EmployeeListStatus.success,
+        employees: response.results,
+        currentPage: event.page,
         hasMore: response.hasMore,
         totalCount: response.count,
       ));

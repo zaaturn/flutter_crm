@@ -51,6 +51,23 @@ class _AdminDashboardDesktopViewState
   static const _gap = AdminDashboardTheme.panelGap;
   static const _splitPanelHeight = 380.0;
 
+  bool _initialLoad(AdminDashboardState state) =>
+      state.isLoading && state.username == null;
+
+  void _syncScrollPosition() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      final max = position.maxScrollExtent;
+      final pixels = position.pixels;
+      if (pixels > max) {
+        _scrollController.jumpTo(max);
+      } else if (pixels < 0) {
+        _scrollController.jumpTo(0);
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -79,16 +96,15 @@ class _AdminDashboardDesktopViewState
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
+    return BlocConsumer<AdminDashboardBloc, AdminDashboardState>(
+      listenWhen: (previous, current) =>
+          (previous.isLoading && !current.isLoading) ||
+          previous.liveEmployees.length != current.liveEmployees.length ||
+          previous.totalEmployeeCount != current.totalEmployeeCount,
+      listener: (context, state) {
+        _syncScrollPosition();
+      },
       builder: (context, state) {
-        if (state.isLoading) {
-          return const Center(
-            child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
-          );
-        }
-
-        final roleIsAdmin = state.role?.toLowerCase() == 'admin';
-
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -114,62 +130,83 @@ class _AdminDashboardDesktopViewState
                     ModernDashboardHeader(
                       adminName: state.username ?? 'Admin',
                       parentContext: context,
-                      showWorkspaceSwitcher: roleIsAdmin,
+                      showWorkspaceSwitcher:
+                          state.role?.toLowerCase() == 'admin',
                     ),
                     Expanded(
-                      child: KeyboardScrollRegion(
-                      scrollController: _scrollController,
-                      focusNode: _contentFocusNode,
-                      onMoveToPreviousRegion: () =>
-                          _sidebarFocusNode.requestFocus(),
-                      child: SingleChildScrollView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 12),
-                            AdminDashboardOverviewSection(state: state),
-                            const SizedBox(height: 40),
-                            SizedBox(
-                              height: _splitPanelHeight,
-                              child: Row(
+                      child: Stack(
+                        children: [
+                          KeyboardScrollRegion(
+                            scrollController: _scrollController,
+                            focusNode: _contentFocusNode,
+                            onMoveToPreviousRegion: () =>
+                                _sidebarFocusNode.requestFocus(),
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              primary: false,
+                              physics: const ClampingScrollPhysics(
+                                parent: AlwaysScrollableScrollPhysics(),
+                              ),
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Expanded(
-                                    child: AdminDashboardPanel(
-                                      child: DesktopEmployeeSection(
-                                        employees: state.liveEmployees,
-                                        totalEmployeeCount:
-                                            state.totalEmployeeCount,
-                                        flat: true,
-                                        compact: true,
-                                      ),
+                                  AdminDashboardOverviewSection(state: state),
+                                  const SizedBox(height: 40),
+                                  SizedBox(
+                                    height: _splitPanelHeight,
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          child: AdminDashboardPanel(
+                                            child: DesktopEmployeeSection(
+                                              employees: state.liveEmployees,
+                                              totalEmployeeCount:
+                                                  state.totalEmployeeCount,
+                                              flat: true,
+                                              compact: true,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: _gap),
+                                        Expanded(
+                                          child: AdminDashboardPanel(
+                                            child: BlocProvider.value(
+                                              value: _clientSummaryCubit,
+                                              child:
+                                                  const AdminClientSummaryPanel(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: _gap),
-                                  Expanded(
-                                    child: AdminDashboardPanel(
-                                      child: BlocProvider.value(
-                                        value: _clientSummaryCubit,
-                                        child:
-                                            const AdminClientSummaryPanel(),
-                                      ),
-                                    ),
-                                  ),
+                                  const SizedBox(height: _gap),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: _gap),
-                          ],
-                        ),
+                          ),
+                          if (_initialLoad(state))
+                            Positioned.fill(
+                              child: ColoredBox(
+                                color: AdminDashboardTheme.shellMint
+                                    .withValues(alpha: 0.92),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AdminDashboardTheme.teal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ],
         );
       },

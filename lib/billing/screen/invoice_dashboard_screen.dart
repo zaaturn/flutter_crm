@@ -216,7 +216,7 @@ class _InvoiceDashboardScreenState extends State<InvoiceDashboardScreen> {
     if (_page > pages - 1) _page = pages - 1;
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Invoices',
         onBack: () => BillingFlowController.backToAdminDashboard(context),

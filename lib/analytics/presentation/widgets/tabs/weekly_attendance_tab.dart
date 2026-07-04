@@ -8,6 +8,7 @@ import '../../../utils/analytics_date_utils.dart';
 import '../../../utils/analytics_hours.dart';
 import '../../../utils/analytics_time.dart';
 import '../../../utils/iso_week.dart';
+import '../../mobile/mobile_attendance_daily_list.dart';
 import '../analytics_enterprise_table.dart';
 import '../analytics_loading_widgets.dart';
 
@@ -40,42 +41,55 @@ class WeeklyAttendanceTab extends StatelessWidget {
 
     Widget body;
     if (subview == WeeklyAttendanceSubview.weeklySummary) {
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SectionHeader(
-            title: weekLabel,
-            subtitle:
-                'Employee weekly summary · max ${model.maxDailyHours.toStringAsFixed(0)}h/day (server cap)',
-            mobile: mobile,
-          ),
-          Expanded(
-            child: SizedBox.expand(
-              child: _SummaryTable(rows: model.summaryRows, mobile: mobile),
+      if (mobile) {
+        body = MobileAttendanceSummaryList(rows: model.summaryRows);
+      } else {
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SectionHeader(
+              title: weekLabel,
+              subtitle:
+                  'Employee weekly summary · max ${model.maxDailyHours.toStringAsFixed(0)}h/day (server cap)',
+              mobile: mobile,
             ),
-          ),
-        ],
-      );
+            Expanded(
+              child: SizedBox.expand(
+                child: _SummaryTable(rows: model.summaryRows, mobile: mobile),
+              ),
+            ),
+          ],
+        );
+      }
     } else {
       final dayKey = dayFilterKey ??
           AnalyticsDateUtils.defaultDayKeyForIsoWeek(model.year, model.week);
       final rows = model.filteredDailyRows(dayKey: dayKey);
-      body = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SectionHeader(
-            title: weekLabel,
-            subtitle:
-                '${_dayLabel(model.week, dayKey)} · ${rows.length} employees',
-            mobile: mobile,
-          ),
-          Expanded(
-            child: SizedBox.expand(
-              child: _DailyTable(rows: rows, mobile: mobile),
+      if (mobile) {
+        body = MobileAttendanceDailyList(
+          rows: rows,
+          year: model.year,
+          week: model.week,
+          dayKey: dayKey,
+        );
+      } else {
+        body = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SectionHeader(
+              title: weekLabel,
+              subtitle:
+                  '${_dayLabel(model.week, dayKey)} · ${rows.length} employees',
+              mobile: mobile,
             ),
-          ),
-        ],
-      );
+            Expanded(
+              child: SizedBox.expand(
+                child: _DailyTable(rows: rows, mobile: mobile),
+              ),
+            ),
+          ],
+        );
+      }
     }
 
     if (onRefresh == null || !mobile) return body;

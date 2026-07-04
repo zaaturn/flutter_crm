@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/user.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_search_desktop.dart';
 
 class AssignTaskScreenDesktop extends StatefulWidget {
@@ -54,11 +55,11 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AdminDashboardTheme.shellMint,
       appBar: _buildAppBar(),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          double horizontalPadding = 24.0;
+          double horizontalPadding = AdminDashboardTheme.shellPadding;
           if (constraints.maxWidth > 1400) {
             horizontalPadding = (constraints.maxWidth - 1200) / 2;
           } else if (constraints.maxWidth > 1000) {
@@ -69,7 +70,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
 
           return SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 32),
+            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24),
             child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
           );
         },
@@ -79,17 +80,17 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AdminDashboardTheme.shellMint,
       elevation: 0,
       centerTitle: false,
-      leading: const BackButton(color: Color(0xFF1E293B)),
+      leading: const BackButton(color: AdminDashboardTheme.textDark),
       title: const Text(
         "Assign New Task",
-        style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(color: const Color(0xFFE2E8F0), height: 1),
+        style: TextStyle(
+          color: AdminDashboardTheme.textDark,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
+        ),
       ),
       actions: [
         Padding(
@@ -211,23 +212,24 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
   }
 
   Widget _buildSectionCard({required String title, required List<Widget> children}) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.015), blurRadius: 20, offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-          const SizedBox(height: 24),
-          ...children,
-        ],
+    return AdminDashboardPanel(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AdminDashboardTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ...children,
+          ],
+        ),
       ),
     );
   }
@@ -237,7 +239,12 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text.toUpperCase(),
-        style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF94A3B8), fontSize: 11, letterSpacing: 1.2),
+        style: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: AdminDashboardTheme.textMuted,
+          fontSize: 11,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -245,18 +252,18 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
   Widget _inputField({required TextEditingController controller, required String hint, int maxLines = 1, IconData? icon}) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AdminDashboardTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AdminDashboardTheme.border),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
-        style: const TextStyle(fontSize: 15, color: Color(0xFF1E293B)),
+        style: const TextStyle(fontSize: 15, color: AdminDashboardTheme.textDark),
         decoration: InputDecoration(
-          prefixIcon: icon != null ? Icon(icon, size: 20, color: const Color(0xFF64748B)) : null,
+          prefixIcon: icon != null ? Icon(icon, size: 20, color: AdminDashboardTheme.textMuted) : null,
           hintText: hint,
-          hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+          hintStyle: const TextStyle(color: AdminDashboardTheme.iconInactive),
           contentPadding: const EdgeInsets.all(16),
           border: InputBorder.none,
         ),
@@ -271,19 +278,19 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
+          color: AdminDashboardTheme.surfaceMuted,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: AdminDashboardTheme.border),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_month_rounded, size: 18, color: Color(0xFF0F172A)),
+            const Icon(Icons.calendar_month_rounded, size: 18, color: AdminDashboardTheme.teal),
             const SizedBox(width: 12),
             Text(
               dueDate == null ? "Set Due Date" : DateFormat("EEE, MMM dd, yyyy").format(dueDate!),
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: dueDate == null ? const Color(0xFF94A3B8) : const Color(0xFF1E293B),
+                color: dueDate == null ? AdminDashboardTheme.iconInactive : AdminDashboardTheme.textDark,
               ),
             ),
           ],
@@ -296,15 +303,15 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: AdminDashboardTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: AdminDashboardTheme.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: priority,
           isExpanded: true,
-          icon: const Icon(Icons.unfold_more_rounded, size: 20, color: Color(0xFF64748B)),
+          icon: const Icon(Icons.unfold_more_rounded, size: 20, color: AdminDashboardTheme.textMuted),
           items: ["Low", "Medium", "High"].map((p) {
             final color = p == "High" ? Colors.red : (p == "Medium" ? Colors.orange : Colors.green);
             return DropdownMenuItem(
@@ -371,7 +378,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       child: ElevatedButton(
         onPressed: submitting ? null : _submitTask,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0F172A),
+          backgroundColor: AdminDashboardTheme.teal,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
@@ -405,7 +412,11 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF0F172A), onPrimary: Colors.white, onSurface: Color(0xFF1E293B)),
+            colorScheme: const ColorScheme.light(
+              primary: AdminDashboardTheme.teal,
+              onPrimary: Colors.white,
+              onSurface: AdminDashboardTheme.textDark,
+            ),
           ),
           child: child!,
         );

@@ -183,7 +183,7 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
     final wide = MediaQuery.sizeOf(context).width >= 840;
     if (_loading) {
       return Scaffold(
-        backgroundColor: BillingAdaptiveTheme.bg(context),
+        backgroundColor: BillingAdaptiveTheme.canvas(context),
         body: const Center(child: CircularProgressIndicator(color: Color(0xFF0C56D0))),
       );
     }
@@ -191,7 +191,7 @@ class _EditInvoiceDraftScreenState extends State<EditInvoiceDraftScreen> {
     final isDraft = (_status ?? '').toUpperCase() == 'DRAFT';
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: isDraft ? 'Edit Draft' : 'Review Invoice',
         onBack: () => Navigator.of(context).maybePop(),

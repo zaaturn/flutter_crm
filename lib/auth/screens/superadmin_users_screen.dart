@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/superadmin_repository.dart';
 
@@ -25,17 +26,17 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
   Map<String, dynamic>? _selectedUser;
   Map<String, dynamic>? _accessPayload;
 
-  // Theme: Desktop keeps purple, Mobile uses terracotta.
+  // Theme: Desktop matches the mint/teal admin dashboard shell, Mobile uses terracotta.
   bool get _wide => MediaQuery.sizeOf(context).width >= 900;
 
-  Color get _primary => _wide ? const Color(0xFF7C3AED) : const Color(0xFFC05E41);
-  Color get _primaryLight => _wide ? const Color(0xFFF5F3FF) : const Color(0xFFEADBC8);
-  Color get _primaryDark => _wide ? const Color(0xFF4C1D95) : const Color(0xFF3E2723);
-  Color get _textPrimary => _wide ? const Color(0xFF0F172A) : const Color(0xFF3E2723);
-  Color get _textMuted => _wide ? const Color(0xFF334155) : const Color(0xFF8D6E63);
+  Color get _primary => _wide ? AdminDashboardTheme.teal : const Color(0xFFC05E41);
+  Color get _primaryLight => _wide ? AdminDashboardTheme.tealLight : const Color(0xFFEADBC8);
+  Color get _primaryDark => _wide ? AdminDashboardTheme.tealDark : const Color(0xFF3E2723);
+  Color get _textPrimary => _wide ? AdminDashboardTheme.textDark : const Color(0xFF3E2723);
+  Color get _textMuted => _wide ? AdminDashboardTheme.textMuted : const Color(0xFF8D6E63);
   Color get _border =>
-      _wide ? const Color(0xFFEDE9FE) : const Color(0xFFC05E41).withValues(alpha: 0.14);
-  Color get _bg => _wide ? Colors.white : const Color(0xFFFAF3E0);
+      _wide ? AdminDashboardTheme.border : const Color(0xFFC05E41).withValues(alpha: 0.14);
+  Color get _bg => _wide ? AdminDashboardTheme.shellMint : const Color(0xFFFAF3E0);
 
   @override
   void initState() {
@@ -123,6 +124,10 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final body = _step == _ManageStep.pickEmployee
+        ? _buildPickEmployeeBody()
+        : _buildAccessBody();
+
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
@@ -146,14 +151,19 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
             fontSize: 20,
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: _border, height: 1),
-        ),
+        bottom: _wide
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(color: _border, height: 1),
+              ),
       ),
-      body: _step == _ManageStep.pickEmployee
-          ? _buildPickEmployeeBody()
-          : _buildAccessBody(),
+      body: _wide
+          ? Padding(
+              padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+              child: AdminDashboardPanel(child: body),
+            )
+          : body,
     );
   }
 
@@ -205,6 +215,7 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
+                    color: _wide ? AdminDashboardTheme.surfaceMuted : null,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: _border, width: 1),
                   ),
@@ -347,12 +358,12 @@ class _UserAccessFormState extends State<_UserAccessForm> {
   bool _saving = false;
 
   bool get _wide => MediaQuery.sizeOf(context).width >= 900;
-  Color get _primary => _wide ? const Color(0xFF7C3AED) : const Color(0xFFC05E41);
-  Color get _textPrimary => _wide ? const Color(0xFF0F172A) : const Color(0xFF3E2723);
+  Color get _primary => _wide ? AdminDashboardTheme.teal : const Color(0xFFC05E41);
+  Color get _textPrimary => _wide ? AdminDashboardTheme.textDark : const Color(0xFF3E2723);
   Color get _border =>
-      _wide ? const Color(0xFFEDE9FE) : const Color(0xFFC05E41).withValues(alpha: 0.14);
+      _wide ? AdminDashboardTheme.border : const Color(0xFFC05E41).withValues(alpha: 0.14);
   Color get _fill =>
-      _wide ? Colors.white : Colors.white.withValues(alpha: 0.65);
+      _wide ? AdminDashboardTheme.surfaceMuted : Colors.white.withValues(alpha: 0.65);
 
   @override
   void initState() {
@@ -443,6 +454,7 @@ class _UserAccessFormState extends State<_UserAccessForm> {
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
+              color: _wide ? AdminDashboardTheme.surfaceMuted : null,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: _border),
             ),

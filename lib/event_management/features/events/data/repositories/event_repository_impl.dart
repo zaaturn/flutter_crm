@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/event_management/core/errors/failures.dart';
 import '../../domain/entities/event.dart';
 import '../../domain/repositories/event_repository.dart';
@@ -49,14 +50,28 @@ class EventRepositoryImpl implements EventRepository {
   Failure _mapException(Object e) {
     if (e is DioException) {
       if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout) {
-        return const NetworkFailure();
+          e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        return const NetworkFailure(
+          'Unable to connect. Check your internet or API URL.',
+        );
       }
       final statusCode = e.response?.statusCode;
-      final message = e.response?.data?['detail'] as String? ?? e.message ?? 'Server error';
+      if (AuthSessionRedirect.isAuthFailure(e, statusCode: statusCode)) {
+        AuthSessionRedirect.handleIfAuthFailure(e, statusCode: statusCode);
+        return const AuthFailure('Session expired. Please login.');
+      }
+      final message = AuthSessionRedirect.displayMessage(
+        e,
+        statusCode: statusCode,
+      );
       return ServerFailure(message, statusCode: statusCode);
     }
-    return ServerFailure(e.toString());
+    if (AuthSessionRedirect.handleIfAuthFailure(e)) {
+      return const AuthFailure('Session expired. Please login.');
+    }
+    return ServerFailure(AuthSessionRedirect.displayMessage(e));
   }
 
   @override

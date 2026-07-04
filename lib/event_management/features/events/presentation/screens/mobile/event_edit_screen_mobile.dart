@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:my_app/core/scaffold_messenger_scope.dart';
+import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calendar_bloc.dart';
 import 'package:my_app/event_management/features/calendar/presentation/bloc/calender_event.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/events/domain/entities/event.dart';
 import 'package:my_app/event_management/features/events/presentation/bloc/event_bloc.dart';
+import 'package:my_app/event_management/features/events/presentation/mobile/mobile_event_theme.dart';
 import 'package:my_app/event_management/features/events/presentation/screens/mobile/event_composer_mobile_ui.dart';
 import 'package:my_app/event_management/features/events/presentation/utils/event_snackbar.dart';
 import 'package:my_app/event_management/features/events/presentation/widgets/event_create/event_create_date_picker.dart';
@@ -99,22 +100,19 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
           } catch (_) {}
           popRouteThenShowSnackBar(
             ctx,
-            SnackBar(content: Text('Event "${state.event.title}" updated')),
+            EventSnackBars.terracotta('Event "${state.event.title}" updated'),
           );
         } else if (state is EventError) {
           setState(() => _isSaving = false);
-          rootScaffoldMessengerKey.currentState?.showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red.shade700,
-            ),
-          );
+          EventSnackBars.show(state.message);
         }
       },
-      child: Scaffold(
-        backgroundColor: ZaaturnComposerUI.background,
-        body: SafeArea(
-          child: Form(
+      child: MobileEventTheme.wrap(
+        context,
+        Scaffold(
+          backgroundColor: MobileEventTheme.background,
+          body: SafeArea(
+            child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -140,6 +138,7 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );
@@ -196,7 +195,6 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
                 const EventComposerFieldLabel('All day'),
                 Switch.adaptive(
                   value: _isAllDay,
-                  activeColor: ZaaturnComposerUI.terracotta,
                   onChanged: _onAllDayChanged,
                 ),
               ],
@@ -274,14 +272,7 @@ class _EventEditScreenMobileState extends State<EventEditScreenMobile> {
           width: double.infinity,
           child: FilledButton(
             onPressed: _pickParticipants,
-            style: FilledButton.styleFrom(
-              backgroundColor: ZaaturnComposerUI.terracotta,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
+            style: MobileEventTheme.filledButton(),
             child: Text(
               _participants.isEmpty
                   ? 'Add guests'

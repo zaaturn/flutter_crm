@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/app_theme.dart';
 import 'employee_detail_shared.dart';
 
@@ -35,7 +36,7 @@ class EmployeeStatsSection extends StatelessWidget {
                 label: 'Employee ID',
                 
                 value: sanitizedId,
-                color: const Color(0xFF6366F1),
+                color: AdminDashboardTheme.tealDark,
               ),
             ),
           ],

@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
 import '../../admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 import '../../admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
 
 class WorkspaceTheme {
-  static const Color primaryPurple = Color(0xFF6F34DC);
-  static const Color cardSurface = Colors.white;
-  static const Color borderSubtle = Color(0xFFE8E9F1);
-  static const Color textMain = Color(0xFF1E1E24);
-  static const Color textMuted = Color(0xFF64748B);
+  static const Color primaryPurple = AdminDashboardTheme.teal;
+  static const Color cardSurface = AdminDashboardTheme.surface;
+  static const Color borderSubtle = AdminDashboardTheme.borderSoft;
+  static const Color textMain = AdminDashboardTheme.textDark;
+  static const Color textMuted = AdminDashboardTheme.textMuted;
 }
 
 class PayrollHeader extends StatelessWidget {

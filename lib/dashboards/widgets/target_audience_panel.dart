@@ -29,7 +29,7 @@ class TargetAudiencePanel extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.60),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF8A79E5), width: 2),
+          border: Border.all(color: const Color(0xFF6FA99A), width: 2),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
@@ -55,7 +55,7 @@ class TargetAudiencePanel extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Icon(Icons.filter_list, color: Color(0xFF604EB8), size: 18),
+                  Icon(Icons.filter_list, color: Color(0xFF2F7D6D), size: 18),
                 ],
               ),
               const SizedBox(height: 6),
@@ -201,7 +201,7 @@ class _GlassAudiencePickerDialog extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF604EB8).withValues(alpha: 0.12),
+                  color: const Color(0xFF2F7D6D).withValues(alpha: 0.12),
                   blurRadius: 32,
                   offset: const Offset(0, 18),
                 ),
@@ -295,7 +295,7 @@ class _SearchFieldState extends State<_SearchField> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF8A79E5), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF6FA99A), width: 2),
           ),
         ),
       ),
@@ -386,7 +386,7 @@ class _PanelFooter extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF604EB8),
+                      color: Color(0xFF2F7D6D),
                     ),
                   ),
                 ),

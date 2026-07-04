@@ -51,7 +51,7 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
     final narrow = MediaQuery.sizeOf(context).width < 900;
     final scaffold = Scaffold(
       backgroundColor:
-          narrow ? LeaveManagerColors.background : const Color(0xFFF8FAFC),
+          narrow ? LeaveManagerColors.background : AppColors.canvas,
       appBar: AppBar(
         title: Text(
           'Add New Credential',
@@ -60,8 +60,8 @@ class _AddCredentialScreenState extends State<AddCredentialScreen> {
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: narrow ? LeaveManagerColors.primary : Colors.black,
+        backgroundColor: narrow ? Colors.white : AppColors.canvas,
+        foregroundColor: narrow ? LeaveManagerColors.primary : AppColors.text,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(28),

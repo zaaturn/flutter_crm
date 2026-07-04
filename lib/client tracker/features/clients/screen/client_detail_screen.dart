@@ -26,7 +26,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: AppColors.canvas,
       body: BlocBuilder<ClientBloc, ClientState>(
         builder: (ctx, state) {
 

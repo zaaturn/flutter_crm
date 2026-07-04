@@ -143,7 +143,7 @@ class _InvoiceReviewScreenState extends State<InvoiceReviewScreen> {
     final bool isMobile = BillingAdaptiveTheme.isMobile(context);
 
     return Scaffold(
-      backgroundColor: BillingAdaptiveTheme.bg(context),
+      backgroundColor: BillingAdaptiveTheme.canvas(context),
       appBar: billingAppBar(
         title: 'Invoice Review',
         onBack: () => Navigator.of(context).maybePop(),

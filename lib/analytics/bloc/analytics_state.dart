@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-
+import 'package:my_app/admin_dashboard/model/task.dart';
 
 import '../models/analytics_overview_model.dart';
 
@@ -64,6 +64,8 @@ class AnalyticsState extends Equatable {
 
   final bool leaveLoading;
 
+  final bool tasksLoading;
+
 
 
   final AnalyticsOverviewModel? overview;
@@ -79,6 +81,10 @@ class AnalyticsState extends Equatable {
   final LeaveSummaryModel? leaveSummary;
 
   final LeaveAnalyticsResponse? leaveAnalytics;
+
+  /// `null` = not fetched yet; overview's overdue-tasks panel (pulled from
+  /// the admin tasks module, not analytics' own endpoint).
+  final List<Task>? overdueTasks;
 
 
 
@@ -120,6 +126,8 @@ class AnalyticsState extends Equatable {
 
     this.leaveLoading = false,
 
+    this.tasksLoading = false,
+
     this.overview,
 
     this.attendanceSummary,
@@ -133,6 +141,8 @@ class AnalyticsState extends Equatable {
     this.leaveSummary,
 
     this.leaveAnalytics,
+
+    this.overdueTasks,
 
     this.errorMessage,
 
@@ -244,6 +254,8 @@ class AnalyticsState extends Equatable {
 
     bool? leaveLoading,
 
+    bool? tasksLoading,
+
     AnalyticsOverviewModel? overview,
 
     AttendanceSummaryModel? attendanceSummary,
@@ -257,6 +269,8 @@ class AnalyticsState extends Equatable {
     LeaveSummaryModel? leaveSummary,
 
     LeaveAnalyticsResponse? leaveAnalytics,
+
+    List<Task>? overdueTasks,
 
     String? errorMessage,
 
@@ -314,6 +328,8 @@ class AnalyticsState extends Equatable {
 
       leaveLoading: leaveLoading ?? this.leaveLoading,
 
+      tasksLoading: tasksLoading ?? this.tasksLoading,
+
       overview: clearOverview ? null : (overview ?? this.overview),
 
       attendanceSummary:
@@ -333,6 +349,8 @@ class AnalyticsState extends Equatable {
           ? null
 
           : (leaveAnalytics ?? this.leaveAnalytics),
+
+      overdueTasks: overdueTasks ?? this.overdueTasks,
 
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
 
@@ -378,6 +396,8 @@ class AnalyticsState extends Equatable {
 
         leaveLoading,
 
+        tasksLoading,
+
         overview,
 
         attendanceSummary,
@@ -391,6 +411,8 @@ class AnalyticsState extends Equatable {
         leaveSummary,
 
         leaveAnalytics,
+
+        overdueTasks,
 
         errorMessage,
 

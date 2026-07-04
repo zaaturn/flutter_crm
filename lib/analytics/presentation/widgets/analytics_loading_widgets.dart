@@ -12,10 +12,10 @@ class AnalyticsShimmerGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base = mobile
-        ? AnalyticsMobileTheme.card
+        ? AnalyticsMobileTheme.field
         : AnalyticsDesktopTheme.border;
     final highlight = mobile
-        ? AnalyticsMobileTheme.field
+        ? AnalyticsMobileTheme.card
         : AnalyticsDesktopTheme.purpleLight;
 
     return Padding(

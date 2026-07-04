@@ -18,13 +18,51 @@ class SummaryPagination {
   });
 
   factory SummaryPagination.fromJson(Map<String, dynamic> json) {
+    final page = _readInt(json['page'], 1);
+    final pageSize = _readInt(json['page_size'] ?? json['pageSize'], 20);
+    final total = _readInt(json['total'] ?? json['count'], 0);
+    var totalPages = _readInt(json['total_pages'] ?? json['totalPages'], 0);
+    if (totalPages <= 0 && total > 0) {
+      totalPages = ((total + pageSize - 1) / pageSize).ceil();
+    }
+    if (totalPages <= 0) totalPages = 1;
+
+    final hasNext =
+        json['has_next'] == true || (total > 0 && page < totalPages);
+    final hasPrev = json['has_prev'] == true || page > 1;
+
     return SummaryPagination(
-      page: json['page'] ?? 1,
-      pageSize: json['page_size'] ?? 20,
-      total: json['total'] ?? 0,
-      totalPages: json['total_pages'] ?? 1,
-      hasNext: json['has_next'] == true,
-      hasPrev: json['has_prev'] == true,
+      page: page,
+      pageSize: pageSize,
+      total: total,
+      totalPages: totalPages,
+      hasNext: hasNext,
+      hasPrev: hasPrev,
+    );
+  }
+
+  static int _readInt(dynamic value, int fallback) {
+    if (value is int) return value;
+    if (value is double) return value.round();
+    return int.tryParse('$value') ?? fallback;
+  }
+
+  factory SummaryPagination.synthetic({
+    required int page,
+    required int pageSize,
+    required int total,
+  }) {
+    final totalPages = total <= 0
+        ? 1
+        : ((total + pageSize - 1) / pageSize).ceil();
+    final safePage = page.clamp(1, totalPages);
+    return SummaryPagination(
+      page: safePage,
+      pageSize: pageSize,
+      total: total,
+      totalPages: totalPages,
+      hasNext: safePage < totalPages,
+      hasPrev: safePage > 1,
     );
   }
 
@@ -200,8 +238,30 @@ class ClientDashboardSummary {
         ? Map<String, dynamic>.from(root['pagination'] as Map)
         : <String, dynamic>{};
 
+    final totalClients = _readInt(
+      root['total_clients'] ?? json['total_clients'],
+      0,
+    );
+
+    var pagination = paginationSource.isNotEmpty
+        ? SummaryPagination.fromJson(paginationSource)
+        : SummaryPagination.fromJson(root);
+
+    if (pagination.total <= 0 && totalClients > 0) {
+      final page = _readInt(root['page'] ?? json['page'], 1);
+      final pageSize = _readInt(
+        root['page_size'] ?? json['page_size'],
+        20,
+      );
+      pagination = SummaryPagination.synthetic(
+        page: page,
+        pageSize: pageSize,
+        total: totalClients,
+      );
+    }
+
     return ClientDashboardSummary(
-      totalClients: root['total_clients'] ?? json['total_clients'] ?? 0,
+      totalClients: totalClients,
       invoicesSentCount:
           root['invoices_sent_count'] ?? json['invoices_sent_count'] ?? 0,
       invoicesPendingCount:
@@ -211,8 +271,14 @@ class ClientDashboardSummary {
       paymentsPendingCount:
           root['payments_pending_count'] ?? json['payments_pending_count'] ?? 0,
       results: rows,
-      pagination: SummaryPagination.fromJson(paginationSource),
+      pagination: pagination,
     );
+  }
+
+  static int _readInt(dynamic value, int fallback) {
+    if (value is int) return value;
+    if (value is double) return value.round();
+    return int.tryParse('$value') ?? fallback;
   }
 
   ClientDashboardSummary copyWith({

@@ -79,13 +79,25 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
 
   void setMonth(int month) {
     if (month == state.month) return;
-    _safeEmit(state.copyWith(month: month, page: 1));
+    _safeEmit(state.copyWith(
+      month: month,
+      page: 1,
+      search: '',
+      invoiceFilter: TriStateFilter.all,
+      paymentFilter: TriStateFilter.all,
+    ));
     load();
   }
 
   void setYear(int year) {
     if (year == state.year) return;
-    _safeEmit(state.copyWith(year: year, page: 1));
+    _safeEmit(state.copyWith(
+      year: year,
+      page: 1,
+      search: '',
+      invoiceFilter: TriStateFilter.all,
+      paymentFilter: TriStateFilter.all,
+    ));
     load();
   }
 
@@ -109,6 +121,21 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
     load();
   }
 
+  void applyFilters({
+    TriStateFilter? invoiceFilter,
+    TriStateFilter? paymentFilter,
+  }) {
+    final inv = invoiceFilter ?? state.invoiceFilter;
+    final pay = paymentFilter ?? state.paymentFilter;
+    if (inv == state.invoiceFilter && pay == state.paymentFilter) return;
+    _safeEmit(state.copyWith(
+      invoiceFilter: inv,
+      paymentFilter: pay,
+      page: 1,
+    ));
+    load();
+  }
+
   void setPage(int page) {
     if (page == state.page) return;
     _safeEmit(state.copyWith(page: page));
@@ -122,9 +149,51 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
   }
 
   Future<void> toggleInvoice(ClientSummaryRow row) async {
+    await _patchInvoice(row, cycleTriState(row.invoiceSent));
+  }
+
+  Future<void> togglePayment(ClientSummaryRow row) async {
+    await _patchPayment(row, cycleTriState(row.paymentReceived));
+  }
+
+  Future<void> setInvoiceSent(ClientSummaryRow row, bool? value) async {
+    if (row.invoiceSent == value) return;
+    await _patchInvoice(row, value);
+  }
+
+  Future<void> setPaymentReceived(ClientSummaryRow row, bool? value) async {
+    if (row.paymentReceived == value) return;
+    await _patchPayment(row, value);
+  }
+
+  Future<void> bulkMarkInvoiceSent(List<int> paymentRecordIds) async {
+    for (final id in paymentRecordIds) {
+      if (isClosed) return;
+      final row = _rowById(id);
+      if (row == null || row.invoiceSent == true) continue;
+      await _patchInvoice(row, true);
+    }
+  }
+
+  Future<void> bulkMarkPaymentReceived(List<int> paymentRecordIds) async {
+    for (final id in paymentRecordIds) {
+      if (isClosed) return;
+      final row = _rowById(id);
+      if (row == null || row.paymentReceived == true) continue;
+      await _patchPayment(row, true);
+    }
+  }
+
+  ClientSummaryRow? _rowById(int id) {
+    for (final row in state.summary.results) {
+      if (row.paymentRecordId == id) return row;
+    }
+    return null;
+  }
+
+  Future<void> _patchInvoice(ClientSummaryRow row, bool? newValue) async {
     final cellKey = '${row.paymentRecordId}_invoice';
     final oldValue = row.invoiceSent;
-    final newValue = cycleTriState(oldValue);
 
     _safeEmit(state.copyWith(
       updatingCellKey: cellKey,
@@ -163,10 +232,9 @@ class ClientDashboardSummaryCubit extends Cubit<ClientDashboardSummaryState> {
     }
   }
 
-  Future<void> togglePayment(ClientSummaryRow row) async {
+  Future<void> _patchPayment(ClientSummaryRow row, bool? newValue) async {
     final cellKey = '${row.paymentRecordId}_payment';
     final oldValue = row.paymentReceived;
-    final newValue = cycleTriState(oldValue);
 
     _safeEmit(state.copyWith(
       updatingCellKey: cellKey,
