@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
@@ -12,12 +13,13 @@ class AuthSessionRedirect {
 
   static GlobalKey<NavigatorState>? Function()? _navigatorKey;
   static bool _redirectInProgress = false;
+  static String? _pendingSessionMessage;
 
   static const String loginRoute = '/employeeLogin';
 
   static const String defaultMessage = 'Session expired. Please login.';
 
-  static const String defaultSubtitle = 'Redirecting you to sign in…';
+  static const String defaultSubtitle = 'Please sign in again to continue.';
 
   static const Set<String> _loginRoutes = {
     loginRoute,
@@ -26,6 +28,17 @@ class AuthSessionRedirect {
 
   static void bindNavigator(GlobalKey<NavigatorState> Function() provider) {
     _navigatorKey = provider;
+  }
+
+  /// Drop any queued expiry toast (e.g. cold start redirect to login).
+  static void discardPendingSessionMessage() {
+    _pendingSessionMessage = null;
+  }
+
+  static bool get isOnLoginRoute {
+    final nav = _navigatorKey?.call()?.currentState;
+    if (nav == null) return false;
+    return _isAlreadyOnLogin(nav);
   }
 
   /// Reads the top route name without popping anything from the stack.
@@ -175,10 +188,38 @@ class AuthSessionRedirect {
     return text;
   }
 
+  /// Call from login screens after mount so the snackbar appears on the login page.
+  static void flushPendingSessionSnackBar() {
+    final message = _pendingSessionMessage;
+    if (message == null || message.isEmpty) return;
+    _pendingSessionMessage = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showSessionExpiredSnackBar(
+        title: message,
+        subtitle: defaultSubtitle,
+      );
+    });
+  }
+
   /// Clears stored auth and opens the login screen (mobile + web).
-  static Future<void> forceLogin({String? message}) async {
+  static Future<void> forceLogin({
+    String? message,
+    bool notifyUser = true,
+  }) async {
     if (_redirectInProgress) return;
     _redirectInProgress = true;
+
+    final navNow = _navigatorKey?.call()?.currentState;
+    final alreadyOnLogin =
+        navNow != null && _isAlreadyOnLogin(navNow);
+    final shouldNotify = notifyUser && !alreadyOnLogin;
+
+    if (shouldNotify) {
+      _pendingSessionMessage = message ?? defaultMessage;
+    } else {
+      _pendingSessionMessage = null;
+    }
 
     try {
       await ApiClient().logout();
@@ -187,13 +228,12 @@ class AuthSessionRedirect {
     } catch (_) {}
 
     void redirect(NavigatorState nav) {
-      if (_isAlreadyOnLogin(nav)) return;
-
-      _showSessionExpiredSnackBar(
-        title: message ?? defaultMessage,
-        subtitle: defaultSubtitle,
-      );
-      nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
+      if (!_isAlreadyOnLogin(nav)) {
+        nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
+      }
+      if (shouldNotify) {
+        flushPendingSessionSnackBar();
+      }
     }
 
     void finishRedirect() {
@@ -219,7 +259,12 @@ class AuthSessionRedirect {
   }) {
     if (!isAuthFailure(error, statusCode: statusCode)) return;
 
-    unawaited(forceLogin(message: message ?? defaultMessage));
+    unawaited(
+      forceLogin(
+        message: message ?? defaultMessage,
+        notifyUser: !isOnLoginRoute,
+      ),
+    );
   }
 
   static void _showSessionExpiredSnackBar({
@@ -227,18 +272,24 @@ class AuthSessionRedirect {
     required String subtitle,
   }) {
     final messenger = rootScaffoldMessengerKey.currentState;
-    if (messenger == null) return;
+    if (messenger == null) {
+      _pendingSessionMessage = title;
+      return;
+    }
 
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        elevation: 8,
-        backgroundColor: const Color(0xFFC05C39),
+        elevation: 0,
+        backgroundColor: AdminDashboardTheme.shellMint,
         margin: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AdminDashboardTheme.border),
+        ),
+        duration: const Duration(seconds: 4),
         content: Row(
           children: [
             Container(
@@ -246,12 +297,15 @@ class AuthSessionRedirect {
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: AdminDashboardTheme.tealLight,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AdminDashboardTheme.teal.withValues(alpha: 0.25),
+                ),
               ),
               child: const Icon(
                 Icons.lock_clock_rounded,
-                color: Colors.white,
+                color: AdminDashboardTheme.teal,
                 size: 22,
               ),
             ),
@@ -264,18 +318,19 @@ class AuthSessionRedirect {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                      color: AdminDashboardTheme.textDark,
                       letterSpacing: 0.1,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.85),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AdminDashboardTheme.textMuted,
                     ),
                   ),
                 ],

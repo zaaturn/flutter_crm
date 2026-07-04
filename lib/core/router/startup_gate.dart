@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/auth/jwt_utils.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/services/api_client.dart';
@@ -29,6 +30,7 @@ class _StartupGateState extends State<StartupGate> {
   static const _storageTimeout = Duration(seconds: 12);
 
   Future<void> _redirectToLogin() async {
+    AuthSessionRedirect.discardPendingSessionMessage();
     try {
       await AuthService().logout();
     } catch (_) {
@@ -66,7 +68,7 @@ class _StartupGateState extends State<StartupGate> {
       final refresh = await storage.readRefreshToken().timeout(_storageTimeout);
       if (refresh != null && refresh.isNotEmpty) {
         try {
-          final ok = await ApiClient().ensureSessionValid(redirectOnFailure: true);
+          final ok = await ApiClient().ensureSessionValid(redirectOnFailure: false);
           if (ok) {
             ApiClient().forceAuthenticated();
             token = await storage.readToken().timeout(_storageTimeout);
