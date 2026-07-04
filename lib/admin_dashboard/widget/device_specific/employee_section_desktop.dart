@@ -27,6 +27,8 @@ class DesktopEmployeeSection extends StatefulWidget {
 
 class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   final ScrollController _scrollController = ScrollController();
+  int _attendancePage = 0;
+  static const _attendancePageSize = 10;
 
   // --- Daxarrow Theme Constants ---
   static const _brandPurple = Color(0xFF7C3AED);
@@ -36,6 +38,42 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   static const _textMuted = Color(0xFF64748B);
 
   bool get _dashboardEmbed => widget.flat && widget.compact;
+
+  bool get _usePagination =>
+      _dashboardEmbed && widget.employees.length > _attendancePageSize;
+
+  int get _maxAttendancePage {
+    final count = widget.employees.length;
+    if (count == 0) return 0;
+    return ((count - 1) / _attendancePageSize).floor();
+  }
+
+  List<Employee> get _visibleEmployees {
+    if (!_usePagination) return widget.employees;
+    final start = _attendancePage * _attendancePageSize;
+    if (start >= widget.employees.length) return [];
+    final end = (start + _attendancePageSize).clamp(0, widget.employees.length);
+    return widget.employees.sublist(start, end);
+  }
+
+  void _goToNextPage() {
+    if (_attendancePage >= _maxAttendancePage) return;
+    setState(() => _attendancePage++);
+    if (_scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(DesktopEmployeeSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.employees.length != widget.employees.length) {
+      final maxPage = _maxAttendancePage;
+      if (_attendancePage > maxPage) {
+        setState(() => _attendancePage = maxPage);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -181,10 +219,21 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
               ],
             ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: stats,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: stats,
+                  ),
+                ),
+                if (_usePagination) ...[
+                  const SizedBox(width: 8),
+                  _buildNextPageButton(),
+                ],
+              ],
             ),
           ],
         ),
@@ -210,6 +259,46 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNextPageButton() {
+    final onLastPage = _attendancePage >= _maxAttendancePage;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onLastPage ? null : _goToNextPage,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: onLastPage ? const Color(0xFFF8FAFC) : _purpleLight,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: onLastPage ? const Color(0xFFE2E8F0) : _borderPurple,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Next',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: onLastPage ? _textMuted : _brandPurple,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: onLastPage ? _textMuted : _brandPurple,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -271,6 +360,7 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
   }
 
   Widget _buildList(bool isDark) {
+    final employees = _visibleEmployees;
     final listView = ListView.separated(
       controller: _scrollController,
       physics: const ClampingScrollPhysics(),
@@ -280,10 +370,10 @@ class _DesktopEmployeeSectionState extends State<DesktopEmployeeSection> {
         widget.compact ? 16 : 20,
         widget.compact ? 8 : 24,
       ),
-      itemCount: widget.employees.length,
+      itemCount: employees.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final employee = widget.employees[index];
+        final employee = employees[index];
         return _EmployeeTile(
           employee: employee,
           onTap: () => widget.onEmployeeTap?.call(employee),
