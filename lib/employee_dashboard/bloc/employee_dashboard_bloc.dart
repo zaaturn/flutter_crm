@@ -169,7 +169,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ) async {
     final userId = await _storage.readUserId();
     if (userId == null || userId.isEmpty) {
-      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.');
+      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.', notifyUser: true);
       return;
     }
 
@@ -208,7 +208,7 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       ) async {
     final userId = await _storage.readUserId();
     if (userId == null || userId.isEmpty) {
-      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.');
+      AuthSessionRedirect.onAuthFailure(error: 'Session expired. Please login again.', notifyUser: true);
       return;
     }
 

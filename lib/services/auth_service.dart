@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 import 'api_client.dart';
 import 'secure_storage_service.dart';
@@ -57,6 +58,7 @@ class AuthService {
     }
 
     await ProfileRemoteSync.applyAuthPayload(data);
+    AuthSessionRedirect.clearExpiryNotice();
 
     return data;
   }

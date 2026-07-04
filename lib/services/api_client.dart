@@ -225,7 +225,9 @@ class ApiClient {
                 }
               }
               if (token == null || token.isEmpty) {
-                await _handleSessionExpired();
+                if (_isAuthenticated) {
+                  await _handleSessionExpired();
+                }
                 return handler.reject(
                   DioException(
                     requestOptions: options,
@@ -363,7 +365,8 @@ class ApiClient {
   Future<void> _handleSessionExpired() async {
     final refresh = await _storage.readRefreshToken();
     final access = await _storage.readToken();
-    final hadSession = _isAuthenticated ||
+    final wasAuthenticated = _isAuthenticated;
+    final hadSession = wasAuthenticated ||
         (refresh != null && refresh.isNotEmpty) ||
         (access != null && access.isNotEmpty);
     if (!hadSession) return;
@@ -377,7 +380,10 @@ class ApiClient {
       await _storage.clearAll();
     } catch (_) {}
     forceUnauthenticated();
-    AuthSessionRedirect.onAuthFailure(statusCode: 401);
+    AuthSessionRedirect.onAuthFailure(
+      statusCode: 401,
+      notifyUser: wasAuthenticated,
+    );
   }
 
   /// Explicitly refreshes the access token using the stored refresh token.

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/core/auth/session_expiry_notice_storage.dart';
 import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
@@ -34,6 +35,15 @@ class AuthSessionRedirect {
   static void discardPendingSessionMessage() {
     _pendingSessionMessage = null;
   }
+
+  /// Call after a successful login so the next expiry can notify again.
+  static void clearExpiryNotice() {
+    SessionExpiryNoticeStorage.clear();
+    discardPendingSessionMessage();
+  }
+
+  static bool get _expiryNoticeAlreadyShown =>
+      SessionExpiryNoticeStorage.wasShown;
 
   static bool get isOnLoginRoute {
     final nav = _navigatorKey?.call()?.currentState;
@@ -129,7 +139,11 @@ class AuthSessionRedirect {
   static bool handleIfAuthFailure(Object? error, {int? statusCode}) {
     final code = statusCode ?? extractStatusCode(error);
     if (!isAuthFailure(error, statusCode: code)) return false;
-    onAuthFailure(error: error, statusCode: code);
+    onAuthFailure(
+      error: error,
+      statusCode: code,
+      notifyUser: ApiClient().isAuthenticated,
+    );
     return true;
   }
 
@@ -213,7 +227,9 @@ class AuthSessionRedirect {
     final navNow = _navigatorKey?.call()?.currentState;
     final alreadyOnLogin =
         navNow != null && _isAlreadyOnLogin(navNow);
-    final shouldNotify = notifyUser && !alreadyOnLogin;
+    final shouldNotify = notifyUser &&
+        !alreadyOnLogin &&
+        !_expiryNoticeAlreadyShown;
 
     if (shouldNotify) {
       _pendingSessionMessage = message ?? defaultMessage;
@@ -256,13 +272,14 @@ class AuthSessionRedirect {
     Object? error,
     int? statusCode,
     String? message,
+    bool notifyUser = false,
   }) {
     if (!isAuthFailure(error, statusCode: statusCode)) return;
 
     unawaited(
       forceLogin(
         message: message ?? defaultMessage,
-        notifyUser: !isOnLoginRoute,
+        notifyUser: notifyUser && !isOnLoginRoute,
       ),
     );
   }
@@ -270,13 +287,22 @@ class AuthSessionRedirect {
   static void _showSessionExpiredSnackBar({
     required String title,
     required String subtitle,
+    int attempt = 0,
   }) {
     final messenger = rootScaffoldMessengerKey.currentState;
     if (messenger == null) {
-      _pendingSessionMessage = title;
+      if (attempt >= 8) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showSessionExpiredSnackBar(
+          title: title,
+          subtitle: subtitle,
+          attempt: attempt + 1,
+        );
+      });
       return;
     }
 
+    SessionExpiryNoticeStorage.markShown();
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
