@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+
 /// Calendar UI — purple accent, white cards, pastel event blocks by type.
 abstract final class CalendarUiTheme {
   static const primary = Color(0xFF7C3AED);
   static const primaryLight = Color(0xFFF3E8FF);
-  static const pageBackground = Color(0xFFF0F7F4);
-  static const cardBackground = Colors.white;
-  static const border = Color(0xFFE2E8E6);
-  static const textDark = Color(0xFF1A2E28);
-  static const textMuted = Color(0xFF6B7F78);
-  static const surface = Color(0xFFF0F7F4);
+  static const pageBackground = AdminDashboardTheme.shellMint;
+  static const cardBackground = AdminDashboardTheme.surface;
+  static const border = AdminDashboardTheme.border;
+  static const textDark = AdminDashboardTheme.textDark;
+  static const textMuted = AdminDashboardTheme.textMuted;
+  static const surface = AdminDashboardTheme.shellMint;
 
   // Filter legend swatches
   static const legendMeeting = Color(0xFF7ECFC0);
