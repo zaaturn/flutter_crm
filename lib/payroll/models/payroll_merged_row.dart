@@ -15,6 +15,7 @@ class PayrollMergedRow extends Equatable {
     required this.amountDisplay,
     required this.updatedDateLabel,
     required this.avatarInitials,
+    this.profilePhoto,
   });
 
   final int employeeId;
@@ -27,6 +28,7 @@ class PayrollMergedRow extends Equatable {
   final String amountDisplay;
   final String updatedDateLabel;
   final String avatarInitials;
+  final String? profilePhoto;
 
   /// Prefer [emp] for name / subtitle / avatar: list & PATCH responses often omit
   /// nested `employee`, which would otherwise show as "—" in the table.
@@ -46,6 +48,7 @@ class PayrollMergedRow extends Equatable {
       amountDisplay: r.amountDisplay,
       updatedDateLabel: r.updatedDateLabel,
       avatarInitials: _initialsFromLabel(name),
+      profilePhoto: emp.profilePhoto ?? r.profilePhoto,
     );
   }
 
@@ -61,6 +64,7 @@ class PayrollMergedRow extends Equatable {
       amountDisplay: r'$0.00',
       updatedDateLabel: '—',
       avatarInitials: initials,
+      profilePhoto: e.profilePhoto,
     );
   }
 

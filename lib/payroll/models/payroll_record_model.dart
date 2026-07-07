@@ -16,6 +16,7 @@ class PayrollRecordModel {
     required this.amountRaw,
     required this.updatedDateLabel,
     required this.avatarInitials,
+    this.profilePhoto,
   });
 
   final int id;
@@ -37,12 +38,14 @@ class PayrollRecordModel {
   final String amountRaw;
   final String updatedDateLabel;
   final String avatarInitials;
+  final String? profilePhoto;
 
   factory PayrollRecordModel.fromJson(Map<String, dynamic> json) {
     final id = _parseId(json['id']);
     int? employeeId = _parseIdNullable(json['employee_id']);
     String name = '';
     String title = '';
+    String? profilePhoto;
 
     int? crmUserId = _parseIdNullable(json['user_id']);
     String? mergeEmail;
@@ -96,6 +99,13 @@ class PayrollRecordModel {
           emp['title']?.toString() ??
           emp['position']?.toString() ??
           '';
+      profilePhoto = emp['profile_photo']?.toString();
+      if (profilePhoto == null || profilePhoto.trim().isEmpty) {
+        final user = emp['user'];
+        if (user is Map) {
+          profilePhoto = user['profile_photo']?.toString();
+        }
+      }
     } else {
       name = json['employee_name']?.toString().trim() ?? '';
       title = json['job_title']?.toString() ?? '';
@@ -162,6 +172,7 @@ class PayrollRecordModel {
       amountRaw: amountRaw,
       updatedDateLabel: updatedLabel,
       avatarInitials: _initials(name),
+      profilePhoto: profilePhoto,
     );
   }
 

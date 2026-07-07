@@ -169,6 +169,7 @@ class PayrollApiService {
       id: id,
       label: label,
       subtitle: m['email']?.toString(),
+      profilePhoto: m['profile_photo']?.toString(),
     );
   }
 

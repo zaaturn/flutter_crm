@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_lists/employee_pagination_bar.dart';
+import 'package:my_app/employee_dashboard/model/employee_profile.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 
 import '../../services/secure_storage_service.dart';
 import '../bloc/payroll_dashboard_bloc.dart';
@@ -419,10 +421,12 @@ class _PayrollInlineRowState extends State<_PayrollInlineRow> {
             flex: 4,
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 18,
+                EmployeeAvatar(
+                  photoUrl: resolveProfilePhotoUrl(r.profilePhoto),
+                  initials: r.avatarInitials,
+                  size: 36,
                   backgroundColor: WorkspaceTheme.primaryPurple.withOpacity(0.1),
-                  child: Text(r.avatarInitials, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: WorkspaceTheme.primaryPurple)),
+                  foregroundColor: WorkspaceTheme.primaryPurple,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

@@ -20,6 +20,7 @@ List<PayrollEmployeeOption> _employeesFromRecords(List<PayrollRecordModel> recor
         id: id,
         label: r.employeeName == '—' ? 'Employee #$id' : r.employeeName,
         subtitle: r.mergeEmail,
+        profilePhoto: r.profilePhoto,
       ),
     );
   }

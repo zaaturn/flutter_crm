@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/employee_dashboard/model/employee_profile.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 
 class Avatar extends StatelessWidget {
   final Employee employee;
@@ -14,22 +15,13 @@ class Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool hasImage = employee.profilePhoto != null && employee.profilePhoto!.isNotEmpty;
-
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.blue.withOpacity(0.1),
-      backgroundImage: hasImage ? NetworkImage(employee.profilePhoto!) : null,
-      child: !hasImage
-          ? Text(
-              employee.initials,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.blue,
-                fontWeight: FontWeight.bold,
-                fontSize: radius * 0.8,
-              ),
-            )
-          : null,
+    final size = radius * 2;
+    return EmployeeAvatar(
+      photoUrl: resolveProfilePhotoUrl(employee.profilePhoto),
+      initials: employee.initials,
+      size: size,
+      backgroundColor: const Color(0xFF3B82F6).withOpacity(0.1),
+      foregroundColor: const Color(0xFF3B82F6),
     );
   }
 }

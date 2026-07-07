@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
+import 'package:my_app/employee_dashboard/model/employee_profile.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 
 class DesktopEmployeeSection extends StatefulWidget {
   final List<Employee> employees;
@@ -516,23 +518,13 @@ class _EmployeeTile extends StatelessWidget {
   Widget _buildAvatar(Color statusColor) {
     return Stack(
       children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _brandPurple.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(
-            child: Text(
-              employee.initials,
-              style: GoogleFonts.plusJakartaSans(
-                color: _brandPurple,
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-              ),
-            ),
-          ),
+        EmployeeAvatar(
+          photoUrl: resolveProfilePhotoUrl(employee.profilePhoto),
+          initials: employee.initials,
+          size: 48,
+          borderRadius: BorderRadius.circular(12),
+          backgroundColor: _brandPurple.withOpacity(0.1),
+          foregroundColor: _brandPurple,
         ),
         Positioned(
           right: -1,

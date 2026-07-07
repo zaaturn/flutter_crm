@@ -179,4 +179,22 @@ class EmployeeProfile {
       userId: userId ?? this.userId,
     );
   }
+
+  /// Absolute URL for network image widgets (handles `/media/...` paths).
+  String? get resolvedProfilePhotoUrl => resolveProfilePhotoUrl(profilePhoto);
+}
+
+/// Builds a fetchable profile photo URL from API values.
+String? resolveProfilePhotoUrl(String? photo) {
+  final raw = photo?.trim() ?? '';
+  if (raw.isEmpty) return null;
+  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+
+  const baseRaw = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://192.168.1.13:8000',
+  );
+  final base = baseRaw.replaceAll(RegExp(r'/+$'), '');
+  final path = raw.startsWith('/') ? raw : '/$raw';
+  return '$base$path';
 }

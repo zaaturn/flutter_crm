@@ -34,7 +34,7 @@ class EmployeeAvatar extends StatelessWidget {
     BoxBorder? border,
   }) {
     return EmployeeAvatar(
-      photoUrl: profile.profilePhoto,
+      photoUrl: profile.resolvedProfilePhotoUrl,
       initials: profile.avatarInitials,
       size: size,
       borderRadius: borderRadius,
@@ -50,8 +50,9 @@ class EmployeeAvatar extends StatelessWidget {
     final fg = foregroundColor ?? EmployeeDashboardV2Theme.greenDark;
     final radius = borderRadius ?? BorderRadius.circular(size / 2);
     final fontSize = (size * 0.34).clamp(10.0, 18.0);
-    final url = photoUrl?.trim() ?? '';
+    final url = resolveProfilePhotoUrl(photoUrl) ?? '';
     final label = initials.isNotEmpty ? initials : 'U';
+    final pixelSize = (size * MediaQuery.devicePixelRatioOf(context)).round();
 
     Widget initialsChild() => Container(
           width: size,
@@ -85,6 +86,10 @@ class EmployeeAvatar extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          cacheWidth: pixelSize,
+          cacheHeight: pixelSize,
+          gaplessPlayback: true,
           errorBuilder: (_, __, ___) => initialsChild(),
           loadingBuilder: (_, child, progress) {
             if (progress == null) return child;

@@ -8,6 +8,8 @@ import '../bloc/payroll_dashboard_event.dart';
 import '../bloc/payroll_dashboard_state.dart';
 import '../models/payroll_merged_row.dart';
 import '../theme/payroll_mobile_theme.dart';
+import 'package:my_app/employee_dashboard/model/employee_profile.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 import 'payroll_mobile_edit_panel.dart';
 
 const int _kPageSize = 20;
@@ -560,17 +562,12 @@ class _PayrollEmployeeRow extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
+                      EmployeeAvatar(
+                        photoUrl: resolveProfilePhotoUrl(r.profilePhoto),
+                        initials: r.avatarInitials,
+                        size: 36,
                         backgroundColor: avatarBg,
-                        child: Text(
-                          r.avatarInitials,
-                          style: GoogleFonts.manrope(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: PayrollMobileTheme.textDark,
-                          ),
-                        ),
+                        foregroundColor: PayrollMobileTheme.textDark,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
