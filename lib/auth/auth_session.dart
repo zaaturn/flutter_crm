@@ -16,6 +16,9 @@ class AuthSession {
   bool get isEmployee => role == 'employee';
   bool get isClient => role == 'client';
 
+  /// Admin shell: superuser or role `admin` only (not employee/client).
+  bool get canAccessAdminDashboard => isSuperuser || isAdmin;
+
   /// Payroll admin UI: superuser, or admin with `admin_modules['payroll'] == true`.
   bool get canAccessPayrollAdmin =>
       isSuperuser || (isAdmin && adminModules['payroll'] == true);

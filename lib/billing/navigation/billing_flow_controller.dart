@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/billing/screen/billing_home_screen.dart';
 import 'package:my_app/billing/screen/invoice_dashboard_screen.dart';
+import 'package:my_app/core/auth/admin_access_guard.dart';
 import 'dart:typed_data';
 import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
@@ -36,12 +37,14 @@ class BillingFlowController {
     );
   }
 
-  static void backToAdminDashboard(BuildContext context) {
+  static Future<void> backToAdminDashboard(BuildContext context) async {
     final nav = Navigator.of(context, rootNavigator: true);
     if (nav.canPop()) {
       nav.pop();
       return;
     }
+    if (!await AdminAccessGuard.ensureAccess(context)) return;
+    if (!context.mounted) return;
     nav.pushNamed('/adminDashboard');
   }
 

@@ -18,6 +18,7 @@ class SecureStorageService {
   static const String _isSuperuserKey = 'is_superuser';
   static const String _adminModulesKey = 'admin_modules_json';
   static const String _activeDashboardKey = 'active_dashboard';
+  static const String _lastShellRouteKey = 'last_shell_route';
   static const String _authSessionKey = 'auth_session_json';
 
   final FlutterSecureStorage _secureStorage =
@@ -114,6 +115,12 @@ class SecureStorageService {
       _write(_activeDashboardKey, value);
 
   Future<String?> readActiveDashboard() async => _read(_activeDashboardKey);
+
+  /// Last shell the user was on (`/employeeDashboard` or `/adminDashboard`).
+  Future<void> saveLastShellRoute(String route) async =>
+      _write(_lastShellRouteKey, route);
+
+  Future<String?> readLastShellRoute() async => _read(_lastShellRouteKey);
 
   /// Full [AuthSession] snapshot for cold start (role, superuser, modules).
   Future<void> saveAuthSessionJson(String json) async =>

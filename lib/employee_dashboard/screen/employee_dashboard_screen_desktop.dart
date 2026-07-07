@@ -18,8 +18,7 @@ import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_das
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 
-import 'package:my_app/auth/auth_session.dart';
-import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
@@ -47,7 +46,7 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
   @override
   void initState() {
     super.initState();
-    unawaited(AuthService().setActiveDashboard(ActiveDashboard.employee));
+    unawaited(ShellRoutePersistence.markEmployeeShell());
     _employeeBloc = context.read<EmployeeBloc>();
     _employeeBloc.add(LoadDashboard());
     _employeeBloc.add(StartTaskPolling());

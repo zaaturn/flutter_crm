@@ -6,6 +6,8 @@ import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
 import 'package:my_app/core/layout/adaptive_layout.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/admin_dashboard_mobile.dart';
+import 'package:my_app/core/auth/admin_access_guard.dart';
+import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/aniamtion_welcome.dart';
 
@@ -42,6 +44,7 @@ class AuthNavigation {
     }
 
     // employee, client, or unknown → employee shell
+    await ShellRoutePersistence.markEmployeeShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/employeeDashboard',
@@ -54,8 +57,19 @@ class AuthNavigation {
     ActiveDashboard dash,
     Map<String, dynamic> loginResponse,
   ) async {
+    final session = AuthSession.fromJson(loginResponse);
     if (!context.mounted) return;
     if (dash == ActiveDashboard.admin) {
+      if (!session.canAccessAdminDashboard) {
+        await ShellRoutePersistence.markEmployeeShell();
+        if (!context.mounted) return;
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          '/employeeDashboard',
+          (_) => false,
+        );
+        return;
+      }
+
       final String? displayName = () {
         try {
           final user = loginResponse['user'];
@@ -91,6 +105,8 @@ class AuthNavigation {
         (_) => false,
       );
     } else {
+      await ShellRoutePersistence.markEmployeeShell();
+      if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
         '/employeeDashboard',
         (_) => false,
@@ -99,7 +115,8 @@ class AuthNavigation {
   }
 
   static Future<void> openAdminShell(BuildContext context) async {
-    await AuthService().setActiveDashboard(ActiveDashboard.admin);
+    if (!await AdminAccessGuard.ensureAccess(context)) return;
+    await ShellRoutePersistence.markAdminShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(
@@ -122,7 +139,7 @@ class AuthNavigation {
   }
 
   static Future<void> openEmployeeShell(BuildContext context) async {
-    await AuthService().setActiveDashboard(ActiveDashboard.employee);
+    await ShellRoutePersistence.markEmployeeShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/employeeDashboard',
@@ -138,6 +155,7 @@ class AuthNavigation {
   }
 
   static Future<void> openDashboardChooser(BuildContext context) async {
+    if (!await AdminAccessGuard.ensureAccess(context)) return;
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => const DashboardChooserScreen()),

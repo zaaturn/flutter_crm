@@ -14,6 +14,7 @@ import 'package:my_app/admin_dashboard/widget/device_specific/admin_client_summa
 import 'package:my_app/admin_dashboard/cubit/client_dashboard_summary_cubit.dart';
 import 'package:my_app/admin_dashboard/repository/client_dashboard_summary_repository.dart';
 import 'package:my_app/core/keyboard/keyboard_navigation.dart';
+import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
@@ -79,6 +80,7 @@ class _AdminDashboardDesktopViewState
   @override
   void initState() {
     super.initState();
+    unawaited(ShellRoutePersistence.markAdminShell());
     _clientSummaryCubit = ClientDashboardSummaryCubit(
       ClientDashboardSummaryRepository(),
     )..initialize();

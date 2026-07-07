@@ -25,6 +25,7 @@ import 'package:my_app/event_management/features/calendar/presentation/screen/ca
 
 
 import 'package:my_app/core/layout/adaptive_layout.dart';
+import 'package:my_app/core/auth/admin_access_guard.dart';
 import 'package:my_app/core/router/startup_gate.dart';
 
 import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
@@ -85,16 +86,20 @@ class AppRouter {
     // =====================
       case '/adminDashboard':
         return MaterialPageRoute(
-          builder: (_) => AdaptiveLayout(
-            mobile: const AdminDashboardMobile(),
-            tablet: const AdminDashboardMobile(),
-            webDesktop: const AdminDashboardDesktop(),
+          builder: (_) => const AdminRouteGuard(
+            child: AdaptiveLayout(
+              mobile: AdminDashboardMobile(),
+              tablet: AdminDashboardMobile(),
+              webDesktop: AdminDashboardDesktop(),
+            ),
           ),
         );
 
       case '/dashboardChooser':
         return MaterialPageRoute(
-          builder: (_) => const DashboardChooserScreen(),
+          builder: (_) => const AdminRouteGuard(
+            child: DashboardChooserScreen(),
+          ),
         );
 
       case '/superadmin':

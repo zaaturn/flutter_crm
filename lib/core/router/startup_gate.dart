@@ -5,6 +5,8 @@ import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/auth/jwt_utils.dart';
+import 'package:my_app/core/auth/admin_access_guard.dart';
+import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
@@ -17,7 +19,6 @@ class StartupGate extends StatefulWidget {
 }
 
 class _StartupGateState extends State<StartupGate> {
-
   @override
   void initState() {
     super.initState();
@@ -44,21 +45,101 @@ class _StartupGateState extends State<StartupGate> {
     );
   }
 
+  void _goEmployee() {
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      ShellRoutePersistence.employee,
+      (route) => false,
+    );
+  }
+
+  void _goAdmin() {
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      ShellRoutePersistence.admin,
+      (route) => false,
+    );
+  }
+
+  void _goChooser() {
+    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+      '/dashboardChooser',
+      (route) => false,
+    );
+  }
+
+  Future<void> _routeToShell({
+    required AuthSession? session,
+    required bool legacySuperuser,
+    required String role,
+    required String? activeDashboardRaw,
+    required String? lastShellRoute,
+  }) async {
+    final canAccessAdmin = AdminAccessGuard.allows(
+      session: session,
+      role: role,
+      legacySuperuser: legacySuperuser,
+    );
+    final active = ActiveDashboardStorage.fromString(activeDashboardRaw);
+
+    // Restore the last shell the user was actually viewing.
+    if (lastShellRoute == ShellRoutePersistence.employee) {
+      await ShellRoutePersistence.markEmployeeShell();
+      if (!mounted) return;
+      _goEmployee();
+      return;
+    }
+
+    if (lastShellRoute == ShellRoutePersistence.admin && canAccessAdmin) {
+      await ShellRoutePersistence.markAdminShell();
+      if (!mounted) return;
+      _goAdmin();
+      return;
+    }
+
+    if (canAccessAdmin) {
+      final dash = active ?? ActiveDashboard.admin;
+      if (dash == ActiveDashboard.employee) {
+        await ShellRoutePersistence.markEmployeeShell();
+        if (!mounted) return;
+        _goEmployee();
+        return;
+      }
+      if (dash == ActiveDashboard.admin) {
+        await ShellRoutePersistence.markAdminShell();
+        if (!mounted) return;
+        _goAdmin();
+        return;
+      }
+      if (!mounted) return;
+      _goChooser();
+      return;
+    }
+
+    await ShellRoutePersistence.markEmployeeShell();
+    if (!mounted) return;
+    _goEmployee();
+  }
+
   Future<void> _checkAuth() async {
     final storage = SecureStorageService();
 
     String? token;
     String? activeDashboardRaw;
+    String? lastShellRoute;
 
     try {
       token = await storage.readToken().timeout(_storageTimeout);
-      activeDashboardRaw = await storage.readActiveDashboard().timeout(_storageTimeout);
+      activeDashboardRaw =
+          await storage.readActiveDashboard().timeout(_storageTimeout);
+      lastShellRoute =
+          await storage.readLastShellRoute().timeout(_storageTimeout);
     } on TimeoutException {
       token = null;
       activeDashboardRaw = null;
+      lastShellRoute = null;
     } catch (_) {
       token = null;
       activeDashboardRaw = null;
+      lastShellRoute = null;
     }
 
     final accessExpired =
@@ -119,44 +200,12 @@ class _StartupGateState extends State<StartupGate> {
         session?.isSuperuser == true || (session == null && legacySuperuser);
     final role = (session?.role ?? roleStr ?? 'employee').toLowerCase();
 
-    if (isSuperuser) {
-      await AuthService().setActiveDashboard(ActiveDashboard.admin);
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-        '/adminDashboard',
-        (route) => false,
-      );
-      return;
-    }
-
-    if (role == 'admin') {
-      final active = ActiveDashboardStorage.fromString(activeDashboardRaw);
-      if (active == null) {
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/dashboardChooser',
-          (route) => false,
-        );
-        return;
-      }
-      if (active == ActiveDashboard.admin) {
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/adminDashboard',
-          (route) => false,
-        );
-      } else {
-        await AuthService().setActiveDashboard(ActiveDashboard.employee);
-        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-          '/employeeDashboard',
-          (route) => false,
-        );
-      }
-      return;
-    }
-
-    await AuthService().setActiveDashboard(ActiveDashboard.employee);
-    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-      '/employeeDashboard',
-      (route) => false,
+    await _routeToShell(
+      session: session,
+      legacySuperuser: isSuperuser && session == null,
+      role: role,
+      activeDashboardRaw: activeDashboardRaw,
+      lastShellRoute: lastShellRoute,
     );
   }
 

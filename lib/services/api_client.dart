@@ -7,7 +7,6 @@ import 'secure_storage_service.dart';
 import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/auth/jwt_utils.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
-import 'package:my_app/core/scaffold_messenger_scope.dart';
 
 class ApiClient {
 
@@ -286,8 +285,7 @@ class ApiClient {
                 ),
               );
             } catch (e) {
-              if (e is DioException &&
-                  (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
+              if (e is DioException && e.response?.statusCode == 401) {
                 await _handleSessionExpired();
               }
               return handler.reject(
@@ -297,18 +295,6 @@ class ApiClient {
                   response: error.response,
                 ),
               );
-            }
-          }
-          if (statusCode == 403) {
-            final msg = rootScaffoldMessengerKey.currentState;
-            if (msg != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                msg.showSnackBar(
-                  const SnackBar(
-                    content: Text('No access to this module'),
-                  ),
-                );
-              });
             }
           }
           handler.next(error);
@@ -354,7 +340,7 @@ class ApiClient {
       return newAccess;
     } on DioException catch (e) {
       final code = e.response?.statusCode;
-      if (code == 401 || code == 403) {
+      if (code == 401) {
         return null;
       }
       rethrow;
@@ -410,7 +396,7 @@ class ApiClient {
     } catch (e) {
       if (redirectOnFailure && e is DioException) {
         final code = e.response?.statusCode;
-        if (code == 401 || code == 403) {
+        if (code == 401) {
           await _handleSessionExpired();
         }
       }

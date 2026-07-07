@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/core/ui/adaptive_layout.dart';
-import 'package:my_app/auth/auth_session.dart';
-import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/main.dart' show navigatorKey;
 
 // SCREEN IMPORTS
@@ -45,7 +44,7 @@ class EmployeeDashboardNavigator {
   /// and leave `_history` empty after `pushAndRemoveUntil`).
   static void _switchTab(BuildContext context, Widget screen) {
     _safeCloseDrawer(context);
-    unawaited(AuthService().setActiveDashboard(ActiveDashboard.employee));
+    unawaited(ShellRoutePersistence.markEmployeeShell());
 
     void push(NavigatorState nav) {
       if (!nav.mounted) return;
