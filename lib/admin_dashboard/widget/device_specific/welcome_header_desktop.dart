@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/sidebar/device_specific/workspace_switcher_desktop.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 
@@ -11,11 +14,13 @@ class ModernDashboardHeader extends StatelessWidget {
   final String adminName;
   final BuildContext parentContext;
   final bool showWorkspaceSwitcher;
+  final VoidCallback onProfileClick;
 
   const ModernDashboardHeader({
     super.key,
     required this.adminName,
     required this.parentContext,
+    required this.onProfileClick,
     this.showWorkspaceSwitcher = false,
   });
 
@@ -42,56 +47,64 @@ class ModernDashboardHeader extends StatelessWidget {
           ],
           _NotificationBell(),
           const SizedBox(width: 12),
-          _ProfileChip(name: adminName),
+          _ProfileAvatar(
+            fallbackName: adminName,
+            onTap: onProfileClick,
+          ),
         ],
       ),
     );
   }
 }
 
-class _ProfileChip extends StatelessWidget {
-  final String name;
+class _ProfileAvatar extends StatelessWidget {
+  final String fallbackName;
+  final VoidCallback onTap;
 
-  const _ProfileChip({required this.name});
+  const _ProfileAvatar({
+    required this.fallbackName,
+    required this.onTap,
+  });
+
+  String _initials(String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return 'U';
+    final words =
+        trimmed.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    if (trimmed.length >= 2) return trimmed.substring(0, 2).toUpperCase();
+    return trimmed[0].toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: () {},
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 17,
-            backgroundColor: AdminDashboardTheme.tealLight,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                color: AdminDashboardTheme.tealDark,
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-              ),
-            ),
+    return BlocBuilder<EmployeeBloc, EmployeeState>(
+      builder: (context, state) {
+        final employee = state.employee;
+        return Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: employee != null
+                ? EmployeeAvatar.fromProfile(
+                    employee,
+                    size: 42,
+                    border: Border.all(color: AdminDashboardTheme.border),
+                  )
+                : EmployeeAvatar(
+                    initials: _initials(fallbackName),
+                    size: 42,
+                    backgroundColor: AdminDashboardTheme.tealLight,
+                    foregroundColor: AdminDashboardTheme.tealDark,
+                    border: Border.all(color: AdminDashboardTheme.border),
+                  ),
           ),
-          const SizedBox(width: 10),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 160),
-            child: Text(
-              name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AdminDashboardTheme.profileName(),
-            ),
-          ),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 20,
-            color: AdminDashboardTheme.textMuted,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

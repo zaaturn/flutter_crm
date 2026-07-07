@@ -14,6 +14,9 @@ import 'package:my_app/admin_dashboard/widget/device_specific/admin_client_summa
 import 'package:my_app/admin_dashboard/cubit/client_dashboard_summary_cubit.dart';
 import 'package:my_app/admin_dashboard/repository/client_dashboard_summary_repository.dart';
 import 'package:my_app/core/keyboard/keyboard_navigation.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
+import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
 
 class AdminDashboardDesktop extends StatelessWidget {
   const AdminDashboardDesktop({super.key});
@@ -47,6 +50,11 @@ class _AdminDashboardDesktopViewState
   final FocusNode _sidebarFocusNode = FocusNode(debugLabel: 'AdminSidebarFocus');
   final FocusNode _contentFocusNode = FocusNode(debugLabel: 'AdminContentFocus');
   late final ClientDashboardSummaryCubit _clientSummaryCubit;
+  bool _showProfilePanel = false;
+
+  void _toggleProfilePanel() {
+    setState(() => _showProfilePanel = !_showProfilePanel);
+  }
 
   static const _gap = AdminDashboardTheme.panelGap;
   static const _splitPanelHeight = 380.0;
@@ -82,6 +90,7 @@ class _AdminDashboardDesktopViewState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _sidebarFocusNode.requestFocus();
     });
+    context.read<EmployeeBloc>().add(RefreshEmployeeProfile());
   }
 
   @override
@@ -105,106 +114,143 @@ class _AdminDashboardDesktopViewState
         _syncScrollPosition();
       },
       builder: (context, state) {
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Stack(
           children: [
-            AdminDashboardPanel(
-              margin: const EdgeInsets.only(right: _gap),
-              width: AdminDashboardTheme.railWidth,
-              child: DashboardSidebarFocusScope(
-                focusNode: _sidebarFocusNode,
-                onMoveToContent: () => _contentFocusNode.requestFocus(),
-                child: DesktopSidebar(
-                  parentContext: context,
-                  userName: state.username ?? 'Admin',
-                  userRole: state.role ?? 'Super Admin',
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ModernDashboardHeader(
-                      adminName: state.username ?? 'Admin',
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AdminDashboardPanel(
+                  margin: const EdgeInsets.only(right: _gap),
+                  width: AdminDashboardTheme.railWidth,
+                  child: DashboardSidebarFocusScope(
+                    focusNode: _sidebarFocusNode,
+                    onMoveToContent: () => _contentFocusNode.requestFocus(),
+                    child: DesktopSidebar(
                       parentContext: context,
-                      showWorkspaceSwitcher:
-                          state.role?.toLowerCase() == 'admin',
+                      userName: state.username ?? 'Admin',
+                      userRole: state.role ?? 'Super Admin',
                     ),
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          KeyboardScrollRegion(
-                            scrollController: _scrollController,
-                            focusNode: _contentFocusNode,
-                            onMoveToPreviousRegion: () =>
-                                _sidebarFocusNode.requestFocus(),
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              primary: false,
-                              physics: const ClampingScrollPhysics(
-                                parent: AlwaysScrollableScrollPhysics(),
-                              ),
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  AdminDashboardOverviewSection(state: state),
-                                  const SizedBox(height: 40),
-                                  SizedBox(
-                                    height: _splitPanelHeight,
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Expanded(
-                                          child: AdminDashboardPanel(
-                                            child: DesktopEmployeeSection(
-                                              employees: state.liveEmployees,
-                                              totalEmployeeCount:
-                                                  state.totalEmployeeCount,
-                                              flat: true,
-                                              compact: true,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: _gap),
-                                        Expanded(
-                                          child: AdminDashboardPanel(
-                                            child: BlocProvider.value(
-                                              value: _clientSummaryCubit,
-                                              child:
-                                                  const AdminClientSummaryPanel(),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ModernDashboardHeader(
+                          adminName: state.username ?? 'Admin',
+                          parentContext: context,
+                          onProfileClick: _toggleProfilePanel,
+                          showWorkspaceSwitcher:
+                              state.role?.toLowerCase() == 'admin',
+                        ),
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              KeyboardScrollRegion(
+                                scrollController: _scrollController,
+                                focusNode: _contentFocusNode,
+                                onMoveToPreviousRegion: () =>
+                                    _sidebarFocusNode.requestFocus(),
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  primary: false,
+                                  physics: const ClampingScrollPhysics(
+                                    parent: AlwaysScrollableScrollPhysics(),
                                   ),
-                                  const SizedBox(height: _gap),
-                                ],
-                              ),
-                            ),
-                          ),
-                          if (_initialLoad(state))
-                            Positioned.fill(
-                              child: ColoredBox(
-                                color: AdminDashboardTheme.shellMint
-                                    .withValues(alpha: 0.92),
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: AdminDashboardTheme.teal,
+                                  padding: const EdgeInsets.only(top: 12),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      AdminDashboardOverviewSection(state: state),
+                                      const SizedBox(height: 40),
+                                      SizedBox(
+                                        height: _splitPanelHeight,
+                                        child: Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Expanded(
+                                              child: AdminDashboardPanel(
+                                                child: DesktopEmployeeSection(
+                                                  employees: state.liveEmployees,
+                                                  totalEmployeeCount:
+                                                      state.totalEmployeeCount,
+                                                  flat: true,
+                                                  compact: true,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: _gap),
+                                            Expanded(
+                                              child: AdminDashboardPanel(
+                                                child: BlocProvider.value(
+                                                  value: _clientSummaryCubit,
+                                                  child:
+                                                      const AdminClientSummaryPanel(),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: _gap),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
+                              if (_initialLoad(state))
+                                Positioned.fill(
+                                  child: ColoredBox(
+                                    color: AdminDashboardTheme.shellMint
+                                        .withValues(alpha: 0.92),
+                                    child: const Center(
+                                      child: CircularProgressIndicator(
+                                        color: AdminDashboardTheme.teal,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_showProfilePanel)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _toggleProfilePanel,
+                  behavior: HitTestBehavior.opaque,
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.35),
+                  ),
+                ),
+              ),
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutQuart,
+              right: _showProfilePanel ? 0 : -420,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: 420,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 40,
+                      offset: const Offset(-10, 0),
                     ),
                   ],
                 ),
+                child: const ProfileScreenDesktop(),
               ),
             ),
           ],
