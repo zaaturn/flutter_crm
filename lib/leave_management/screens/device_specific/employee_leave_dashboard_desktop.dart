@@ -46,6 +46,7 @@ class _EmployeeLeaveDashboardScreenState
           const EmployeeDashboardV2TopNav(
             selectedIndex: 3,
             onProfileClick: _noop,
+            showLogout: false,
           ),
           Expanded(
             child: BlocBuilder<LeaveBloc, LeaveState>(

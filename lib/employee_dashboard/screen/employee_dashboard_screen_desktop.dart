@@ -18,10 +18,7 @@ import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_das
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 
-import 'package:my_app/screens/welcome_screen.dart';
 import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
-import 'package:my_app/services/secure_storage_service.dart';
-import 'package:my_app/services/api_client.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 
@@ -76,17 +73,6 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     super.dispose();
   }
 
-  Future<void> _logout() async {
-    await ApiClient().logout();
-    await SecureStorageService().clearAll();
-    _employeeBloc.add(StopTaskPolling());
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomePage()),
-      (_) => false,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,7 +83,6 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
             children: [
               EmployeeDashboardV2TopNav(
                 onProfileClick: _toggleProfilePanel,
-                onLogout: _logout,
               ),
               Expanded(
                 child: BlocBuilder<EmployeeBloc, EmployeeState>(

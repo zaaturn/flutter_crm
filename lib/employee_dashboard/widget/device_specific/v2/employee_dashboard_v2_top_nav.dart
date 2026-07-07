@@ -12,18 +12,19 @@ import 'package:my_app/event_management/features/notification/presentation/bloc/
 import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
 
 import 'employee_dashboard_v2_theme.dart';
+import 'employee_desktop_logout.dart';
 import 'employee_workspace_access.dart';
 import 'employee_workspace_switch_button.dart';
 
 class EmployeeDashboardV2TopNav extends StatefulWidget {
   final VoidCallback onProfileClick;
-  final VoidCallback? onLogout;
+  final bool showLogout;
   final int selectedIndex;
 
   const EmployeeDashboardV2TopNav({
     super.key,
     required this.onProfileClick,
-    this.onLogout,
+    this.showLogout = true,
     this.selectedIndex = 0,
   });
 
@@ -215,51 +216,12 @@ class _EmployeeDashboardV2TopNavState extends State<EmployeeDashboardV2TopNav> {
           EmployeeWorkspaceSwitchButton(parentContext: context),
           const SizedBox(width: 12),
         ],
-        BlocBuilder<NotificationBloc, NotificationState>(
-          builder: (context, state) {
-            final unread = state.unreadCount;
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationScreenDesktop(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.notifications_outlined),
-                  color: EmployeeDashboardV2Theme.textBody,
-                ),
-                if (unread > 0)
-                  Positioned(
-                    right: 8,
-                    top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: EmployeeDashboardV2Theme.green,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                      child: Text(
-                        unread > 9 ? '9+' : '$unread',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(width: 4),
+        const _EmployeeNotificationBell(),
+        if (widget.showLogout) ...[
+          const SizedBox(width: 8),
+          _LogoutButton(onPressed: _confirmLogout),
+        ],
+        const SizedBox(width: 8),
         BlocBuilder<EmployeeBloc, EmployeeState>(
           builder: (context, state) {
             final employee = state.employee;
@@ -283,6 +245,108 @@ class _EmployeeDashboardV2TopNavState extends State<EmployeeDashboardV2TopNav> {
           },
         ),
       ],
+    );
+  }
+
+  Future<void> _confirmLogout() async {
+    await confirmEmployeeDesktopLogout(context);
+  }
+}
+
+class _EmployeeNotificationBell extends StatelessWidget {
+  const _EmployeeNotificationBell();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<NotificationBloc, NotificationState>(
+      builder: (context, state) {
+        final unread = state.unreadCount;
+        return Material(
+          color: EmployeeDashboardV2Theme.surfaceAlt,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationScreenDesktop(),
+                ),
+              );
+            },
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 22,
+                    color: EmployeeDashboardV2Theme.textDark,
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: 7,
+                      top: 7,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: EmployeeDashboardV2Theme.green,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          unread > 9 ? '9+' : '$unread',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Logout',
+      child: Material(
+        color: EmployeeDashboardV2Theme.surfaceAlt,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onPressed,
+          child: const SizedBox(
+            width: 42,
+            height: 42,
+            child: Icon(
+              Icons.logout_rounded,
+              size: 22,
+              color: Color(0xFFE11D48),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
