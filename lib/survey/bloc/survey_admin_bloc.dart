@@ -43,6 +43,7 @@ class SurveyAdminBloc extends Bloc<SurveyAdminEvent, SurveyAdminState> {
     Emitter<SurveyAdminState> emit,
   ) async {
     emit(state.copyWith(
+      clearFilter: event.status == null,
       filter: event.status,
       status: SurveyAdminLoadStatus.loading,
       clearError: true,

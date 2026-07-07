@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 
 class StatsBar extends StatelessWidget {
   const StatsBar({
@@ -9,8 +10,6 @@ class StatsBar extends StatelessWidget {
 
   final List<TaskModel> tasks;
 
-  static const _surface = Colors.white;
-  static const _border = Color(0xFFE2E8F0);
   static const _textSecondary = Color(0xFF64748B);
   static const _pending = Color(0xFFF59E0B);
   static const _inprogress = Color(0xFF6366F1);
@@ -39,10 +38,7 @@ class StatsBar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: const BoxDecoration(
-        color: _surface,
-        border: Border(bottom: BorderSide(color: _border)),
-      ),
+      decoration: const BoxDecoration(color: EmployeeDashboardV2Theme.shell),
       child: Row(
         children: [
           _StatCard(
@@ -87,13 +83,15 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = color.withValues(alpha: 0.12);
+    final border = color.withValues(alpha: 0.25);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: border),
         ),
         child: Row(
           children: [

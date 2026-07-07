@@ -14,7 +14,12 @@ class LoadLeaveTypes extends LeaveEvent {
 }
 
 class LoadLeaveBalances extends LeaveEvent {
-  const LoadLeaveBalances();
+  final int? year;
+
+  const LoadLeaveBalances({this.year});
+
+  @override
+  List<Object?> get props => [year];
 }
 
 class LoadMyLeaves extends LeaveEvent {

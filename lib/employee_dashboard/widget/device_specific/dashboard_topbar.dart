@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/desktop/notification_screen_desktop.dart';
-import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 
 class DashboardTopBar extends StatelessWidget {
   final VoidCallback onProfileClick;
@@ -108,7 +108,7 @@ class DashboardTopBar extends StatelessWidget {
   Widget _buildDynamicProfile() {
     return BlocBuilder<EmployeeBloc, EmployeeState>(
       builder: (context, state) {
-        final initials = state.employee?.avatarInitials ?? 'U';
+        final employee = state.employee;
 
         return InkWell(
           onTap: onProfileClick,
@@ -122,32 +122,21 @@ class DashboardTopBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: _purple,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _purple.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                employee != null
+                    ? EmployeeAvatar.fromProfile(
+                        employee,
+                        size: 36,
+                        borderRadius: BorderRadius.circular(10),
+                        backgroundColor: _purple,
+                        foregroundColor: Colors.white,
                       )
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12,
-                        letterSpacing: 0.5,
+                    : EmployeeAvatar(
+                        initials: 'U',
+                        size: 36,
+                        borderRadius: BorderRadius.circular(10),
+                        backgroundColor: _purple,
+                        foregroundColor: Colors.white,
                       ),
-                    ),
-                  ),
-                ),
                 const Padding(
                   padding: EdgeInsets.only(left: 8, right: 4),
                   child: Icon(Icons.expand_more_rounded, color: _purple, size: 20),

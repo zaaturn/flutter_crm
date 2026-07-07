@@ -6,6 +6,7 @@ import 'package:cross_file/cross_file.dart';
 
 import 'api_client.dart';
 import 'secure_storage_service.dart';
+import 'package:my_app/employee_dashboard/model/employee_profile.dart';
 import 'package:my_app/tasks/task_status_utils.dart';
 
 /* ================================
@@ -20,6 +21,20 @@ class AttendanceService {
 
   Future<Map<String, dynamic>> getTodayStatus() async {
     return await _api.get("$_base/attendance/today/");
+  }
+
+  /// Current ISO week punch history for the signed-in employee.
+  Future<Map<String, dynamic>> getWeeklyActivity({
+    int? year,
+    int? week,
+  }) async {
+    final q = <String, dynamic>{};
+    if (year != null) q['year'] = year;
+    if (week != null) q['week'] = week;
+    return await _api.get(
+      "$_base/attendance/weekly/",
+      queryParameters: q.isEmpty ? null : q,
+    );
   }
 
   Future<Map<String, dynamic>> checkIn() async {
@@ -99,15 +114,36 @@ class ProfileService {
 
   String get baseUrl => _api.baseEmployee;
 
-  Future<Map<String, dynamic>> getProfile() async {
-    return await _api.get("$baseUrl/profile/");
+  Future<EmployeeProfile> fetchMyProfile() async {
+    final data = await _api.get("$baseUrl/profile/");
+    return EmployeeProfile.fromJson(Map<String, dynamic>.from(data));
   }
 
-  /// -------------------------------
-  /// UPLOAD PROFILE PHOTO
-  /// -------------------------------
+  Future<EmployeeProfile> updateMyProfile(Map<String, dynamic> body) async {
+    final data = await _api.patch("$baseUrl/profile/", body: body);
+    return EmployeeProfile.fromJson(Map<String, dynamic>.from(data));
+  }
 
-  Future<Map<String, dynamic>> uploadProfilePhoto(XFile file) async {
+  Future<EmployeeProfile> fetchEmployeeProfile(int userId) async {
+    final data = await _api.get("$baseUrl/profile/$userId/");
+    return EmployeeProfile.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  /// Legacy — returns raw JSON map.
+  Future<Map<String, dynamic>> getProfile() async {
+    final data = await _api.get("$baseUrl/profile/");
+    return Map<String, dynamic>.from(data);
+  }
+
+  Future<String> uploadProfilePhoto(XFile file) async {
+    final result = await _uploadProfilePhotoRaw(file);
+    return result['profile_photo']?.toString() ?? '';
+  }
+
+  Future<Map<String, dynamic>> uploadProfilePhotoMap(XFile file) =>
+      _uploadProfilePhotoRaw(file);
+
+  Future<Map<String, dynamic>> _uploadProfilePhotoRaw(XFile file) async {
     final token = await _storage.readToken();
     if (token == null || token.isEmpty) {
       throw ApiException(401, "User is logged out");

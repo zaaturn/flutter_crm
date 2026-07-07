@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
+import 'package:cross_file/cross_file.dart';
+
 import '../model/attendance_model.dart';
+import '../model/weekly_activity_model.dart';
+import 'package:my_app/analytics/utils/iso_week.dart';
 import '../model/task_model.dart';
 import '../model/shared_item_model.dart';
 import '../model/event_model.dart';
@@ -27,10 +31,15 @@ class EmployeeRepository {
   // EMPLOYEE PROFILE
   // ----------------------------
   Future<EmployeeModel> fetchEmployeeProfile() async {
-    final data = await _profileService.getProfile();
-    return EmployeeModel.fromJson(
-      Map<String, dynamic>.from(data),
-    );
+    return _profileService.fetchMyProfile();
+  }
+
+  Future<EmployeeModel> updateEmployeeProfile(Map<String, dynamic> body) async {
+    return _profileService.updateMyProfile(body);
+  }
+
+  Future<String> uploadProfilePhoto(XFile file) async {
+    return _profileService.uploadProfilePhoto(file);
   }
 
   // ----------------------------
@@ -41,6 +50,19 @@ class EmployeeRepository {
     return AttendanceModel.fromMap(
       Map<String, dynamic>.from(data),
     );
+  }
+
+  Future<WeeklyActivityModel> fetchWeeklyActivity() async {
+    final iso = IsoWeek.current();
+    try {
+      final data = await _attendanceService.getWeeklyActivity(
+        year: iso.year,
+        week: iso.week,
+      );
+      return WeeklyActivityModel.fromJson(Map<String, dynamic>.from(data));
+    } catch (_) {
+      return WeeklyActivityModel.forCalendarWeek();
+    }
   }
 
   Future<AttendanceModel> toggleCheckIn() async {

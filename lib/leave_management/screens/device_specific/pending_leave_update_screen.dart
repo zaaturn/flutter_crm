@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/models/leave_request.dart';
 import 'package:my_app/leave_management/models/leave_type.dart';
+import 'package:my_app/leave_management/screens/device_specific/employee_leave_v2_widgets.dart';
+
 import 'pending_edit_leave_loader.dart';
 
 class PendingLeaveUpdateScreen extends StatefulWidget {
@@ -30,13 +35,13 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
   static (Color bg, Color fg) _statusColors(String status) {
     switch (status.toUpperCase()) {
       case 'APPROVED':
-        return (Colors.green.shade50, Colors.green.shade800);
+        return (EmployeeDashboardV2Theme.greenLight, EmployeeDashboardV2Theme.greenMid);
       case 'REJECTED':
-        return (Colors.red.shade50, Colors.red.shade800);
+        return (const Color(0xFFFEE2E2), const Color(0xFFDC2626));
       case 'CANCELLED':
-        return (Colors.grey.shade200, Colors.grey.shade700);
+        return (EmployeeDashboardV2Theme.slateBg, EmployeeDashboardV2Theme.textMuted);
       default:
-        return (Colors.amber.shade50, Colors.amber.shade800);
+        return (EmployeeDashboardV2Theme.amberBg, const Color(0xFFD97706));
     }
   }
 
@@ -51,75 +56,50 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        centerTitle: false,
-        title: const Text(
-          'My leaves',
-          style: TextStyle(
-            color: Color(0xFF0F172A),
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF64748B), size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+      backgroundColor: EmployeeDashboardV2Theme.shell,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            const SizedBox(height: 32),
+            const LeaveV2TopBar(title: 'Pending Leaves'),
             Expanded(
-              child: BlocListener<LeaveBloc, LeaveState>(
-                listenWhen: (prev, current) => current is LeaveTypesLoaded,
-                listener: (context, state) {
-                  if (state is LeaveTypesLoaded) {
-                    setState(() => cachedLeaveTypes = state.leaveTypes);
-                  }
-                },
-                child: _buildModernTable(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: EmployeeDashboardV2Theme.maxContentWidth,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const LeaveV2PageTitle(
+                          title: 'Your requests',
+                          subtitle:
+                              'Edit is only available while status is PENDING.',
+                        ),
+                        const SizedBox(height: 24),
+                        Expanded(
+                          child: BlocListener<LeaveBloc, LeaveState>(
+                            listenWhen: (prev, current) =>
+                                current is LeaveTypesLoaded,
+                            listener: (context, state) {
+                              if (state is LeaveTypesLoaded) {
+                                setState(
+                                    () => cachedLeaveTypes = state.leaveTypes);
+                              }
+                            },
+                            child: _buildModernTable(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your requests',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF1E293B),
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          'Edit is only available while status is PENDING.',
-          style: TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 15,
-            letterSpacing: 0.3,
-          ),
-        ),
-      ],
     );
   }
 
@@ -133,7 +113,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
         if (state is MyLeavesLoading) {
           return const Center(
             child: CircularProgressIndicator(
-              color: Color(0xFF2563EB),
+              color: EmployeeDashboardV2Theme.green,
               strokeWidth: 3,
             ),
           );
@@ -145,28 +125,20 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
 
           if (leaves.isEmpty) return _buildEmptyState();
 
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
+          return LeaveV2ContentCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 16,
+                  ),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF8FAFC),
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(16)),
+                    color: EmployeeDashboardV2Theme.cardMuted,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(EmployeeDashboardV2Theme.cardRadius),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -181,9 +153,12 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
                 Expanded(
                   child: ListView.separated(
                     itemCount: leaves.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                    itemBuilder: (context, index) => _buildRow(leaves[index]),
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 1,
+                      color: EmployeeDashboardV2Theme.rowBorder,
+                    ),
+                    itemBuilder: (context, index) =>
+                        _buildRow(leaves[index]),
                   ),
                 ),
               ],
@@ -193,7 +168,7 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
 
         return const Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF2563EB),
+            color: EmployeeDashboardV2Theme.green,
             strokeWidth: 3,
           ),
         );
@@ -206,11 +181,11 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       flex: flex,
       child: Text(
         text,
-        style: const TextStyle(
+        style: GoogleFonts.plusJakartaSans(
           fontWeight: FontWeight.w700,
-          fontSize: 12,
-          color: Color(0xFF64748B),
-          letterSpacing: 1.1,
+          fontSize: 11,
+          color: EmployeeDashboardV2Theme.textMuted,
+          letterSpacing: 1.0,
         ),
       ),
     );
@@ -230,9 +205,9 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
             flex: 2,
             child: Text(
               leave.displayLeaveType,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1E293B),
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w700,
+                color: EmployeeDashboardV2Theme.textDark,
               ),
             ),
           ),
@@ -240,15 +215,18 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
             flex: 1,
             child: _badge(
               _durationLabel(leave),
-              Colors.blue.shade50,
-              Colors.blue.shade700,
+              const Color(0xFFEFF6FF),
+              const Color(0xFF2563EB),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               range,
-              style: const TextStyle(color: Color(0xFF64748B)),
+              style: GoogleFonts.plusJakartaSans(
+                color: EmployeeDashboardV2Theme.textBody,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           Expanded(
@@ -263,28 +241,27 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
                   ? TextButton(
                       onPressed: () => _openEditDialog(leave),
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundColor: EmployeeDashboardV2Theme.greenLight,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Edit',
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          color: Color(0xFF2563EB),
+                          color: EmployeeDashboardV2Theme.greenMid,
                         ),
                       ),
                     )
                   : Tooltip(
-                      message:
-                          'Only PENDING requests can be edited.',
+                      message: 'Only PENDING requests can be edited.',
                       child: IconButton(
                         onPressed: null,
                         icon: Icon(
                           Icons.edit_outlined,
-                          color: Colors.grey.shade400,
+                          color: EmployeeDashboardV2Theme.textMuted,
                           size: 22,
                         ),
                       ),
@@ -307,9 +284,9 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
         ),
         child: Text(
           text,
-          style: TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             color: textCol,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             fontSize: 11,
           ),
         ),
@@ -373,26 +350,32 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Edit leave',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.w800,
+                  color: EmployeeDashboardV2Theme.textDark,
                 ),
               ),
               Text(
                 'Resubmit updates your PENDING request.',
-                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
               ),
             ],
           ),
           IconButton(
             onPressed: () => Navigator.pop(ctx),
-            icon: const Icon(Icons.close_rounded, color: Color(0xFF94A3B8)),
+            icon: const Icon(
+              Icons.close_rounded,
+              color: EmployeeDashboardV2Theme.textMuted,
+            ),
           ),
         ],
       ),
@@ -404,19 +387,25 @@ class _PendingLeaveUpdateScreenState extends State<PendingLeaveUpdateScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.event_busy_rounded, size: 80, color: Colors.grey[200]),
+          Icon(
+            Icons.event_busy_rounded,
+            size: 80,
+            color: EmployeeDashboardV2Theme.textMuted.withValues(alpha: 0.35),
+          ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'No leave requests',
-            style: TextStyle(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w800,
+              color: EmployeeDashboardV2Theme.textDark,
             ),
           ),
           Text(
-            'Nothing from GET /api/leaves/my-leaves/ yet.',
-            style: TextStyle(color: Colors.grey[500]),
+            'Your leave requests will appear here.',
+            style: GoogleFonts.plusJakartaSans(
+              color: EmployeeDashboardV2Theme.textMuted,
+            ),
           ),
         ],
       ),

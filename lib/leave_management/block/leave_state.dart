@@ -1,5 +1,5 @@
 import '../models/leave_type.dart';
-import '../models/leave_balance.dart';
+import '../models/leave_balance_response.dart';
 import '../models/leave_request.dart';
 
 /// Base state
@@ -36,8 +36,8 @@ class LeaveTypesLoaded extends LeaveState {
 }
 
 class LeaveBalancesLoaded extends LeaveState {
-  final List<LeaveBalance> balances;
-  LeaveBalancesLoaded(this.balances);
+  final LeaveBalanceResponse response;
+  LeaveBalancesLoaded(this.response);
 }
 
 class MyLeavesLoaded extends LeaveState {

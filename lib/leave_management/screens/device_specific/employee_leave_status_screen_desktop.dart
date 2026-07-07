@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-// Proper Package Imports
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/models/leave_request.dart';
+import 'package:my_app/leave_management/screens/device_specific/employee_leave_v2_widgets.dart';
 
 class EmployeeLeaveStatusScreenDesktop extends StatefulWidget {
   const EmployeeLeaveStatusScreenDesktop({super.key});
@@ -15,15 +17,9 @@ class EmployeeLeaveStatusScreenDesktop extends StatefulWidget {
       _EmployeeLeaveStatusScreenState();
 }
 
-class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreenDesktop> {
-  final ScrollController _scrollController = ScrollController();
+class _EmployeeLeaveStatusScreenState
+    extends State<EmployeeLeaveStatusScreenDesktop> {
   String? highlightedLeaveId;
-
-  // SaaS Desktop Design Tokens
-  static const Color _bgSlate = Color(0xFFF8FAFC);
-  static const Color _borderSlate = Color(0xFFE2E8F0);
-  static const Color _textMain = Color(0xFF0F172A);
-  static const Color _indigo = Color(0xFF6366F1);
 
   @override
   void initState() {
@@ -31,7 +27,8 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreenDes
     context.read<LeaveBloc>().add(const LoadMyLeaves());
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['leave_id'] != null) {
         setState(() => highlightedLeaveId = args['leave_id'].toString());
       }
@@ -39,139 +36,187 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreenDes
   }
 
   String _formatOnlyDate(DateTime? date) {
-    if (date == null) return "--";
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    if (date == null) return '--';
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isWide = MediaQuery.of(context).size.width > 900;
-
     return Scaffold(
-      backgroundColor: _bgSlate,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text("Leave History", style: TextStyle(color: _textMain, fontWeight: FontWeight.w800)),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: _borderSlate, height: 1),
-        ),
-      ),
-      body: BlocBuilder<LeaveBloc, LeaveState>(
-        builder: (context, state) {
-          if (state is MyLeavesLoading || state is LeaveInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      backgroundColor: EmployeeDashboardV2Theme.shell,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const LeaveV2TopBar(title: 'Leave Status'),
+            Expanded(
+              child: BlocBuilder<LeaveBloc, LeaveState>(
+                builder: (context, state) {
+                  if (state is MyLeavesLoading || state is LeaveInitial) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: EmployeeDashboardV2Theme.green,
+                      ),
+                    );
+                  }
 
+                  if (state is MyLeavesLoaded) {
+                    final approved = state.leaves
+                        .where((e) => e.status == 'APPROVED')
+                        .toList();
+                    final rejected = state.leaves
+                        .where((e) => e.status == 'REJECTED')
+                        .toList();
+                    final allLeaves = [...approved, ...rejected];
 
-          if (state is MyLeavesLoaded) {
-            final approved = state.leaves.where((e) => e.status == "APPROVED").toList();
-            final rejected = state.leaves.where((e) => e.status == "REJECTED").toList();
-            final allLeaves = [...approved, ...rejected];
+                    if (allLeaves.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-            if (allLeaves.isEmpty) return _buildEmptyState();
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(
+                            maxWidth: EmployeeDashboardV2Theme.maxContentWidth,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const LeaveV2PageTitle(
+                                title: 'Leave History',
+                                subtitle:
+                                    'Approved and rejected requests from your account.',
+                              ),
+                              const SizedBox(height: 28),
+                              _buildDesktopTable(allLeaves),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: isWide ? 60 : 20, vertical: 40),
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeaderStats(approved.length, rejected.length),
-                      const SizedBox(height: 32),
-                      _buildDesktopTable(allLeaves),
-                    ],
-                  ),
-                ),
+                  if (state is LeaveError) {
+                    return Center(child: Text(state.message));
+                  }
+                  return const SizedBox();
+                },
               ),
-            );
-          }
-
-          if (state is LeaveError) return Center(child: Text(state.message));
-          return const SizedBox();
-        },
-      ),
-    );
-  }
-
-  // ================= DESKTOP UI COMPONENTS =================
-
-  Widget _buildHeaderStats(int approved, int rejected) {
-    return Row(
-      children: [
-        _statCard("Approved", approved.toString(), const Color(0xFF10B981)),
-        const SizedBox(width: 20),
-        _statCard("Rejected", rejected.toString(), const Color(0xFFEF4444)),
-      ],
-    );
-  }
-
-  Widget _statCard(String label, String count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _borderSlate),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(radius: 4, backgroundColor: color),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
-          const SizedBox(width: 12),
-          Text(count, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: _textMain)),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildDesktopTable(List<LeaveRequest> leaves) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderSlate),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 20)],
-      ),
+    return LeaveV2ContentCard(
+      padding: EdgeInsets.zero,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(EmployeeDashboardV2Theme.cardRadius),
         child: DataTable(
-          headingRowColor: MaterialStateProperty.all(const Color(0xFFF1F5F9)),
+          headingRowColor: WidgetStateProperty.all(
+            EmployeeDashboardV2Theme.cardMuted,
+          ),
           dataRowHeight: 70,
           horizontalMargin: 24,
-          columns: const [
-            DataColumn(label: Text("DATES", style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text("DURATION", style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text("STATUS", style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text("REMARKS", style: TextStyle(fontWeight: FontWeight.bold))),
+          columns: [
+            DataColumn(
+              label: Text(
+                'DATES',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'DURATION',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'STATUS',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'REMARKS',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
+              ),
+            ),
           ],
           rows: leaves.map((leave) {
             final isHighlighted = leave.id.toString() == highlightedLeaveId;
+            final isApproved = leave.status == 'APPROVED';
             return DataRow(
               selected: isHighlighted,
-              color: isHighlighted ? MaterialStateProperty.all(_indigo.withOpacity(0.05)) : null,
+              color: isHighlighted
+                  ? WidgetStateProperty.all(
+                      EmployeeDashboardV2Theme.greenLight,
+                    )
+                  : null,
               cells: [
                 DataCell(
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_formatOnlyDate(leave.startDate), style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const Icon(Icons.arrow_right_alt, size: 16, color: Colors.grey),
-                      Text(_formatOnlyDate(leave.endDate), style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        _formatOnlyDate(leave.startDate),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: EmployeeDashboardV2Theme.textDark,
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_right_alt,
+                        size: 16,
+                        color: EmployeeDashboardV2Theme.textMuted,
+                      ),
+                      Text(
+                        _formatOnlyDate(leave.endDate),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: EmployeeDashboardV2Theme.textDark,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                DataCell(Text("${leave.endDate.difference(leave.startDate).inDays + 1} Days")),
-                DataCell(_statusBadge(leave.status == "APPROVED")),
                 DataCell(
                   Text(
-                    leave.status == "APPROVED" ? "Approved by Admin" : "Criteria not met",
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    '${leave.endDate.difference(leave.startDate).inDays + 1} Days',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: EmployeeDashboardV2Theme.textBody,
+                    ),
+                  ),
+                ),
+                DataCell(_statusBadge(isApproved)),
+                DataCell(
+                  Text(
+                    isApproved
+                        ? 'Approved by Admin'
+                        : 'Criteria not met',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: EmployeeDashboardV2Theme.textMuted,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -183,17 +228,24 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreenDes
   }
 
   Widget _statusBadge(bool isApproved) {
-    final color = isApproved ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final color = isApproved
+        ? EmployeeDashboardV2Theme.greenMid
+        : const Color(0xFFDC2626);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
-        isApproved ? "Approved" : "Rejected",
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.5),
+        isApproved ? 'Approved' : 'Rejected',
+        style: GoogleFonts.plusJakartaSans(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }
@@ -203,10 +255,26 @@ class _EmployeeLeaveStatusScreenState extends State<EmployeeLeaveStatusScreenDes
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.history_rounded, size: 80, color: _borderSlate),
+          Icon(
+            Icons.history_rounded,
+            size: 80,
+            color: EmployeeDashboardV2Theme.textMuted.withValues(alpha: 0.35),
+          ),
           const SizedBox(height: 16),
-          const Text("No processed applications", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textMain)),
-          const Text("Your leave history will appear here once reviewed.", style: TextStyle(color: Color(0xFF64748B))),
+          Text(
+            'No processed applications',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: EmployeeDashboardV2Theme.textDark,
+            ),
+          ),
+          Text(
+            'Your leave history will appear here once reviewed.',
+            style: GoogleFonts.plusJakartaSans(
+              color: EmployeeDashboardV2Theme.textMuted,
+            ),
+          ),
         ],
       ),
     );

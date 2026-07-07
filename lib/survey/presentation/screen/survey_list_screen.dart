@@ -8,6 +8,8 @@ import '../../bloc/survey_admin_event.dart';
 import '../../bloc/survey_admin_state.dart';
 import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
+import '../widgets/survey_admin_shell.dart';
+import '../widgets/survey_filter_rail.dart';
 import '../widgets/survey_delete_action.dart';
 import 'package:my_app/core/widgets/survey_icons.dart';
 import 'survey_builder_screen.dart';
@@ -18,56 +20,43 @@ class SurveyListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SurveyTheme.background,
-      body: BlocConsumer<SurveyAdminBloc, SurveyAdminState>(
-        listenWhen: (p, c) => c.error != null && c.error != p.error,
-        listener: (context, state) {
-          if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.error!)),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _StatusSidebar(
-                selected: state.filter,
-                onChanged: (s) => context
-                    .read<SurveyAdminBloc>()
-                    .add(SurveyAdminStatusFilterChanged(s)),
-                onCreate: () => _createSurvey(context),
-              ),
-              const VerticalDivider(width: 1, thickness: 1, color: SurveyTheme.divider),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _ListHeader(count: state.surveys.length),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: SurveyTheme.purple,
-                        onRefresh: () async {
-                          context.read<SurveyAdminBloc>().add(const SurveyAdminRefreshed());
-                        },
-                        child: _buildBody(context, state),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return BlocConsumer<SurveyAdminBloc, SurveyAdminState>(
+      listenWhen: (p, c) => c.error != null && c.error != p.error,
+      listener: (context, state) {
+        if (state.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!)),
           );
-        },
-      ),
+        }
+      },
+      builder: (context, state) {
+        return SurveyAdminShell(
+          title: 'Surveys',
+          subtitle: '${state.surveys.length} item${state.surveys.length == 1 ? '' : 's'}',
+          showBackInHeader: false,
+          onBack: () => Navigator.of(context, rootNavigator: true).pop(),
+          rail: SurveyFilterRail(
+            selected: state.filter,
+            onCreate: () => _createSurvey(context),
+            onBack: () => Navigator.of(context, rootNavigator: true).pop(),
+          ),
+          body: RefreshIndicator(
+            color: SurveyTheme.primary,
+            onRefresh: () async {
+              context.read<SurveyAdminBloc>().add(const SurveyAdminRefreshed());
+            },
+            child: _buildBody(context, state),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildBody(BuildContext context, SurveyAdminState state) {
     if (state.status == SurveyAdminLoadStatus.loading && state.surveys.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: SurveyTheme.purple));
+      return const Center(
+        child: CircularProgressIndicator(color: SurveyTheme.primary),
+      );
     }
     if (state.status == SurveyAdminLoadStatus.failure && state.surveys.isEmpty) {
       return ListView(
@@ -107,9 +96,10 @@ class SurveyListScreen extends StatelessWidget {
     }
     return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       itemCount: state.surveys.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: SurveyTheme.divider),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, color: SurveyTheme.divider),
       itemBuilder: (context, i) => _SurveyRow(
         survey: state.surveys[i],
         onTap: () => _openSurvey(context, state.surveys[i]),
@@ -173,220 +163,6 @@ class SurveyListScreen extends StatelessWidget {
         ),
       );
     }
-  }
-}
-
-class _StatusSidebar extends StatelessWidget {
-  const _StatusSidebar({
-    required this.selected,
-    required this.onChanged,
-    required this.onCreate,
-  });
-
-  final SurveyStatus? selected;
-  final ValueChanged<SurveyStatus?> onChanged;
-  final VoidCallback onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <(SurveyStatus?, String, SurveyIconType)>[
-      (null, 'All surveys', SurveyIconType.list),
-      (SurveyStatus.draft, 'Draft', SurveyIconType.draft),
-      (SurveyStatus.active, 'Active', SurveyIconType.active),
-      (SurveyStatus.closed, 'Closed', SurveyIconType.closed),
-    ];
-
-    return SizedBox(
-      width: 240,
-      child: ColoredBox(
-        color: SurveyTheme.background,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 28, 12, 0),
-              child: _BackToShareButton(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Text(
-                'Surveys',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 22,
-                  color: SurveyTheme.textMain,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FilledButton(
-                onPressed: onCreate,
-                style: FilledButton.styleFrom(
-                  backgroundColor: SurveyTheme.purple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    SurveyIcon(type: SurveyIconType.add, size: 20, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Create Survey'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'STATUS',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: SurveyTheme.textMuted,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...items.map((item) {
-              final active = selected == item.$1;
-              return _SidebarItem(
-                label: item.$2,
-                icon: item.$3,
-                active: active,
-                onTap: () => onChanged(item.$1),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BackToShareButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => Navigator.of(context, rootNavigator: true).pop(),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SurveyIcon(
-                type: SurveyIconType.arrowBack,
-                size: 20,
-                color: SurveyTheme.textMuted,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Share',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                  color: SurveyTheme.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SidebarItem extends StatelessWidget {
-  const _SidebarItem({
-    required this.label,
-    required this.icon,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final SurveyIconType icon;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      child: Material(
-        color: active ? SurveyTheme.purpleLight : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Row(
-              children: [
-                SurveyIcon(
-                  type: icon,
-                  size: 20,
-                  color: active ? SurveyTheme.purple : SurveyTheme.textMuted,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w600,
-                    fontSize: 14,
-                    color: active ? SurveyTheme.purpleDark : SurveyTheme.textMain,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ListHeader extends StatelessWidget {
-  const _ListHeader({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: SurveyTheme.divider)),
-      ),
-      child: Row(
-        children: [
-          Text(
-            'Survey list',
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
-              color: SurveyTheme.textMain,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            '$count item${count == 1 ? '' : 's'}',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              color: SurveyTheme.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -471,8 +247,9 @@ class _StatusBadge extends StatelessWidget {
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(
         label,

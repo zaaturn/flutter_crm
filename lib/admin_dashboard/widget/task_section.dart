@@ -653,7 +653,7 @@ class _TaskCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    task.dueDate,
+                    task.dueDate ?? '—',
                     style: const TextStyle(
                       fontSize: 11,
                       color: Color(0xFF6366F1),

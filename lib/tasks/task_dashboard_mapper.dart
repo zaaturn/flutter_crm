@@ -8,10 +8,14 @@ extension CrmTaskDashboardMapper on CrmTask {
       title: title,
       description: description,
       priority: priority,
-      dueDate: dueDate ?? '',
-      assignedToName: assignedToName ?? 'Unassigned',
+      dueDate: dueDate,
       status: status.trim().toLowerCase(),
+      assignedTo: assignedTo,
+      assignedToName: assignedToName ?? 'Unassigned',
+      assignedBy: assignedBy,
+      assignedByName: assignedByName,
       isApproved: isApproved,
+      attachment: attachment,
     );
   }
 }

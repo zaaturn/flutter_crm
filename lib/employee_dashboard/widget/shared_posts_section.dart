@@ -9,11 +9,19 @@ import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
-import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/employee_dashboard/widget/employee_feed_chrome.dart';
 
 class SharedPostsSection extends StatefulWidget {
-  const SharedPostsSection({super.key});
+  final bool hideHeader;
+  final bool scrollable;
+  final bool v2Flat;
+
+  const SharedPostsSection({
+    super.key,
+    this.hideHeader = false,
+    this.scrollable = false,
+    this.v2Flat = false,
+  });
 
   @override
   State<SharedPostsSection> createState() => _SharedPostsSectionState();
@@ -54,31 +62,82 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Shared Items',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: narrow ? _coffee : _textMain,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: () => EmployeeDashboardNavigator.feed(context),
-              child: Text(
-                'View all',
+        if (!widget.hideHeader) ...[
+          Row(
+            children: [
+              Text(
+                'Shared Items',
                 style: TextStyle(
-                  color: narrow ? _terracotta : chrome.accent,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: narrow ? _coffee : _textMain,
+                  letterSpacing: -0.5,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+              const Spacer(),
+              TextButton(
+                onPressed: () => EmployeeDashboardNavigator.feed(context),
+                child: Text(
+                  'View all',
+                  style: TextStyle(
+                    color: narrow ? _terracotta : chrome.accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (widget.v2Flat) ...[
+          FutureBuilder<List<PostModel>>(
+            future: _load(repo),
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+
+              final posts = snap.data ?? [];
+              if (posts.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 26),
+                  child: Center(
+                    child: Text(
+                      'No items shared',
+                      style: TextStyle(
+                        color: narrow ? _coffeeMuted : _textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              final list = ListView.separated(
+                primary: false,
+                shrinkWrap: !widget.scrollable,
+                physics: widget.scrollable
+                    ? const AlwaysScrollableScrollPhysics()
+                    : const NeverScrollableScrollPhysics(),
+                itemCount: posts.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: chrome.borderAccent.withValues(alpha: 0.65),
+                ),
+                itemBuilder: (context, i) => _Row(post: posts[i], chrome: chrome),
+              );
+
+              if (!widget.scrollable) return list;
+              return SizedBox(height: 260, child: list);
+            },
+          ),
+        ] else
         Container(
           decoration: BoxDecoration(
             color: narrow ? _beigeCard : Colors.white,
@@ -132,18 +191,26 @@ class _SharedPostsSectionState extends State<SharedPostsSection> {
                   );
                 }
 
-                return ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                final list = ListView.separated(
+                  primary: false,
+                  shrinkWrap: !widget.scrollable,
+                  physics: widget.scrollable
+                      ? const AlwaysScrollableScrollPhysics()
+                      : const NeverScrollableScrollPhysics(),
                   itemCount: posts.length,
                   separatorBuilder: (_, __) => Divider(
                     height: 1,
                     thickness: 1,
                     color: chrome.borderAccent.withValues(alpha: 0.65),
                   ),
-                  itemBuilder: (context, i) =>
-                      _Row(post: posts[i], chrome: chrome),
+                  itemBuilder: (context, i) => _Row(post: posts[i], chrome: chrome),
                 );
+
+                if (!widget.scrollable) return list;
+
+                // When used inside fixed-height cards (v2 bento grid), keep
+                // card heights aligned by scrolling the list instead.
+                return SizedBox(height: 260, child: list);
               },
             ),
           ),

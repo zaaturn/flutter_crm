@@ -8,11 +8,13 @@ import '../../shared/dashboard_ui_theme.dart';
 class DashboardTodayGrid extends StatelessWidget {
   final List<Event> events;
   final EdgeInsetsGeometry sectionPadding;
+  final bool hideHeader;
 
   const DashboardTodayGrid({
     super.key,
     required this.events,
     this.sectionPadding = const EdgeInsets.fromLTRB(20, 20, 20, 0),
+    this.hideHeader = false,
   });
 
   @override
@@ -22,30 +24,32 @@ class DashboardTodayGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SectionTitle(
-            title: "Today's Events",
-            trailing: events.isNotEmpty
-                ? Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: DashboardUiTheme.primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${events.length}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: DashboardUiTheme.primary,
+          if (!hideHeader) ...[
+            _SectionTitle(
+              title: "Today's Events",
+              trailing: events.isNotEmpty
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
                       ),
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 14),
+                      decoration: BoxDecoration(
+                        color: DashboardUiTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${events.length}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: DashboardUiTheme.primary,
+                        ),
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(height: 14),
+          ],
           if (events.isEmpty)
             _emptyState('You’re all caught up for today.')
           else

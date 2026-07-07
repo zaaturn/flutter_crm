@@ -6,6 +6,8 @@ import 'package:my_app/admin_dashboard/sidebar/device_specific/workspace_switche
 import 'package:my_app/auth/auth_navigation.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
+
 import 'dashboard_sidebar_theme.dart';
 
 class DashboardSidebarContent {
@@ -16,6 +18,7 @@ class DashboardSidebarContent {
     required BuildContext parentContext,
     required String name,
     required String initials,
+    String? photoUrl,
     required bool canSwitchWorkspace,
     required VoidCallback onLogoutTap,
   }) {
@@ -50,17 +53,13 @@ class DashboardSidebarContent {
             ),
           Row(
             children: [
-              CircleAvatar(
-                radius: 18,
+              EmployeeAvatar(
+                photoUrl: photoUrl,
+                initials: initials,
+                size: 36,
+                borderRadius: BorderRadius.circular(18),
                 backgroundColor: DashboardSidebarTheme.purple,
-                child: Text(
-                  initials,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                  ),
-                ),
+                foregroundColor: Colors.white,
               ),
               const SizedBox(width: 12),
               Expanded(

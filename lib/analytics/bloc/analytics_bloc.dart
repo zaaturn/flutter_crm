@@ -821,11 +821,11 @@ class AnalyticsBloc extends Bloc<AnalyticsEvent, AnalyticsState> {
       final today = DateTime(now.year, now.month, now.day);
       final overdue = tasks.where((t) {
         if (t.status == 'completed') return false;
-        final due = DateTime.tryParse(t.dueDate);
+        final due = DateTime.tryParse(t.dueDate ?? '');
         if (due == null) return false;
         return DateTime(due.year, due.month, due.day).isBefore(today);
       }).toList()
-        ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+        ..sort((a, b) => (a.dueDate ?? '').compareTo(b.dueDate ?? ''));
       emit(state.copyWith(tasksLoading: false, overdueTasks: overdue));
     } catch (_) {
       emit(

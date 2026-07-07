@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-// PROPER PACKAGE IMPORTS
-import 'package:my_app/leave_management/services/leave_api_services.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/leave_management/models/public_holiday.dart';
+import 'package:my_app/leave_management/screens/device_specific/employee_leave_v2_widgets.dart';
+import 'package:my_app/leave_management/services/leave_api_services.dart';
 
 class PublicHolidayCalendarScreenDesktop extends StatefulWidget {
   const PublicHolidayCalendarScreenDesktop({super.key});
@@ -14,19 +16,13 @@ class PublicHolidayCalendarScreenDesktop extends StatefulWidget {
 }
 
 class _PublicHolidayCalendarScreenState
-    extends State<PublicHolidayCalendarScreenDesktop> with SingleTickerProviderStateMixin {
+    extends State<PublicHolidayCalendarScreenDesktop> {
   final LeaveApiService _apiService = LeaveApiService();
 
   late int _year;
   bool _loading = true;
   String? _error;
   List<PublicHoliday> _holidays = [];
-
-  // Desktop Design Tokens (Static const to allow use in UI)
-  static const Color _bgSlate = Color(0xFFF8FAFC);
-  static const Color _borderSlate = Color(0xFFE2E8F0);
-  static const Color _indigo = Color(0xFF6366F1);
-  static const Color _textMain = Color(0xFF0F172A);
 
   @override
   void initState() {
@@ -45,12 +41,13 @@ class _PublicHolidayCalendarScreenState
     try {
       final data = await _apiService.getPublicHolidays(_year);
       if (mounted) {
-        setState(() {
-          _holidays = data;
-        });
+        setState(() => _holidays = data);
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        final msg = e.toString().replaceFirst('Exception: ', '');
+        setState(() => _error = msg);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -62,51 +59,48 @@ class _PublicHolidayCalendarScreenState
     final bool isWide = size.width > 1100;
 
     return Scaffold(
-      backgroundColor: _bgSlate,
-      appBar: _buildDesktopAppBar(),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(strokeWidth: 2, color: _indigo))
-          : _error != null
-          ? _buildErrorState()
-          : _buildDesktopContent(isWide),
-    );
-  }
-
-  PreferredSizeWidget _buildDesktopAppBar() {
-    return AppBar(
-      elevation: 0,
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.white,
-      title: const Text(
-        "Company Holidays",
-        style: TextStyle(
-            color: _textMain,
-            fontWeight: FontWeight.w800,
-            fontSize: 20
+      backgroundColor: EmployeeDashboardV2Theme.shell,
+      body: SafeArea(
+        child: Column(
+          children: [
+            LeaveV2TopBar(
+              title: 'Holiday Calendar',
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  color: EmployeeDashboardV2Theme.textDark,
+                  onPressed: () {
+                    setState(() => _year--);
+                    _loadHolidays();
+                  },
+                ),
+                _buildYearChip('$_year'),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  color: EmployeeDashboardV2Theme.textDark,
+                  onPressed: () {
+                    setState(() => _year++);
+                    _loadHolidays();
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: EmployeeDashboardV2Theme.green,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : _error != null
+                      ? _buildErrorState()
+                      : _buildDesktopContent(isWide),
+            ),
+          ],
         ),
       ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(color: _borderSlate, height: 1),
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.chevron_left),
-          onPressed: () {
-            setState(() => _year--);
-            _loadHolidays();
-          },
-        ),
-        _buildActionChip("$_year"),
-        IconButton(
-          icon: const Icon(Icons.chevron_right),
-          onPressed: () {
-            setState(() => _year++);
-            _loadHolidays();
-          },
-        ),
-        const SizedBox(width: 24),
-      ],
     );
   }
 
@@ -116,23 +110,54 @@ class _PublicHolidayCalendarScreenState
       holidaysByMonth.putIfAbsent(h.date.month, () => []).add(h);
     }
 
+    final monthsWithHolidays = holidaysByMonth.length;
+
     return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: isWide ? 60 : 20, vertical: 40),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 40),
       child: Center(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 1400),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: EmployeeDashboardV2Theme.maxContentWidth,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDesktopHeader(holidaysByMonth.length),
-              const SizedBox(height: 32),
+              LeaveV2PageTitle(
+                title: 'Annual Schedule',
+                subtitle:
+                    'Total of $monthsWithHolidays months with company holidays for $_year',
+              ),
+              const SizedBox(height: 20),
+              LeaveV2KpiGrid(
+                aspectRatioWide: 2.6,
+                aspectRatioNarrow: 2.0,
+                items: [
+                  LeaveV2KpiData(
+                    value: '${_holidays.length}',
+                    label: 'Holidays',
+                    tag: '$_year',
+                    color: const Color(0xFF9333EA),
+                    icon: Icons.calendar_month_rounded,
+                  ),
+                  LeaveV2KpiData(
+                    value: '$monthsWithHolidays',
+                    label: 'Active months',
+                    tag: 'Calendar',
+                    color: EmployeeDashboardV2Theme.greenMid,
+                    icon: Icons.event_available_rounded,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isWide ? 3 : (MediaQuery.of(context).size.width > 700 ? 2 : 1),
-                  crossAxisSpacing: 24,
-                  mainAxisSpacing: 24,
+                  crossAxisCount: isWide
+                      ? 3
+                      : (MediaQuery.of(context).size.width > 700 ? 2 : 1),
+                  crossAxisSpacing: 20,
+                  mainAxisSpacing: 20,
                   mainAxisExtent: 320,
                 ),
                 itemCount: 12,
@@ -149,65 +174,12 @@ class _PublicHolidayCalendarScreenState
     );
   }
 
-  Widget _buildDesktopHeader(int count) {
-    return Row(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Annual Schedule",
-              style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: _textMain,
-                  letterSpacing: -1
-              ),
-            ),
-            Text(
-              "Total of $count company-wide holidays for the year $_year",
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 14),
-            ),
-          ],
-        ),
-        const Spacer(),
-        ElevatedButton.icon(
-          onPressed: () {},
-
-          icon: const Icon(Icons.event_available, size: 18),
-          label: const Text("Sync to Calendar"),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: _textMain,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: _borderSlate),
-            ),
-            elevation: 0,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildMonthGridCard(int month, List<PublicHoliday> holidays) {
     final monthName = DateFormat('MMMM').format(DateTime(_year, month));
     final bool hasHolidays = holidays.isNotEmpty;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderSlate),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 15,
-              offset: const Offset(0, 8)
-          ),
-        ],
-      ),
+    return LeaveV2ContentCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -218,46 +190,51 @@ class _PublicHolidayCalendarScreenState
               children: [
                 Text(
                   monthName,
-                  style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: _textMain
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: EmployeeDashboardV2Theme.textDark,
                   ),
                 ),
                 if (hasHolidays)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                        color: _indigo.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6)
+                      color: EmployeeDashboardV2Theme.greenLight,
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      "${holidays.length} Holiday${holidays.length > 1 ? 's' : ''}",
-                      style: const TextStyle(
-                          color: _indigo,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold
+                      '${holidays.length} Holiday${holidays.length > 1 ? 's' : ''}',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: EmployeeDashboardV2Theme.greenMid,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
               ],
             ),
           ),
-          const Divider(height: 1, color: _borderSlate),
+          const Divider(height: 1, color: EmployeeDashboardV2Theme.rowBorder),
           Expanded(
             child: hasHolidays
                 ? ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: holidays.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) => _buildMinimalHolidayTile(holidays[index]),
-            )
+                    padding: const EdgeInsets.all(16),
+                    itemCount: holidays.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) =>
+                        _buildMinimalHolidayTile(holidays[index]),
+                  )
                 : Center(
-              child: Text(
-                  "No holidays",
-                  style: TextStyle(color: Colors.grey.shade400, fontSize: 13)
-              ),
-            ),
+                    child: Text(
+                      'No holidays',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: EmployeeDashboardV2Theme.textMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -273,14 +250,18 @@ class _PublicHolidayCalendarScreenState
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: isUpcoming ? _indigo : const Color(0xFFF1F5F9),
+            color: isUpcoming
+                ? EmployeeDashboardV2Theme.greenMid
+                : EmployeeDashboardV2Theme.slateBg,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
             child: Text(
               holiday.date.day.toString(),
-              style: TextStyle(
-                color: isUpcoming ? Colors.white : const Color(0xFF64748B),
+              style: GoogleFonts.plusJakartaSans(
+                color: isUpcoming
+                    ? Colors.white
+                    : EmployeeDashboardV2Theme.textBody,
                 fontWeight: FontWeight.w800,
                 fontSize: 14,
               ),
@@ -294,17 +275,20 @@ class _PublicHolidayCalendarScreenState
             children: [
               Text(
                 holiday.name,
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: _textMain
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: EmployeeDashboardV2Theme.textDark,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 DateFormat('EEEE').format(holiday.date),
-                style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
               ),
             ],
           ),
@@ -313,17 +297,22 @@ class _PublicHolidayCalendarScreenState
     );
   }
 
-  Widget _buildActionChip(String label) {
+  Widget _buildYearChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-          color: _bgSlate,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _borderSlate)
+        color: EmployeeDashboardV2Theme.greenLight,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: EmployeeDashboardV2Theme.green.withValues(alpha: 0.25),
+        ),
       ),
       child: Text(
-          label,
-          style: const TextStyle(color: _textMain, fontWeight: FontWeight.bold)
+        label,
+        style: GoogleFonts.plusJakartaSans(
+          color: EmployeeDashboardV2Theme.textDark,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }
@@ -333,15 +322,39 @@ class _PublicHolidayCalendarScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 48, color: _borderSlate),
-          const SizedBox(height: 16),
-          const Text(
-              "Unable to sync calendar data",
-              style: TextStyle(fontWeight: FontWeight.bold)
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: EmployeeDashboardV2Theme.textMuted,
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Unable to sync calendar data',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+          if (_error != null && _error!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: EmployeeDashboardV2Theme.textMuted,
+                ),
+              ),
+            ),
+          ],
           TextButton(
-              onPressed: _loadHolidays,
-              child: const Text("Retry Connection")
+            onPressed: _loadHolidays,
+            child: Text(
+              'Retry Connection',
+              style: GoogleFonts.plusJakartaSans(
+                color: EmployeeDashboardV2Theme.greenMid,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),

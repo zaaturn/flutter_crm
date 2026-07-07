@@ -1,21 +1,39 @@
 import 'package:flutter/material.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
+
+/// Desktop admin survey UI aligns with admin dashboard mint shell.
+/// Mobile employee flows can still use [SurveyMobileTheme].
 class SurveyTheme {
   SurveyTheme._();
 
-  static const purple = Color(0xFF7C3AED);
-  static const purpleDark = Color(0xFF4C1D95);
-  static const purpleLight = Color(0xFFF5F3FF);
-  static const background = Colors.white;
-  static const surface = Color(0xFFF8FAFC);
-  static const surfaceAlt = Color(0xFFF1F5F9);
-  static const divider = Color(0xFFE2E8F0);
-  static const border = Color(0xFFE2E8F0);
-  static const textMain = Color(0xFF0F172A);
-  static const textMuted = Color(0xFF64748B);
+  static const shell = AdminDashboardTheme.shellMint;
+  static const background = AdminDashboardTheme.surface;
+  static const surface = AdminDashboardTheme.surfaceMuted;
+  static const surfaceAlt = AdminDashboardTheme.iconRailBg;
+  static const divider = AdminDashboardTheme.border;
+  static const border = AdminDashboardTheme.border;
+
+  static const textMain = AdminDashboardTheme.textDark;
+  static const textMuted = AdminDashboardTheme.textMuted;
+
+  static const primary = AdminDashboardTheme.teal;
+  static const primaryDark = AdminDashboardTheme.tealDark;
+  static const primaryLight = AdminDashboardTheme.tealLight;
+  static const accentYellow = AdminDashboardTheme.accentYellow;
+
+  /// Legacy aliases used across survey widgets.
+  static const purple = primary;
+  static const purpleDark = primaryDark;
+  static const purpleLight = primaryLight;
+
   static const success = Color(0xFF10B981);
   static const warning = Color(0xFFF59E0B);
   static const danger = Color(0xFFEF4444);
+
+  /// Employee take-survey desktop shell (mint, matches employee v2).
+  static const employeeShell = EmployeeDashboardV2Theme.shell;
 
   static Color statusColor(SurveyStatusLike status) {
     switch (status) {
@@ -24,7 +42,7 @@ class SurveyTheme {
       case SurveyStatusLike.active:
         return success;
       case SurveyStatusLike.closed:
-        return purpleDark;
+        return primaryDark;
     }
   }
 }

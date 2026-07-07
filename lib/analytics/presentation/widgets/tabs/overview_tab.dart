@@ -895,7 +895,7 @@ class _OverdueTaskRow extends StatelessWidget {
   const _OverdueTaskRow({required this.task});
 
   int? get _daysOverdue {
-    final due = DateTime.tryParse(task.dueDate);
+    final due = DateTime.tryParse(task.dueDate ?? '');
     if (due == null) return null;
     final today = DateTime.now();
     return DateTime(today.year, today.month, today.day)

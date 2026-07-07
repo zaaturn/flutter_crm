@@ -12,8 +12,9 @@ import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
-import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_sidebar.dart';
-import 'package:my_app/employee_dashboard/widget/device_specific/dashboard_topbar.dart';
+import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
+import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
@@ -30,10 +31,9 @@ class EmployeeFeedScreenDesktop extends StatefulWidget {
 }
 
 class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
-  static const _bg = Color(0xFFF8FAFC);
   static const _textMain = Color(0xFF0F172A);
   static const _textMuted = Color(0xFF475569);
-  static const _purple = Color(0xFF7C3AED);
+  static const _green = EmployeeDashboardV2Theme.greenMid;
 
   String? _category;
 
@@ -50,10 +50,7 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
   void _toggleProfilePanel() {}
 
   void _goBack() {
-    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-      '/employeeDashboard',
-      (route) => false,
-    );
+    EmployeeDashboardNavigator.dashboard(context);
   }
 
   Future<void> _logout() async {
@@ -73,129 +70,130 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      body: Row(
-        children: [
-          DashboardSidebar(
-            parentContext: context,
-            onLogout: _logout,
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                DashboardTopBar(onProfileClick: _toggleProfilePanel),
-                Expanded(
-                  child: RefreshIndicator(
-                    color: _purple,
-                    onRefresh: () async {
-                      context.read<PostBloc>().add(FetchPosts(category: _category));
-                      context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 680),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        onPressed: _goBack,
-                                        icon: const Icon(
-                                          Icons.arrow_back_rounded,
-                                          color: _textMain,
-                                        ),
-                                        tooltip: 'Back',
-                                      ),
-                                      const SizedBox(width: 6),
-                                      const Text(
-                                        'Feeds',
-                                        style: TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.w900,
-                                          color: _textMain,
-                                          letterSpacing: -0.8,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  const Padding(
-                                    padding: EdgeInsets.only(left: 48),
-                                    child: Text(
-                                      'Curated updates from across the organization.',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: _textMuted,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+      backgroundColor: EmployeeDashboardV2Theme.shell,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              height: 72,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              decoration: const BoxDecoration(
+                color: EmployeeDashboardV2Theme.shell,
+                border: Border(bottom: BorderSide(color: EmployeeDashboardV2Theme.cardBorder)),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: _goBack,
+                    icon: const Icon(Icons.arrow_back_rounded, color: _textMain),
+                    tooltip: 'Back',
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Activity Feed',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: EmployeeDashboardV2Theme.textDark,
+                    ),
+                  ),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: _logout,
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                    ),
+                    child: const Text('Logout'),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                color: _green,
+                onRefresh: () async {
+                  context.read<PostBloc>().add(FetchPosts(category: _category));
+                  context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
+                },
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      // Social-feed style: keep a narrow centered column on desktop.
+                      constraints: const BoxConstraints(maxWidth: 760),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Curated updates from across the organization.',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 14,
+                              color: EmployeeDashboardV2Theme.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          _SimpleTabs(
+                            selected: _category,
+                            onSelected: (c) {
+                              setState(() => _category = c);
+                              context.read<PostBloc>().add(FetchPosts(category: c));
+                            },
+                          ),
+                          const SizedBox(height: 22),
+                          const SurveyFeedSection(),
+                          const SizedBox(height: 16),
+                          BlocBuilder<PostBloc, PostState>(
+                            builder: (context, state) {
+                              if (state is PostLoading || state is PostInitial) {
+                                return const Padding(
+                                  padding: EdgeInsets.only(top: 80),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      color: _green,
                                     ),
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              _SimpleTabs(
-                                selected: _category,
-                                onSelected: (c) {
-                                  setState(() => _category = c);
-                                  context.read<PostBloc>().add(FetchPosts(category: c));
-                                },
-                              ),
-                              const SizedBox(height: 24),
-                              const SurveyFeedSection(),
-                              const SizedBox(height: 16),
-                              BlocBuilder<PostBloc, PostState>(
-                                builder: (context, state) {
-                                  if (state is PostLoading || state is PostInitial) {
-                                    return const Padding(
-                                      padding: EdgeInsets.only(top: 80),
-                                      child: Center(
-                                        child: CircularProgressIndicator(strokeWidth: 3, color: _purple),
-                                      ),
-                                    );
-                                  }
-                                  if (state is PostError) {
-                                    return _ErrorWidget(message: state.message);
-                                  }
-                                  if (state is PostLoaded) {
-                                    final posts = state.posts;
-                                    if (posts.isEmpty) return const _Empty();
-                                    return Column(
-                                      children: posts
-                                          .map((p) => _SocialFeedCard(
-                                        post: p,
-                                        onOpen: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => PostDetailScreen(postId: p.id),
-                                            ),
-                                          );
-                                        },
-                                      ))
-                                          .toList(),
-                                    );
-                                  }
-                                  return const SizedBox.shrink();
-                                },
-                              ),
-                            ],
+                                );
+                              }
+                              if (state is PostError) {
+                                return _ErrorWidget(message: state.message);
+                              }
+                              if (state is PostLoaded) {
+                                final posts = state.posts;
+                                if (posts.isEmpty) return const _Empty();
+                                return Column(
+                                  children: posts
+                                      .map(
+                                        (p) => _SocialFeedCard(
+                                          post: p,
+                                          onOpen: () {
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (_) => PostDetailScreen(postId: p.id),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      )
+                                      .toList(),
+                                );
+                              }
+                              return const SizedBox.shrink();
+                            },
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -206,7 +204,7 @@ class _SimpleTabs extends StatelessWidget {
   final ValueChanged<String?> onSelected;
   const _SimpleTabs({required this.selected, required this.onSelected});
 
-  static const _purple = Color(0xFF7C3AED);
+  static const _accent = EmployeeDashboardV2Theme.greenMid;
 
   @override
   Widget build(BuildContext context) {
@@ -227,14 +225,20 @@ class _SimpleTabs extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-              color: isSel ? _purple : Colors.white,
+              color: isSel ? _accent : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSel ? _purple : const Color(0xFFEDE9FE),
+                color: isSel ? _accent : EmployeeDashboardV2Theme.cardBorder,
                 width: 2,
               ),
               boxShadow: isSel
-                  ? [BoxShadow(color: _purple.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))]
+                  ? [
+                      BoxShadow(
+                        color: _accent.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
                   : [],
             ),
             child: Text(
@@ -257,10 +261,10 @@ class _SocialFeedCard extends StatelessWidget {
   final VoidCallback onOpen;
   const _SocialFeedCard({required this.post, required this.onOpen});
 
-  static const _purple = Color(0xFF525FE1);
+  static const _accent = EmployeeDashboardV2Theme.greenMid;
   static const _textMain = Color(0xFF0F172A);
   static const _textMuted = Color(0xFF334155);
-  static const _borderPurple = Color(0xFF525FE1);
+  static const _border = EmployeeDashboardV2Theme.cardBorder;
 
   bool get _hasLink => (post.link ?? '').trim().isNotEmpty;
 
@@ -493,19 +497,19 @@ class _SocialFeedCard extends StatelessWidget {
     final name = _fileNameFromUrl(url);
     final icon = _fileIcon(url, type);
     final isPdf = _isPdf(url, type);
-    final accent = isPdf ? const Color(0xFFEF4444) : _purple;
+    final accent = isPdf ? const Color(0xFFEF4444) : _accent;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
       child: InkWell(
         onTap: () => _handleMediaTap(context, url, type),
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _borderPurple, width: 2),
+            border: Border.all(color: _border),
           ),
           child: Row(
             children: [
@@ -542,16 +546,16 @@ class _SocialFeedCard extends StatelessWidget {
     final subtitle = _designation().isEmpty ? _timeAgo() : '${_designation().toUpperCase()} • ${_timeAgo()}';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderPurple, width: 2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: _purple.withValues(alpha: 0.03),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: EmployeeDashboardV2Theme.greenDark.withValues(alpha: 0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -560,31 +564,35 @@ class _SocialFeedCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Row(
               children: [
-                _Avatar(photoUrl: photo, initials: _initials()),
-                const SizedBox(width: 14),
+                EmployeeAvatar(
+                  photoUrl: photo,
+                  initials: _initials(),
+                  size: 36,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         _authorName(),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
                           color: _textMain,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: _purple,
-                          letterSpacing: 0.5,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _accent,
                         ),
                       ),
                     ],
@@ -595,26 +603,27 @@ class _SocialFeedCard extends StatelessWidget {
           ),
           if (heroUrl.isNotEmpty) _attachmentPreview(context, heroUrl, heroType),
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (heroUrl.isNotEmpty) const SizedBox(height: 10),
                 if (_hasLink) ...[
                   InkWell(
                     onTap: () => _openLink(context),
                     child: Row(
                       children: [
-                        const Icon(Icons.link, size: 16, color: _purple),
+                        const Icon(Icons.link, size: 16, color: _accent),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             (post.link ?? '').trim(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
-                              color: _purple,
+                              color: _accent,
                               decoration: TextDecoration.underline,
                             ),
                           ),
@@ -622,46 +631,46 @@ class _SocialFeedCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                 ],
                 if (post.title?.isNotEmpty ?? false) ...[
                   Text(
                     post.title!.trim(),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
                       color: _textMain,
                       height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                 ],
                 Text(
                   post.content,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
                     color: _textMuted,
-                    height: 1.6,
+                    height: 1.55,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 if (!post.isRead) ...[
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
                       onPressed: () => context.read<PostBloc>().add(MarkPostAsRead(post.id)),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _purple,
+                        backgroundColor: _accent,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
                       ),
                       child: const Text(
                         'MARK AS SEEN',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1,
                         ),
@@ -674,31 +683,6 @@ class _SocialFeedCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final String photoUrl;
-  final String initials;
-  const _Avatar({required this.photoUrl, required this.initials});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F3FF),
-        borderRadius: BorderRadius.circular(12),
-        image: photoUrl.isNotEmpty ? DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover) : null,
-      ),
-      child: photoUrl.isEmpty
-          ? Center(
-        child: Text(initials,
-            style: const TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w900, fontSize: 13)),
-      )
-          : null,
     );
   }
 }

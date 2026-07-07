@@ -103,7 +103,7 @@ class _LoginMobileState extends State<LoginMobile> {
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    isEmployee ? "Employee Login" : "Admin Login",
+                    isEmployee ? "Employee Login" : "User Login",
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,

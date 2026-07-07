@@ -6,6 +6,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'employee_dashboard_event.dart';
 import 'employee_dashboard_state.dart';
 import '../model/attendance_model.dart';
+import '../model/weekly_activity_model.dart';
+import '../model/employee_model.dart';
 import '../repository/employee_dashboard_repository.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/core/auth/auth_session_redirect.dart';
@@ -33,6 +35,8 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<PollAttendanceRequested>(_onPollAttendanceRequested);
     on<UpdateTaskStatus>(_onUpdateTaskStatus);
     on<RegisterNotificationDevice>(_onRegisterNotificationDevice);
+    on<EmployeeProfileUpdated>(_onEmployeeProfileUpdated);
+    on<RefreshEmployeeProfile>(_onRefreshEmployeeProfile);
     on<LogoutEvent>(_onLogout);
   }
 
@@ -56,16 +60,19 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       final employee = await repo.fetchEmployeeProfile();
       final serverAttendance = await repo.fetchAttendance();
+      final weeklyRaw = await repo.fetchWeeklyActivity();
       final tasks = await repo.fetchTasks();
       final sharedItems = await repo.fetchSharedItems();
       final events = await repo.fetchEvents();
 
       final attendance = _mergeAttendance(state.attendance, serverAttendance);
+      final weeklyActivity = _weeklyWithLiveToday(weeklyRaw, attendance);
 
       emit(state.copyWith(
         loading: false,
         employee: employee,
         attendance: attendance,
+        weeklyActivity: weeklyActivity,
         tasks: tasks,
         sharedItems: sharedItems,
         events: events,
@@ -101,7 +108,26 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         ? a.copyWith(totalBreak: a.totalBreak + const Duration(seconds: 1))
         : a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
 
-    emit(state.copyWith(attendance: updated));
+    emit(state.copyWith(attendance: updated, weeklyActivity: _weeklyWithLiveToday(
+      state.weeklyActivity,
+      updated,
+    )));
+  }
+
+  WeeklyActivityModel _weeklyWithLiveToday(
+    WeeklyActivityModel? weekly,
+    AttendanceModel? attendance,
+  ) {
+    final base = weekly ?? WeeklyActivityModel.forCalendarWeek();
+    if (attendance == null) return base;
+    final now = DateTime.now();
+    return base.mergeToday(
+      WeeklyActivityDay(
+        date: DateTime(now.year, now.month, now.day),
+        netWork: attendance.netWork,
+        totalBreak: attendance.totalBreak,
+      ),
+    );
   }
 
   AttendanceModel _mergeAttendance(
@@ -151,7 +177,10 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       final serverAttendance = await repo.fetchAttendance();
       final attendance = _mergeAttendance(state.attendance, serverAttendance);
-      emit(state.copyWith(attendance: attendance));
+      emit(state.copyWith(
+        attendance: attendance,
+        weeklyActivity: _weeklyWithLiveToday(state.weeklyActivity, attendance),
+      ));
       _startLiveTicker();
     } catch (err) {
       if (kDebugMode) {
@@ -178,10 +207,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       final serverAttendance = await repo.toggleCheckIn();
       final attendance = _mergeAttendance(state.attendance, serverAttendance);
+      final weeklyRaw = await repo.fetchWeeklyActivity();
 
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
+        weeklyActivity: _weeklyWithLiveToday(weeklyRaw, attendance),
         error: null,
       ));
 
@@ -216,8 +247,10 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     // This avoids "net work jumps" caused by API latency.
     final current = state.attendance;
     if (current != null && current.isCheckedIn) {
+      final optimistic = current.copyWith(onBreak: !current.onBreak);
       emit(state.copyWith(
-        attendance: current.copyWith(onBreak: !current.onBreak),
+        attendance: optimistic,
+        weeklyActivity: _weeklyWithLiveToday(state.weeklyActivity, optimistic),
       ));
     }
 
@@ -230,16 +263,14 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
       emit(state.copyWith(
         loading: false,
         attendance: attendance,
+        weeklyActivity: _weeklyWithLiveToday(state.weeklyActivity, attendance),
         error: null,
       ));
 
-      // Keep live ticking based on latest state.
       if (attendance.isCheckedIn) {
         _startLiveTicker();
       }
-
     } catch (err) {
-
       emit(state.copyWith(
         loading: false,
         error: ErrorHandler.format(err),
@@ -361,6 +392,23 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         debugPrint("Notification registration failed: ${ErrorHandler.format(err)}");
       }
     }
+  }
+
+  void _onEmployeeProfileUpdated(
+    EmployeeProfileUpdated event,
+    Emitter<EmployeeState> emit,
+  ) {
+    emit(state.copyWith(employee: event.employee));
+  }
+
+  Future<void> _onRefreshEmployeeProfile(
+    RefreshEmployeeProfile event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    try {
+      final employee = await repo.fetchEmployeeProfile();
+      emit(state.copyWith(employee: employee));
+    } catch (_) {}
   }
 
   // =========================================================

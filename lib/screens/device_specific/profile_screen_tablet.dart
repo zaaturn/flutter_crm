@@ -42,11 +42,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       // Pass the XFile 'picked' directly instead of 'picked.path'
-      final result = await profileService.uploadProfilePhoto(picked);
+      final photoUrl = await profileService.uploadProfilePhoto(picked);
 
-      if (result["profile_photo"] != null) {
+      if (photoUrl.isNotEmpty) {
         setState(() {
-          profile!["profile_photo"] = result["profile_photo"];
+          profile!["profile_photo"] = photoUrl;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(

@@ -8,6 +8,11 @@ class TaskModel {
   final String priority;
   final String? attachment;
   final String? dueDate;
+  final int? assignedTo;
+  final String? assignedToName;
+  final int? assignedBy;
+  final String? assignedByName;
+  final bool isApproved;
 
   TaskModel({
     required this.id,
@@ -17,6 +22,11 @@ class TaskModel {
     required this.priority,
     this.attachment,
     this.dueDate,
+    this.assignedTo,
+    this.assignedToName,
+    this.assignedBy,
+    this.assignedByName,
+    this.isApproved = false,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -26,9 +36,27 @@ class TaskModel {
       description: json['description']?.toString() ?? '',
       status: normalizeTaskStatusForApi(json['status']?.toString() ?? 'PENDING'),
       priority: json['priority']?.toString() ?? 'LOW',
-      attachment: json['attachment'],
+      attachment: json['attachment']?.toString(),
       dueDate: json['due_date']?.toString(),
+      assignedTo: _nullableInt(json['assigned_to']),
+      assignedToName: json['assigned_to_name']?.toString(),
+      assignedBy: _nullableInt(json['assigned_by']),
+      assignedByName: json['assigned_by_name']?.toString(),
+      isApproved: json['is_approved'] == true,
     );
+  }
+
+  static int? _nullableInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    return int.tryParse(v.toString());
+  }
+
+  /// Who assigned this task — primary label for employee "my tasks" views.
+  String get assignedByLabel {
+    final name = assignedByName?.trim();
+    if (name != null && name.isNotEmpty) return name;
+    return '—';
   }
 
   TaskModel copyWith({
@@ -39,6 +67,11 @@ class TaskModel {
     String? priority,
     String? attachment,
     String? dueDate,
+    int? assignedTo,
+    String? assignedToName,
+    int? assignedBy,
+    String? assignedByName,
+    bool? isApproved,
   }) {
     return TaskModel(
       id: id ?? this.id,
@@ -48,6 +81,11 @@ class TaskModel {
       priority: priority ?? this.priority,
       attachment: attachment ?? this.attachment,
       dueDate: dueDate ?? this.dueDate,
+      assignedTo: assignedTo ?? this.assignedTo,
+      assignedToName: assignedToName ?? this.assignedToName,
+      assignedBy: assignedBy ?? this.assignedBy,
+      assignedByName: assignedByName ?? this.assignedByName,
+      isApproved: isApproved ?? this.isApproved,
     );
   }
 }

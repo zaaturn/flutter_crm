@@ -135,6 +135,7 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
                 parentContext: widget.parentContext ?? ctx,
                 name: name,
                 initials: initials,
+                photoUrl: emp?.profilePhoto,
                 canSwitchWorkspace: _canOpenAdminWorkspace,
                 onLogoutTap: () => widget.onLogout?.call(),
               );

@@ -7,6 +7,8 @@ import '../../bloc/survey_employee_event.dart';
 import '../../bloc/survey_employee_state.dart';
 import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/survey/theme/survey_theme.dart';
 import '../widgets/survey_form_fields.dart';
 import '../widgets/survey_submission.dart';
 import '../widgets/survey_thank_you.dart';
@@ -26,16 +28,8 @@ class _TakeSurveyScreenState extends State<TakeSurveyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SurveyTheme.background,
-      appBar: AppBar(
-        backgroundColor: SurveyTheme.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: SurveyTheme.textMain,
-        title: Text('Survey', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800)),
-      ),
-      body: BlocConsumer<SurveyEmployeeBloc, SurveyEmployeeState>(
+    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final content = BlocConsumer<SurveyEmployeeBloc, SurveyEmployeeState>(
         listenWhen: (prev, curr) =>
             prev.status != curr.status && curr.status == SurveyEmployeeStatus.submitted ||
             (curr.error != null && prev.error != curr.error),
@@ -126,6 +120,58 @@ class _TakeSurveyScreenState extends State<TakeSurveyScreen> {
             ),
           );
         },
+      );
+
+    if (!wide) {
+      return Scaffold(
+        backgroundColor: SurveyTheme.employeeShell,
+        appBar: AppBar(
+          backgroundColor: SurveyTheme.employeeShell,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: SurveyTheme.textMain,
+          title: Text(
+            'Survey',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+          ),
+        ),
+        body: content,
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: SurveyTheme.shell,
+      body: Padding(
+        padding: const EdgeInsets.all(AdminDashboardTheme.shellPadding),
+        child: AdminDashboardPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      color: SurveyTheme.textMain,
+                    ),
+                    Text(
+                      'Survey',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: SurveyTheme.textMain,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: SurveyTheme.divider),
+              Expanded(child: content),
+            ],
+          ),
+        ),
       ),
     );
   }

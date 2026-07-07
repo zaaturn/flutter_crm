@@ -105,7 +105,9 @@ class EmployeeDashboardNavigator {
     _switchTab(
       context,
       BlocProvider(
-        create: (_) => LeaveBloc(LeaveApiService())..add(const LoadMyLeaves()),
+        create: (_) => LeaveBloc(LeaveApiService())
+          ..add(const LoadMyLeaves())
+          ..add(const LoadLeaveBalances()),
         child: _isDesktop(context)
             ? const EmployeeLeaveDashboardScreenDesktop()
             : const EmployeeLeaveDashboardScreen(),
@@ -139,7 +141,9 @@ class EmployeeDashboardNavigator {
       context,
       MaterialPageRoute(
         builder: (_) => BlocProvider(
-          create: (_) => LeaveBloc(LeaveApiService())..add(const LoadLeaveTypes()),
+          create: (_) => LeaveBloc(LeaveApiService())
+            ..add(const LoadLeaveTypes())
+            ..add(const LoadLeaveBalances()),
           child: _isDesktop(context)
               ? const ApplyLeaveScreenDesktop()
               : const ApplyLeaveScreen(),

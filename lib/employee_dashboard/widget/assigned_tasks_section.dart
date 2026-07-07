@@ -261,6 +261,27 @@ class _TaskExpandableBarState extends State<_TaskExpandableBar> {
                     height: 1.5,
                   ),
                 ),
+                if (task.assignedByName != null &&
+                    task.assignedByName!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'ASSIGNED BY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _textHint,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    task.assignedByName!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _textMain,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

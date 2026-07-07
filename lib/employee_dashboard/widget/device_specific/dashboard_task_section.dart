@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/tasks/task_status_utils.dart';
 
 typedef TaskStatusCallback = void Function(int taskId, String status);
@@ -8,12 +9,24 @@ typedef TaskStatusCallback = void Function(int taskId, String status);
 class DashboardTasksSection extends StatelessWidget {
   final List<TaskModel> tasks;
   final TaskStatusCallback onUpdateStatus;
+  final bool v2Style;
+  final bool hideHeader;
+  final bool scrollable;
+  final int maxItems;
 
   const DashboardTasksSection({
     super.key,
     required this.tasks,
     required this.onUpdateStatus,
+    this.v2Style = false,
+    this.hideHeader = false,
+    this.scrollable = false,
+    this.maxItems = 20,
   });
+
+  Color get _accent => v2Style ? const Color(0xFF059669) : _purple;
+  Color get _accentLight => v2Style ? EmployeeDashboardV2Theme.greenLight : _purpleL;
+  Color get _borderColor => v2Style ? EmployeeDashboardV2Theme.cardBorder : _border;
 
   static const _white = Color(0xFFFFFFFF);
   static const _purple = Color(0xFF7C3AED);
@@ -34,33 +47,50 @@ class DashboardTasksSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleTasks = tasks.length <= maxItems ? tasks : tasks.take(maxItems).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(),
-        const SizedBox(height: 12),
-        if (tasks.isEmpty)
+        if (!hideHeader) ...[
+          _buildHeader(),
+          const SizedBox(height: 12),
+        ],
+        if (visibleTasks.isEmpty)
           _buildEmptyState()
         else
           Container(
             decoration: BoxDecoration(
               color: _white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border, width: 1.5),
+              border: Border.all(color: _borderColor, width: 1.5),
             ),
             clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (var i = 0; i < tasks.length; i++) ...[
-                  _TaskExpandableBar(
-                    task: tasks[i],
-                    onUpdateStatus: onUpdateStatus,
+            child: scrollable
+                ? ListView.separated(
+                    padding: EdgeInsets.zero,
+                    primary: false,
+                    shrinkWrap: true,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: visibleTasks.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(height: 1, thickness: 1, color: _border),
+                    itemBuilder: (_, i) => _TaskExpandableBar(
+                      task: visibleTasks[i],
+                      onUpdateStatus: onUpdateStatus,
+                    ),
+                  )
+                : Column(
+                    children: [
+                      for (var i = 0; i < visibleTasks.length; i++) ...[
+                        _TaskExpandableBar(
+                          task: visibleTasks[i],
+                          onUpdateStatus: onUpdateStatus,
+                        ),
+                        if (i < visibleTasks.length - 1)
+                          const Divider(height: 1, thickness: 1, color: _border),
+                      ],
+                    ],
                   ),
-                  if (i < tasks.length - 1)
-                    const Divider(height: 1, thickness: 1, color: _border),
-                ],
-              ],
-            ),
           ),
       ],
     );
@@ -69,10 +99,10 @@ class DashboardTasksSection extends StatelessWidget {
   Widget _buildHeader() {
     return Row(
       children: [
-        const Text(
+        Text(
           'Active tasks',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: v2Style ? 17 : 18,
             fontWeight: FontWeight.w900,
             color: _textMain,
             letterSpacing: -0.5,
@@ -82,25 +112,25 @@ class DashboardTasksSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
-            color: _purpleL,
+            color: _accentLight,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: _purple.withValues(alpha: 0.1)),
+            border: Border.all(color: _accent.withValues(alpha: 0.1)),
           ),
           child: Text(
             '${tasks.length}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: _purple,
+              color: _accent,
             ),
           ),
         ),
         const Spacer(),
-        const Text(
+        Text(
           'View all',
           style: TextStyle(
             fontSize: 13,
-            color: _purple,
+            color: _accent,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -319,6 +349,28 @@ class _TaskExpandableBarState extends State<_TaskExpandableBar> {
                     height: 1.5,
                   ),
                 ),
+                if (task.assignedByName != null &&
+                    task.assignedByName!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  const Text(
+                    'ASSIGNED BY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _textHint,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    task.assignedByName!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: _textMain,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,

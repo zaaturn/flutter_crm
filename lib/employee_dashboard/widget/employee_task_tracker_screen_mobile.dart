@@ -408,6 +408,27 @@ class _MobileTaskCard extends StatelessWidget {
             task.description,
             style: const TextStyle(color: textMuted, fontSize: 14, height: 1.5),
           ),
+          if (task.assignedByName != null && task.assignedByName!.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(Icons.person_outline_rounded, size: 14, color: textMuted),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Assigned by ${task.assignedByName}',
+                    style: const TextStyle(
+                      color: textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     ),

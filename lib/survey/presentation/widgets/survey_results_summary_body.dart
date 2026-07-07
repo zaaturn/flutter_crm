@@ -6,6 +6,7 @@ import '../../bloc/survey_admin_bloc.dart';
 import '../../bloc/survey_admin_event.dart';
 import '../../bloc/survey_admin_state.dart';
 import '../../models/survey_models.dart';
+import '../../theme/survey_theme.dart';
 import 'survey_rating_summary_table.dart';
 import 'survey_results_charts.dart';
 import 'survey_text_results_list.dart';
@@ -76,7 +77,7 @@ class SurveyResultsSummaryBody extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
+              color: SurveyTheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),

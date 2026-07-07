@@ -11,6 +11,8 @@ import '../../models/survey_models.dart';
 import '../../theme/survey_theme.dart';
 import '../widgets/survey_question_editor.dart';
 import '../widgets/survey_audience_section.dart';
+import '../widgets/survey_admin_shell.dart';
+import '../widgets/survey_filter_rail.dart';
 import 'survey_results_screen.dart';
 
 class SurveyBuilderScreen extends StatefulWidget {
@@ -148,19 +150,17 @@ class _SurveyBuilderScreenState extends State<SurveyBuilderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: SurveyTheme.background,
-      appBar: AppBar(
-        backgroundColor: SurveyTheme.background,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: SurveyTheme.textMain,
-        title: Text(
-          'Create Survey',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-        ),
-      ),
-      body: BlocConsumer<SurveyAdminBloc, SurveyAdminState>(
+    return BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
+      builder: (context, state) {
+        return SurveyAdminShell(
+          title: 'Create Survey',
+          onBack: () => Navigator.of(context).pop(),
+          rail: SurveyFilterRail(
+            selected: state.filter,
+            popOnFilterChange: true,
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          body: BlocConsumer<SurveyAdminBloc, SurveyAdminState>(
         listener: (context, state) {
           final detail = state.detail;
           if (detail != null && detail.id == widget.surveyId) {
@@ -327,6 +327,8 @@ class _SurveyBuilderScreenState extends State<SurveyBuilderScreen> {
           );
         },
       ),
+        );
+      },
     );
   }
 }

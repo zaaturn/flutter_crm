@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/leave_management/block/leave_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
+import 'package:my_app/leave_management/models/leave_balance_response.dart';
 import 'package:my_app/leave_management/models/leave_type.dart';
 import 'package:my_app/leave_management/models/leave_request.dart';
 
 class ApplyLeaveForm extends StatefulWidget {
   final List<LeaveType> leaveTypes;
+  final Map<int, LeaveBalanceItem> balanceByTypeId;
   final LeaveRequest? existingLeave;
 
   /// Desktop dialog: `true` (default). Modal bottom sheet: `false` so only the sheet pops.
@@ -17,6 +22,7 @@ class ApplyLeaveForm extends StatefulWidget {
   const ApplyLeaveForm({
     super.key,
     required this.leaveTypes,
+    this.balanceByTypeId = const {},
     this.existingLeave,
     this.useRootNavigatorForPop = true,
   });
@@ -147,10 +153,10 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: GoogleFonts.plusJakartaSans(
             fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF374151),
+            fontWeight: FontWeight.w700,
+            color: EmployeeDashboardV2Theme.textDark,
           ),
         ),
         const SizedBox(height: 8),
@@ -161,19 +167,19 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
 
   InputDecoration _inputDecoration(IconData icon) {
     return InputDecoration(
-      prefixIcon: Icon(icon, size: 20, color: Colors.grey),
+      prefixIcon: Icon(icon, size: 20, color: EmployeeDashboardV2Theme.textMuted),
       filled: true,
-      fillColor: Colors.white,
+      fillColor: EmployeeDashboardV2Theme.cardMuted,
       contentPadding: const EdgeInsets.all(16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: EmployeeDashboardV2Theme.cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF2563EB)),
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: EmployeeDashboardV2Theme.green),
       ),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 
@@ -181,9 +187,13 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
     return DropdownButtonFormField<LeaveType>(
       value: _selectedLeaveType,
       decoration: _inputDecoration(Icons.category_outlined),
-      items: widget.leaveTypes
-          .map((e) => DropdownMenuItem(value: e, child: Text(e.name)))
-          .toList(),
+      items: widget.leaveTypes.map((e) {
+        final balance = widget.balanceByTypeId[e.id];
+        final label = balance != null
+            ? '${e.name} (${balance.remainingLabel} days left)'
+            : e.name;
+        return DropdownMenuItem(value: e, child: Text(label));
+      }).toList(),
       onChanged: (v) {
         setState(() {
           _selectedLeaveType = v;
@@ -247,10 +257,10 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
           child: ElevatedButton(
             onPressed: _submit,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: EmployeeDashboardV2Theme.greenMid,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             child: Text(widget.existingLeave == null ? 'Submit Request' : 'Resubmit'),
           ),

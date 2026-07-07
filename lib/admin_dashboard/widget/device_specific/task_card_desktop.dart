@@ -202,7 +202,7 @@ class _ModrenLevelTaskRowState extends State<ModrenLevelTaskRow> {
         const Icon(Icons.calendar_today_rounded, size: 14, color: _textMuted),
         const SizedBox(width: 8),
         Text(
-            widget.task.dueDate,
+            widget.task.dueDate ?? '—',
             style: GoogleFonts.plusJakartaSans(color: _textMuted, fontSize: 12, fontWeight: FontWeight.w600)
         ),
       ],

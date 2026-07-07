@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 
 class DraggableTaskCard extends StatefulWidget {
   const DraggableTaskCard({
@@ -42,7 +43,7 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
               ? const Color(0xFF6366F1)
               : _hovered
               ? const Color(0xFFCBD5E1)
-              : const Color(0xFFE2E8F0),
+              : EmployeeDashboardV2Theme.cardBorder,
           width: isFeedback ? 2 : 1,
         ),
         boxShadow: isFeedback
@@ -109,8 +110,8 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
                 color: Color(0xFF64748B),
                 height: 1.5,
               ),
-              maxLines: 4, // Increased to ensure visibility
-              overflow: TextOverflow.ellipsis,
+              maxLines: null,
+              softWrap: true,
             ),
           ],
           const SizedBox(height: 12),
@@ -133,19 +134,44 @@ class _DraggableTaskCardState extends State<DraggableTaskCard> {
                 ),
               ),
               const Spacer(),
-              CircleAvatar(
-                radius: 13,
-                backgroundColor:
-                widget.statusColor(t.status).withOpacity(0.12),
-                child: Text(
-                  t.title.isNotEmpty ? t.title[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: widget.statusColor(t.status),
+              if (t.assignedByName != null && t.assignedByName!.trim().isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_outline_rounded,
+                      size: 14,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        t.assignedByName!,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                CircleAvatar(
+                  radius: 13,
+                  backgroundColor:
+                      widget.statusColor(t.status).withOpacity(0.12),
+                  child: Text(
+                    t.title.isNotEmpty ? t.title[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: widget.statusColor(t.status),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ],

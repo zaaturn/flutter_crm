@@ -343,7 +343,7 @@ class _FormPanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Admin Login',
+            'User Login',
             textAlign: compact ? TextAlign.center : TextAlign.start,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 24,

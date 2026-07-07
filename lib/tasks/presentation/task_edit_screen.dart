@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import 'package:my_app/admin_dashboard/model/user.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
+import 'package:my_app/admin_dashboard/shared/admin_content_shell.dart';
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_search_desktop.dart';
 import 'package:my_app/tasks/models/crm_task.dart';
 import 'package:my_app/tasks/services/crm_task_api_service.dart';
@@ -19,17 +21,6 @@ class TaskEditScreen extends StatefulWidget {
 }
 
 class _TaskEditScreenState extends State<TaskEditScreen> {
-  // Dashboard purple palette (matches sidebar + task tracker).
-  static const _purple = Color(0xFF7C3AED);
-  static const _purpleLight = Color(0xFFF5F3FF);
-  static const _purpleDark = Color(0xFF4C1D95);
-  static const _borderPurple = Color(0xFFEDE9FE);
-  static const _textPrimary = Color(0xFF0F172A);
-  static const _textMuted = Color(0xFF64748B);
-  static const _labelMuted = Color(0xFF94A3B8);
-  static const _fieldBg = Color(0xFFF8FAFC);
-  static const _border = Color(0xFFE2E8F0);
-
   final _api = CrmTaskApiService();
   final _repo = AdminRepository();
   final _title = TextEditingController();
@@ -115,9 +106,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: _purple,
+              primary: AdminDashboardTheme.teal,
               onPrimary: Colors.white,
-              onSurface: _textPrimary,
+              onSurface: AdminDashboardTheme.textDark,
             ),
           ),
           child: child!,
@@ -181,11 +172,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _purpleLight,
-      appBar: _buildAppBar(),
+    return AdminContentShell(
+      title: 'Edit Task',
+      onBack: () => Navigator.pop(context),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _purple))
+          ? const Center(
+              child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
+            )
           : LayoutBuilder(
               builder: (context, constraints) {
                 double horizontalPadding = 24;
@@ -207,28 +200,6 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 );
               },
             ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      surfaceTintColor: Colors.transparent,
-      leading: const BackButton(color: _textPrimary),
-      title: Text(
-        'Edit Task',
-        style: GoogleFonts.plusJakartaSans(
-          color: _textPrimary,
-          fontWeight: FontWeight.w800,
-          fontSize: 18,
-        ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(1),
-        child: Container(color: _borderPurple, height: 1),
-      ),
     );
   }
 
@@ -354,10 +325,10 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _borderPurple),
+        border: Border.all(color: AdminDashboardTheme.border),
         boxShadow: [
           BoxShadow(
-            color: _purple.withValues(alpha: 0.06),
+            color: AdminDashboardTheme.teal.withValues(alpha: 0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -371,11 +342,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _purpleLight,
+                  color: AdminDashboardTheme.tealLight,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: _borderPurple),
+                  border: Border.all(color: AdminDashboardTheme.border),
                 ),
-                child: Icon(icon, size: 18, color: _purple),
+                child: Icon(icon, size: 18, color: AdminDashboardTheme.teal),
               ),
               const SizedBox(width: 12),
               Text(
@@ -383,7 +354,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: _textPrimary,
+                  color: AdminDashboardTheme.textDark,
                 ),
               ),
             ],
@@ -402,7 +373,7 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
         text.toUpperCase(),
         style: GoogleFonts.plusJakartaSans(
           fontWeight: FontWeight.w700,
-          color: _labelMuted,
+          color: AdminDashboardTheme.textMuted,
           fontSize: 11,
           letterSpacing: 1.2,
         ),
@@ -418,24 +389,24 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _fieldBg,
+        color: AdminDashboardTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border),
+        border: Border.all(color: AdminDashboardTheme.border),
       ),
       child: TextField(
         controller: controller,
         maxLines: maxLines,
         style: GoogleFonts.plusJakartaSans(
           fontSize: 15,
-          color: _textPrimary,
+          color: AdminDashboardTheme.textDark,
           fontWeight: FontWeight.w500,
         ),
         decoration: InputDecoration(
           prefixIcon: icon != null
-              ? Icon(icon, size: 20, color: _textMuted)
+              ? Icon(icon, size: 20, color: AdminDashboardTheme.textMuted)
               : null,
           hintText: hint,
-          hintStyle: GoogleFonts.plusJakartaSans(color: _labelMuted),
+          hintStyle: GoogleFonts.plusJakartaSans(color: AdminDashboardTheme.textMuted),
           contentPadding: const EdgeInsets.all(16),
           border: InputBorder.none,
         ),
@@ -450,13 +421,13 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: _fieldBg,
+          color: AdminDashboardTheme.surfaceMuted,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: _border),
+          border: Border.all(color: AdminDashboardTheme.border),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_month_rounded, size: 18, color: _purple),
+            const Icon(Icons.calendar_month_rounded, size: 18, color: AdminDashboardTheme.teal),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -465,11 +436,11 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
                     : DateFormat('EEE, MMM dd, yyyy').format(_dueDate!),
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w600,
-                  color: _dueDate == null ? _labelMuted : _textPrimary,
+                  color: _dueDate == null ? AdminDashboardTheme.textMuted : AdminDashboardTheme.textDark,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: _textMuted, size: 20),
+            const Icon(Icons.chevron_right_rounded, color: AdminDashboardTheme.textMuted, size: 20),
           ],
         ),
       ),
@@ -480,24 +451,24 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: _fieldBg,
+        color: AdminDashboardTheme.surfaceMuted,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _border),
+        border: Border.all(color: AdminDashboardTheme.border),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _priorities.contains(_priority) ? _priority : 'MEDIUM',
           isExpanded: true,
-          icon: const Icon(Icons.unfold_more_rounded, size: 20, color: _textMuted),
+          icon: const Icon(Icons.unfold_more_rounded, size: 20, color: AdminDashboardTheme.textMuted),
           style: GoogleFonts.plusJakartaSans(
             fontWeight: FontWeight.w600,
-            color: _textPrimary,
+            color: AdminDashboardTheme.textDark,
           ),
           items: _priorities.map((p) {
             final color = switch (p) {
               'HIGH' => const Color(0xFFEF4444),
               'LOW' => const Color(0xFF10B981),
-              _ => _purple,
+              _ => AdminDashboardTheme.teal,
             };
             return DropdownMenuItem(
               value: p,
@@ -531,43 +502,43 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: _purpleLight,
+              color: AdminDashboardTheme.tealLight,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _borderPurple),
+              border: Border.all(color: AdminDashboardTheme.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.description_rounded, color: _purple, size: 20),
+                const Icon(Icons.description_rounded, color: AdminDashboardTheme.teal, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     _attachment!.name,
                     style: GoogleFonts.plusJakartaSans(
-                      color: _purpleDark,
+                      color: AdminDashboardTheme.tealDark,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => setState(() => _attachment = null),
-                  icon: const Icon(Icons.cancel_rounded, color: _purple, size: 20),
+                  icon: const Icon(Icons.cancel_rounded, color: AdminDashboardTheme.teal, size: 20),
                 ),
               ],
             ),
           ),
         OutlinedButton.icon(
           onPressed: _pickFile,
-          icon: const Icon(Icons.file_upload_outlined, color: _purple),
+          icon: const Icon(Icons.file_upload_outlined, color: AdminDashboardTheme.teal),
           label: Text(
             'Attach project documentation',
             style: GoogleFonts.plusJakartaSans(
-              color: _purple,
+              color: AdminDashboardTheme.teal,
               fontWeight: FontWeight.w700,
             ),
           ),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            side: const BorderSide(color: _borderPurple),
+            side: const BorderSide(color: AdminDashboardTheme.border),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -582,9 +553,9 @@ class _TaskEditScreenState extends State<TaskEditScreen> {
       child: ElevatedButton(
         onPressed: _saving ? null : _save,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _purple,
+          backgroundColor: AdminDashboardTheme.teal,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: _purple.withValues(alpha: 0.5),
+          disabledBackgroundColor: AdminDashboardTheme.teal.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),

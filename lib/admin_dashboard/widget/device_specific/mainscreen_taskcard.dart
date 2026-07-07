@@ -143,7 +143,7 @@ class ModernTaskCard extends StatelessWidget {
                       const Icon(Icons.calendar_today_rounded, size: 12, color: _textMuted),
                       const SizedBox(width: 6),
                       Text(
-                        task.dueDate,
+                        task.dueDate ?? '—',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

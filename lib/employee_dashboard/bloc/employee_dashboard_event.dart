@@ -1,3 +1,5 @@
+import '../model/employee_model.dart';
+
 abstract class EmployeeEvent {}
 
 class LoadDashboard extends EmployeeEvent {}
@@ -33,5 +35,11 @@ class UpdateTaskStatus extends EmployeeEvent {
   });
 }
 
+class EmployeeProfileUpdated extends EmployeeEvent {
+  final EmployeeModel employee;
+  EmployeeProfileUpdated(this.employee);
+}
+
+class RefreshEmployeeProfile extends EmployeeEvent {}
 
 class RegisterNotificationDevice extends EmployeeEvent {}

@@ -7,10 +7,10 @@ import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
 
 import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/board_view.dart';
-import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/sidebar.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/stats_bar.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/top_bar.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/task_tracker_widget/list_view.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 
 class EmployeeTaskTrackerScreen extends StatefulWidget {
   final int? focusTaskId;
@@ -25,8 +25,6 @@ class EmployeeTaskTrackerScreen extends StatefulWidget {
 class _EmployeeTaskTrackerScreenState
     extends State<EmployeeTaskTrackerScreen> {
   bool _isBoardView = true;
-  String? _filterStatus;
-  String? _filterPriority;
   final TextEditingController _searchCtrl = TextEditingController();
 
   // drag state
@@ -34,7 +32,6 @@ class _EmployeeTaskTrackerScreenState
   String? _hoveredColumn;
 
   // palette
-  static const _bg = Color(0xFFF8FAFC);
   static const _pending = Color(0xFFF59E0B);
   static const _inprogress = Color(0xFF6366F1);
   static const _completed = Color(0xFF10B981);
@@ -80,14 +77,6 @@ class _EmployeeTaskTrackerScreenState
     final q = _searchCtrl.text.toLowerCase();
 
     return tasks.where((t) {
-      if (_filterStatus != null && t.status != _filterStatus) {
-        return false;
-      }
-
-      if (_filterPriority != null && t.priority != _filterPriority) {
-        return false;
-      }
-
       if (q.isNotEmpty &&
           !t.title.toLowerCase().contains(q) &&
           !t.description.toLowerCase().contains(q)) {
@@ -132,7 +121,7 @@ class _EmployeeTaskTrackerScreenState
         filtered.where((t) => t.status == 'COMPLETED').toList();
 
         return Scaffold(
-          backgroundColor: _bg,
+          backgroundColor: EmployeeDashboardV2Theme.shell,
           body: Column(
             children: [
               TopBar(
@@ -142,93 +131,48 @@ class _EmployeeTaskTrackerScreenState
                     setState(() => _isBoardView = v),
               ),
               Expanded(
-                child: Row(
+                child: Column(
                   children: [
-                    Sidebar(
-                      tasks: tasks,
-                      filterStatus: _filterStatus,
-                      filterPriority: _filterPriority,
-                      isBoardView: _isBoardView,
-                      onStatusFilterChanged: (v) {
-                        setState(() {
-                          _filterStatus = v;
-                          _filterPriority = null;
-                        });
-                      },
-                      onPriorityFilterChanged: (v) {
-                        setState(() {
-                          _filterPriority = v;
-                          _filterStatus = null;
-                        });
-                      },
-                    ),
+                    StatsBar(tasks: tasks),
                     Expanded(
-                      child: Column(
-                        children: [
-                          StatsBar(tasks: tasks),
-                          Expanded(
-                            child: state.loading == true
-                                ? const Center(
-                              child:
-                              CircularProgressIndicator(),
+                      child: state.loading == true
+                          ? const Center(
+                              child: CircularProgressIndicator(),
                             )
-                                : state.error != null
-                                ? Center(
-                              child: Text(state.error!),
-                            )
-                                : Padding(
-                              padding:
-                              const EdgeInsets.all(20),
-                              child: _isBoardView
-                                  ? BoardView(
-                                pending: pending,
-                                inProgress:
-                                inProgress,
-                                completed: completed,
-                                draggingTask:
-                                _draggingTask,
-                                hoveredColumn:
-                                _hoveredColumn,
-                                statusColor:
-                                statusColor,
-                                priorityColor:
-                                priorityColor,
-                                statusLabel:
-                                statusLabel,
-                                onDragStarted:
-                                    (task) =>
-                                    setState(() =>
-                                    _draggingTask =
-                                        task),
-                                onDragEnd: () =>
-                                    setState(() {
-                                      _draggingTask = null;
-                                      _hoveredColumn =
-                                      null;
-                                    }),
-                                onColumnHover:
-                                    (status) =>
-                                    setState(() =>
-                                    _hoveredColumn =
-                                        status),
-                                onDropped:
-                                _onDropped,
-                              )
-                                  : TaskListView(
-                                tasks: filtered,
-                                onStatusChange:
-                                _onStatusChange,
-                                statusColor:
-                                statusColor,
-                                priorityColor:
-                                priorityColor,
-                                statusLabel:
-                                statusLabel,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                          : state.error != null
+                              ? Center(
+                                  child: Text(state.error!),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: _isBoardView
+                                      ? BoardView(
+                                          pending: pending,
+                                          inProgress: inProgress,
+                                          completed: completed,
+                                          draggingTask: _draggingTask,
+                                          hoveredColumn: _hoveredColumn,
+                                          statusColor: statusColor,
+                                          priorityColor: priorityColor,
+                                          statusLabel: statusLabel,
+                                          onDragStarted: (task) =>
+                                              setState(() => _draggingTask = task),
+                                          onDragEnd: () => setState(() {
+                                            _draggingTask = null;
+                                            _hoveredColumn = null;
+                                          }),
+                                          onColumnHover: (status) =>
+                                              setState(() => _hoveredColumn = status),
+                                          onDropped: _onDropped,
+                                        )
+                                      : TaskListView(
+                                          tasks: filtered,
+                                          onStatusChange: _onStatusChange,
+                                          statusColor: statusColor,
+                                          priorityColor: priorityColor,
+                                          statusLabel: statusLabel,
+                                        ),
+                                ),
                     ),
                   ],
                 ),

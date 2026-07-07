@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/tasks/task_status_utils.dart';
 import 'shared_widgets.dart';
 
@@ -25,15 +26,15 @@ class TaskListView extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: EmployeeDashboardV2Theme.cardBorder),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: const BoxDecoration(
-              color: Color(0xFFF8FAFC),
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+              color: EmployeeDashboardV2Theme.cardMuted,
+              border: Border(bottom: BorderSide(color: EmployeeDashboardV2Theme.cardBorder)),
               borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: const Row(
@@ -41,14 +42,14 @@ class TaskListView extends StatelessWidget {
                 Expanded(flex: 6, child: HeaderCell('TASK')),
                 Expanded(flex: 2, child: HeaderCell('PRIORITY')),
                 Expanded(flex: 2, child: HeaderCell('STATUS')),
-                Expanded(flex: 1, child: HeaderCell('ASSIGNEE')),
+                Expanded(flex: 2, child: HeaderCell('ASSIGNED BY')),
               ],
             ),
           ),
           Expanded(
             child: ListView.separated(
               itemCount: tasks.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              separatorBuilder: (_, __) => const Divider(height: 1, color: EmployeeDashboardV2Theme.cardBorder),
               itemBuilder: (_, i) => _ListRow(
                 task: tasks[i],
                 statusColor: statusColor,
@@ -186,16 +187,18 @@ class _ListRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: CircleAvatar(
-                radius: 14,
-                backgroundColor: statusColor(task.status).withOpacity(0.1),
-                child: Text(
-                  task.title.isNotEmpty ? task.title[0] : '?',
-                  style: TextStyle(fontSize: 12, color: statusColor(task.status)),
+              child: Text(
+                task.assignedByLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF475569),
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),

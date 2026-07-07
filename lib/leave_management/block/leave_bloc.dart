@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/leave_management/block/leave_event.dart';
 import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/models/leave_request.dart';
+import 'package:my_app/leave_management/models/leave_balance_response.dart';
 import '../services/leave_api_services.dart';
 
 class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
@@ -12,10 +13,14 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
 
 
   List<LeaveRequest> _cachedLeaves = [];
+  LeaveBalanceResponse? _cachedBalances;
 
   /// Last successful my-leaves list (for UI when current [state] is not [MyLeavesLoaded]).
   List<LeaveRequest> get myLeavesSnapshot =>
       UnmodifiableListView<LeaveRequest>(_cachedLeaves);
+
+  /// Last successful balance response (for UI when state is not [LeaveBalancesLoaded]).
+  LeaveBalanceResponse? get balanceSnapshot => _cachedBalances;
 
 
   String? _lastStatus;
@@ -69,12 +74,22 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
       LoadLeaveBalances event,
       Emitter<LeaveState> emit,
       ) async {
-    emit(LeaveBalancesLoading());
+    if (_cachedBalances == null) {
+      emit(LeaveBalancesLoading());
+    }
     try {
-      final balances = await apiService.getMyLeaveBalances();
-      emit(LeaveBalancesLoaded(balances));
+      final response = await apiService.fetchMyLeaveBalances(year: event.year);
+      _cachedBalances = response;
+      emit(LeaveBalancesLoaded(response));
+      if (_cachedLeaves.isNotEmpty) {
+        emit(MyLeavesLoaded(_cachedLeaves));
+      }
     } catch (e) {
-      emit(LeaveError(_extractErrorMessage(e)));
+      if (_cachedBalances != null) {
+        emit(LeaveBalancesLoaded(_cachedBalances!));
+      } else {
+        emit(LeaveError(_extractErrorMessage(e)));
+      }
     }
   }
 
@@ -159,6 +174,7 @@ class LeaveBloc extends Bloc<LeaveEvent, LeaveState> {
         startDate: _lastStartDate,
         endDate: _lastEndDate,
       ));
+      add(const LoadLeaveBalances());
     } catch (e) {
       emit(LeaveError(_extractErrorMessage(e)));
     }

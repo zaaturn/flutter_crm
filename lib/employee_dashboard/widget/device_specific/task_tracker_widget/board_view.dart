@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/employee_dashboard/model/task_model.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'draggable_task_card.dart';
 
 class BoardView extends StatelessWidget {
@@ -36,7 +37,7 @@ class BoardView extends StatelessWidget {
   final void Function(TaskModel, String) onDropped;
 
   static const _surface = Colors.white;
-  static const _border = Color(0xFFE2E8F0);
+  static const _border = EmployeeDashboardV2Theme.cardBorder;
 
   Color _priorityBg(String p) => switch (p.toUpperCase()) {
     'HIGH' => const Color(0xFFFEF2F2),
@@ -136,7 +137,7 @@ class BoardView extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isHovered
                             ? colColor.withOpacity(0.1)
-                            : const Color(0xFFF8FAFC),
+                            : EmployeeDashboardV2Theme.cardMuted,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: isHovered

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'shared_widgets.dart';
 
 class TopBar extends StatelessWidget {
@@ -17,12 +18,10 @@ class TopBar extends StatelessWidget {
   final bool isBoardView;
   final ValueChanged<bool> onToggleView;
 
-  static const _surface = Colors.white;
-  static const _border = Color(0xFFE2E8F0);
   static const _textPrimary = Color(0xFF0F172A);
   static const _textMuted = Color(0xFF94A3B8);
-  static const _accent = Color(0xFF6366F1);
-  static const _bg = Color(0xFFF8FAFC);
+  static const _accent = EmployeeDashboardV2Theme.greenMid;
+  static const _bg = Color(0xFFF6FBF8);
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +29,8 @@ class TopBar extends StatelessWidget {
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
-        color: _surface,
-        border: Border(bottom: BorderSide(color: _border)),
+        color: EmployeeDashboardV2Theme.shell,
+        border: Border(bottom: BorderSide(color: EmployeeDashboardV2Theme.cardBorder)),
       ),
       child: Row(
         children: [
@@ -107,11 +106,11 @@ class TopBar extends StatelessWidget {
                 const EdgeInsets.symmetric(vertical: 0),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: _border),
+                  borderSide: const BorderSide(color: EmployeeDashboardV2Theme.cardBorder),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: _border),
+                  borderSide: const BorderSide(color: EmployeeDashboardV2Theme.cardBorder),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -123,14 +122,6 @@ class TopBar extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-
-          IconBtn(
-            icon: Icons.refresh,
-            tooltip: 'Refresh',
-            onTap: () {
-              context.read<EmployeeBloc>().add(LoadDashboard());
-            },
-          ),
         ],
       ),
     );

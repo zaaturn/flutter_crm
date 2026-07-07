@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 
 /// ─────────────────────────────────────────────────────────
 /// View Toggle (Board/List)
@@ -18,9 +19,9 @@ class ViewToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: EmployeeDashboardV2Theme.surfaceAlt,
         borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: EmployeeDashboardV2Theme.cardBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -135,7 +136,7 @@ class IconBtn extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(color: EmployeeDashboardV2Theme.cardBorder),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

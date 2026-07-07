@@ -2,7 +2,8 @@ import '../model/attendance_model.dart';
 import '../model/task_model.dart';
 import '../model/shared_item_model.dart';
 import '../model/event_model.dart';
-import '../model/employee_model.dart';  // <-- ADD THIS
+import '../model/employee_model.dart';
+import '../model/weekly_activity_model.dart';
 
 class EmployeeState {
   final bool loading;
@@ -13,6 +14,7 @@ class EmployeeState {
   final String? error;
 
   final EmployeeModel? employee;
+  final WeeklyActivityModel? weeklyActivity;
 
   EmployeeState({
     this.loading = false,
@@ -22,6 +24,7 @@ class EmployeeState {
     this.events = const [],
     this.error,
     this.employee,
+    this.weeklyActivity,
   });
 
   EmployeeState copyWith({
@@ -32,6 +35,7 @@ class EmployeeState {
     List<EventModel>? events,
     String? error,
     EmployeeModel? employee,
+    WeeklyActivityModel? weeklyActivity,
   }) {
     return EmployeeState(
       loading: loading ?? this.loading,
@@ -41,6 +45,7 @@ class EmployeeState {
       events: events ?? this.events,
       error: error ?? this.error,
       employee: employee ?? this.employee,
+      weeklyActivity: weeklyActivity ?? this.weeklyActivity,
     );
   }
 }

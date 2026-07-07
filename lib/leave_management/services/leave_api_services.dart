@@ -3,7 +3,7 @@ import 'package:my_app/services/api_client.dart';
 import 'package:my_app/core/error_handler/error_handler.dart';
 
 import '../models/leave_type.dart';
-import '../models/leave_balance.dart';
+import '../models/leave_balance_response.dart';
 import '../models/leave_request.dart';
 import '../models/public_holiday.dart';
 import '../models/approver.dart';
@@ -39,16 +39,15 @@ class LeaveApiService {
   }
 
   // ===============================
-  // LEAVE BALANCES
+  // LEAVE BALANCES (GET /api/leaves/balances/)
   // ===============================
-  Future<List<LeaveBalance>> getMyLeaveBalances() async {
+  Future<LeaveBalanceResponse> fetchMyLeaveBalances({int? year}) async {
     return _safeRequest(() async {
-      final data = await _api.get("/api/leaves/my-balances/");
-      final results = data['results'] ?? data;
-
-      return (results as List)
-          .map((e) => LeaveBalance.fromJson(e))
-          .toList();
+      final data = await _api.get(
+        '/api/leaves/balances/',
+        queryParameters: year != null ? {'year': year} : null,
+      );
+      return LeaveBalanceResponse.fromJson(Map<String, dynamic>.from(data));
     });
   }
 
@@ -275,20 +274,44 @@ class LeaveApiService {
 
   // ===============================
   // PUBLIC HOLIDAYS
+  // GET /api/leaves/holidays/?year=YYYY
+  // Response shapes: { holidays: [...] } | { results: [...] } | [...]
   // ===============================
   Future<List<PublicHoliday>> getPublicHolidays(int year) async {
     return _safeRequest(() async {
       final data = await _api.get(
-        "/api/leaves/holidays/",
-        queryParameters: {"year": year},
+        '/api/leaves/holidays/',
+        queryParameters: {'year': year},
       );
+      final holidays = parsePublicHolidayList(data);
+      if (holidays.isNotEmpty) return holidays;
 
-      final results = data['results'] ?? data;
-
-      return (results as List)
-          .map((e) => PublicHoliday.fromJson(e))
-          .toList();
+      // Fallback: some backends expose holidays only on events calendar.
+      return _fetchHolidaysFromEventsCalendar(year);
     });
+  }
+
+  Future<List<PublicHoliday>> _fetchHolidaysFromEventsCalendar(int year) async {
+    final data = await _api.get(
+      '/api/events/calendar/',
+      queryParameters: {
+        'start': '$year-01-01',
+        'end': '$year-12-31',
+        'include_tasks': false,
+        'include_holidays': true,
+      },
+    );
+
+    final raw = data['holidays'];
+    if (raw is! List) return [];
+
+    final rows = raw
+        .whereType<Map>()
+        .where((e) => e['is_holiday'] != false)
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+
+    return parsePublicHolidayList(rows);
   }
 
   // ===============================
