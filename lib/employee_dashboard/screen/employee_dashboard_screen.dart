@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
@@ -26,6 +28,7 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    AuthService().setActiveDashboard(ActiveDashboard.employee);
     final bloc = context.read<EmployeeBloc>();
     bloc.add(LoadDashboard());
     bloc.add(StartTaskPolling());

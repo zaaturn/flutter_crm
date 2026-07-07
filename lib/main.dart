@@ -203,7 +203,7 @@ Future<void> main() async {
           BlocProvider<SurveyEmployeeBloc>(
             create: (_) => SurveyEmployeeBloc(
               repository: SurveyRepository(),
-            )..add(const SurveyEmployeeLoadActive()),
+            ),
           ),
         ],
         child: const _RealtimeWsBootstrap(

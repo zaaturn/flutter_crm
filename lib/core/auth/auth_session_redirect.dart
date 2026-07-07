@@ -70,7 +70,7 @@ class AuthSessionRedirect {
     Object? error, {
     int? statusCode,
   }) {
-    if (statusCode == 401 || statusCode == 403) return true;
+    if (statusCode == 401) return true;
 
     final msg = _normalize(messageFrom(error));
     if (msg.isEmpty) return false;

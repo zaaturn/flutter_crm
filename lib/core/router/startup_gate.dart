@@ -144,6 +144,7 @@ class _StartupGateState extends State<StartupGate> {
           (route) => false,
         );
       } else {
+        await AuthService().setActiveDashboard(ActiveDashboard.employee);
         Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
           '/employeeDashboard',
           (route) => false,
@@ -152,6 +153,7 @@ class _StartupGateState extends State<StartupGate> {
       return;
     }
 
+    await AuthService().setActiveDashboard(ActiveDashboard.employee);
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/employeeDashboard',
       (route) => false,
