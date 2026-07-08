@@ -7,6 +7,8 @@ import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/domain/models/post_model.dart';
 import 'package:my_app/dashboards/widgets/app_color.dart';
+import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
+import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
 
 /// Opens from notifications via `post_id`.
 class PostDetailScreen extends StatefulWidget {
@@ -24,7 +26,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<PostBloc>().add(FetchPostById(widget.postId));
-      context.read<PostBloc>().add(MarkPostAsRead(widget.postId));
     });
   }
 
@@ -93,7 +94,15 @@ class _Body extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(created, style: const TextStyle(color: AppColors.textMuted)),
+          Row(
+            children: [
+              Text(created, style: const TextStyle(color: AppColors.textMuted)),
+              if (post.canSeeViewers || post.isRead) ...[
+                const SizedBox(width: 12),
+                PostFeedStatusRow(post: post),
+              ],
+            ],
+          ),
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
@@ -114,6 +123,11 @@ class _Body extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           if (post.attachments.isNotEmpty) ...[
+            PostAttachmentsGallery(
+              attachments: post.attachments,
+              height: 280,
+            ),
+            const SizedBox(height: 16),
             const Text(
               'Attachments',
               style: TextStyle(

@@ -161,11 +161,11 @@ class _MobileSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(SurveyStatus?, String, SurveyIconType)>[
-      (null, 'All', SurveyIconType.list),
-      (SurveyStatus.draft, 'Draft', SurveyIconType.draft),
-      (SurveyStatus.active, 'Active', SurveyIconType.active),
-      (SurveyStatus.closed, 'Closed', SurveyIconType.closed),
+    final items = <(SurveyStatus?, String, IconData)>[
+      (null, 'All', Icons.list_alt_rounded),
+      (SurveyStatus.draft, 'Draft', Icons.edit_note_rounded),
+      (SurveyStatus.active, 'Active', Icons.play_circle_outline_rounded),
+      (SurveyStatus.closed, 'Closed', Icons.inventory_2_outlined),
     ];
 
     return SizedBox(
@@ -230,8 +230,8 @@ class _MobileSidebar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Column(
                           children: [
-                            SurveyIcon(
-                              type: item.$3,
+                            Icon(
+                              item.$3,
                               size: 18,
                               color: active ? SurveyTheme.purple : SurveyTheme.textMuted,
                             ),

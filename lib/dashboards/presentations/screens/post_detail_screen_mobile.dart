@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:my_app/dashboards/domain/models/post_attachment.dart';
 import 'package:my_app/dashboards/domain/models/post_model.dart';
+import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
@@ -28,7 +29,6 @@ class _PostDetailScreenMobileState extends State<PostDetailScreenMobile> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<PostBloc>().add(FetchPostById(widget.postId));
-      context.read<PostBloc>().add(MarkPostAsRead(widget.postId));
     });
   }
 
@@ -197,60 +197,32 @@ class _ImmersivePostBody extends StatelessWidget {
         : post.category.replaceAll('_', ' ');
     final link = (post.link ?? '').trim();
 
-    PostAttachment? hero;
-    if (post.attachments.isNotEmpty) {
-      final a = post.attachments.first;
-      if (isImage(a.fileType, a.file) || isVideo(a.fileType, a.file)) {
-        hero = a;
-      }
-    }
+    final visualAttachments = post.attachments
+        .where((a) => isImage(a.fileType, a.file) || isVideo(a.fileType, a.file))
+        .toList();
 
-    final List<PostAttachment> extras;
-    if (post.attachments.isEmpty) {
-      extras = [];
-    } else if (hero != null) {
-      extras = post.attachments.length > 1
-          ? post.attachments.sublist(1)
-          : <PostAttachment>[];
-    } else {
-      extras = post.attachments;
-    }
-
-    if (hero != null && isImage(hero.fileType, hero.file)) {
+    if (visualAttachments.isNotEmpty) {
       return Stack(
         fit: StackFit.expand,
         children: [
-          Positioned.fill(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              removeBottom: true,
-              child: Image.network(
-                hero.file,
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                width: double.infinity,
-                height: double.infinity,
-                loadingBuilder: (context, child, progress) {
-                  if (progress == null) return child;
-                  return const ColoredBox(
-                    color: Colors.black,
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.white38),
-                    ),
-                  );
-                },
-                errorBuilder: (_, __, ___) => const ColoredBox(
-                  color: Color(0xFF121212),
-                  child: Center(
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.white38,
-                      size: 56,
-                    ),
-                  ),
-                ),
-              ),
+          ColoredBox(
+            color: Colors.black,
+            child: PostAttachmentsGallery(
+              attachments: visualAttachments,
+              height: MediaQuery.sizeOf(context).height,
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _PostCaptionPanel(
+              post: post,
+              title: title,
+              link: link,
+              onOpenLink: onOpenLink,
+              authorName: _authorName(),
+              timeAgo: _timeAgo(),
             ),
           ),
           _CloseButton(topInset: topInset),
@@ -258,30 +230,7 @@ class _ImmersivePostBody extends StatelessWidget {
       );
     }
 
-    if (hero != null && isVideo(hero.fileType, hero.file)) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Positioned.fill(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              removeBottom: true,
-              child: const ColoredBox(color: Colors.black),
-            ),
-          ),
-          Center(
-            child: Icon(
-              Icons.play_circle_fill_rounded,
-              size: MediaQuery.sizeOf(context).shortestSide * 0.22,
-              color: Colors.white54,
-            ),
-          ),
-          _CloseButton(topInset: topInset),
-        ],
-      );
-    }
-
+    final List<PostAttachment> extras = post.attachments;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -492,6 +441,101 @@ class _ImmersivePostBody extends StatelessWidget {
         ),
         _CloseButton(topInset: topInset),
       ],
+    );
+  }
+}
+
+class _PostCaptionPanel extends StatelessWidget {
+  const _PostCaptionPanel({
+    required this.post,
+    required this.title,
+    required this.link,
+    required this.onOpenLink,
+    required this.authorName,
+    required this.timeAgo,
+  });
+
+  final PostModel post;
+  final String title;
+  final String link;
+  final Future<void> Function(String) onOpenLink;
+  final String authorName;
+  final String timeAgo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        16,
+        16,
+        16 + MediaQuery.paddingOf(context).bottom,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.88),
+            Colors.black.withValues(alpha: 0.35),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            authorName,
+            style: GoogleFonts.manrope(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            timeAgo,
+            style: GoogleFonts.inter(
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          if (title.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: GoogleFonts.manrope(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
+              ),
+            ),
+          ],
+          if (post.content.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              post.content.trim(),
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: Colors.white.withValues(alpha: 0.92),
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+          ],
+          if (link.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => onOpenLink(link),
+              child: const Text('Open link'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -12,13 +12,17 @@ class PostRemoteDataSource {
     required int page,
     String? category,
     int? pageSize,
-  }) {
+    bool mine = false,
+  }) async {
     final qp = <String, dynamic>{
       'page': page,
+      'ordering': '-created_at',
       if (category != null && category.trim().isNotEmpty) 'category': category,
       if (pageSize != null) 'page_size': pageSize,
+      if (mine) 'mine': 'true',
     };
-    return apiClient.get(_base, queryParameters: qp);
+    final response = await apiClient.dio.get(_base, queryParameters: qp);
+    return response.data;
   }
 
   Future<Map<String, dynamic>> fetchPostById(int id) {
@@ -33,8 +37,8 @@ class PostRemoteDataSource {
     await apiClient.patch('$_base$id/publish/');
   }
 
-  Future<List> fetchSeenBy(int id) async {
-    return apiClient.getList('$_base$id/seen_by/');
+  Future<Map<String, dynamic>> fetchSeenBy(int id) async {
+    return apiClient.get('$_base$id/seen_by/');
   }
 
   Future<Map<String, dynamic>> createPost({

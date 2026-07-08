@@ -9,12 +9,17 @@ import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/dashboards/widgets/app_color.dart';
 
-import 'admin_seen_by_screen.dart';
+import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
 
 class AdminPostsManagerScreen extends StatefulWidget {
   final String? initialCategory; // null = all
+  final bool mineOnly;
 
-  const AdminPostsManagerScreen({super.key, this.initialCategory});
+  const AdminPostsManagerScreen({
+    super.key,
+    this.initialCategory,
+    this.mineOnly = false,
+  });
 
   @override
   State<AdminPostsManagerScreen> createState() => _AdminPostsManagerScreenState();
@@ -22,19 +27,25 @@ class AdminPostsManagerScreen extends StatefulWidget {
 
 class _AdminPostsManagerScreenState extends State<AdminPostsManagerScreen> {
   String? _category;
+  bool _mineOnly = false;
 
   @override
   void initState() {
     super.initState();
     _category = widget.initialCategory;
+    _mineOnly = widget.mineOnly;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<PostBloc>().add(FetchPosts(category: _category));
+      context.read<PostBloc>().add(
+            FetchPosts(category: _category, mine: _mineOnly),
+          );
     });
   }
 
   void _refresh() {
-    context.read<PostBloc>().add(FetchPosts(category: _category));
+    context.read<PostBloc>().add(
+          FetchPosts(category: _category, mine: _mineOnly),
+        );
   }
 
   @override
@@ -45,8 +56,8 @@ class _AdminPostsManagerScreenState extends State<AdminPostsManagerScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
-          'Feed Manager',
+        title: Text(
+          _mineOnly ? 'My Posts' : 'Feed Manager',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w900,
@@ -73,7 +84,16 @@ class _AdminPostsManagerScreenState extends State<AdminPostsManagerScreen> {
                 _refresh();
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+            if (!widget.mineOnly)
+              _ScopeRow(
+                mineOnly: _mineOnly,
+                onChanged: (mine) {
+                  setState(() => _mineOnly = mine);
+                  _refresh();
+                },
+              ),
+            if (!widget.mineOnly) const SizedBox(height: 16),
             BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
                 if (state is PostLoading || state is PostInitial) {
@@ -152,6 +172,51 @@ class _CategoryRow extends StatelessWidget {
   }
 }
 
+class _ScopeRow extends StatelessWidget {
+  final bool mineOnly;
+  final ValueChanged<bool> onChanged;
+
+  const _ScopeRow({
+    required this.mineOnly,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ChoiceChip(
+          selected: !mineOnly,
+          label: const Text('All Posts'),
+          onSelected: (_) => onChanged(false),
+          selectedColor: AppColors.cyan,
+          labelStyle: TextStyle(
+            color: !mineOnly ? Colors.white : AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: AppColors.border),
+        ),
+        const SizedBox(width: 10),
+        ChoiceChip(
+          selected: mineOnly,
+          label: const Text('My Posts'),
+          onSelected: (_) => onChanged(true),
+          selectedColor: AppColors.cyan,
+          labelStyle: TextStyle(
+            color: mineOnly ? Colors.white : AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 12,
+          ),
+          backgroundColor: Colors.white,
+          side: const BorderSide(color: AppColors.border),
+        ),
+      ],
+    );
+  }
+}
+
 class _PostAdminCard extends StatelessWidget {
   final PostModel post;
   const _PostAdminCard({required this.post});
@@ -201,7 +266,13 @@ class _PostAdminCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(date, style: const TextStyle(color: AppColors.textMuted)),
+            Row(
+              children: [
+                Text(date, style: const TextStyle(color: AppColors.textMuted)),
+                const SizedBox(width: 12),
+                PostFeedStatusRow(post: post, compact: true),
+              ],
+            ),
             const SizedBox(height: 10),
             Text(
               post.content,
@@ -232,17 +303,15 @@ class _PostAdminCard extends StatelessWidget {
                   },
                   child: const Text('Preview'),
                 ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.of(context).push<void>(
-                      MaterialPageRoute<void>(
-                        builder: (_) => AdminSeenByScreen(postId: post.id),
-                      ),
-                    );
-                  },
-                  child: const Text('Seen-by'),
-                ),
+                if (post.canSeeViewers) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        PostViewersSheet.show(context, postId: post.id),
+                    icon: const Icon(Icons.visibility_outlined, size: 16),
+                    label: Text('${post.viewCount ?? 0}'),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: isPublished

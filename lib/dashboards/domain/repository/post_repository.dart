@@ -1,4 +1,5 @@
 import 'package:my_app/dashboards/domain/models/post_model.dart';
+import 'package:my_app/dashboards/domain/models/post_seen_by_viewer.dart';
 import 'package:dio/dio.dart';
 
 
@@ -8,6 +9,7 @@ abstract class PostRepository {
     int page = 1,
     String? category,
     int? pageSize,
+    bool mine = false,
   });
 
   Future<PostModel> fetchPostById(int postId);
@@ -16,7 +18,7 @@ abstract class PostRepository {
 
   Future<void> publish(int postId);
 
-  Future<List<dynamic>> fetchSeenBy(int postId);
+  Future<List<PostSeenByViewer>> fetchSeenBy(int postId);
 
   Future<PostModel> createPost({
     String? title,

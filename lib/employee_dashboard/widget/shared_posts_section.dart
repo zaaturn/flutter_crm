@@ -9,6 +9,7 @@ import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
 import 'package:my_app/employee_dashboard/widget/employee_feed_chrome.dart';
 
 class SharedPostsSection extends StatefulWidget {
@@ -305,6 +306,8 @@ class _Row extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
+            PostFeedStatusRow(post: post, compact: true),
+            const SizedBox(width: 8),
             Text(
               formattedTime,
               style: TextStyle(

@@ -274,21 +274,59 @@ class LeaveApiService {
 
   // ===============================
   // PUBLIC HOLIDAYS
-  // GET /api/leaves/holidays/?year=YYYY
-  // Response shapes: { holidays: [...] } | { results: [...] } | [...]
+  // GET /api/leaves/holidays/?year=YYYY&month=MM (optional)
+  // Response: { holidays: [...] } | { months: [...] } | { results: [...] }
   // ===============================
-  Future<List<PublicHoliday>> getPublicHolidays(int year) async {
+  Future<List<PublicHoliday>> getPublicHolidays(int year, {int? month}) async {
     return _safeRequest(() async {
+      final params = <String, dynamic>{'year': year};
+      if (month != null) params['month'] = month;
+
       final data = await _api.get(
         '/api/leaves/holidays/',
-        queryParameters: {'year': year},
+        queryParameters: params,
       );
-      final holidays = parsePublicHolidayList(data);
-      if (holidays.isNotEmpty) return holidays;
+      var holidays = parsePublicHolidayResponse(data);
 
-      // Fallback: some backends expose holidays only on events calendar.
-      return _fetchHolidaysFromEventsCalendar(year);
+      if (holidays.isEmpty && month != null) {
+        final yearData = await _api.get(
+          '/api/leaves/holidays/',
+          queryParameters: {'year': year},
+        );
+        holidays = parsePublicHolidayResponse(yearData)
+            .where((h) => h.date.month == month)
+            .toList();
+      }
+
+      if (holidays.isEmpty && month == null) {
+        holidays = await _fetchHolidaysMonthByMonth(year);
+      }
+
+      if (holidays.isEmpty) {
+        holidays = await _fetchHolidaysFromEventsCalendar(year);
+        if (month != null) {
+          holidays =
+              holidays.where((h) => h.date.month == month).toList();
+        }
+      }
+
+      return holidays;
     });
+  }
+
+  Future<List<PublicHoliday>> _fetchHolidaysMonthByMonth(int year) async {
+    final monthly = <List<PublicHoliday>>[];
+    for (var m = 1; m <= 12; m++) {
+      final data = await _api.get(
+        '/api/leaves/holidays/',
+        queryParameters: {'year': year, 'month': m},
+      );
+      final monthHolidays = parsePublicHolidayResponse(data);
+      if (monthHolidays.isNotEmpty) {
+        monthly.add(monthHolidays);
+      }
+    }
+    return mergePublicHolidayLists(monthly);
   }
 
   Future<List<PublicHoliday>> _fetchHolidaysFromEventsCalendar(int year) async {
@@ -303,11 +341,10 @@ class LeaveApiService {
     );
 
     final raw = data['holidays'];
-    if (raw is! List) return [];
+    if (raw is! List) return const [];
 
     final rows = raw
         .whereType<Map>()
-        .where((e) => e['is_holiday'] != false)
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
 

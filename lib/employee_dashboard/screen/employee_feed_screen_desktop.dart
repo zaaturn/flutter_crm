@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,13 +9,13 @@ import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
-import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
-import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
+import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
+import 'package:my_app/dashboards/widgets/post_media_utils.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
 import 'package:my_app/services/api_client.dart';
-import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/survey/bloc/survey_employee_event.dart';
 import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
@@ -35,36 +34,27 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
   static const _textMuted = Color(0xFF475569);
   static const _green = EmployeeDashboardV2Theme.greenMid;
 
-  String? _category;
+  String? _category = 'shared';
+  static const _feedPageSize = 30;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<PostBloc>().add(FetchPosts(category: _category));
-      context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
+      try {
+        context.read<PostBloc>().add(
+              FetchPosts(category: _category, pageSize: _feedPageSize),
+            );
+        context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
+      } catch (e) {
+        debugPrint('Activity Feed init failed: $e');
+      }
     });
   }
 
-  void _toggleProfilePanel() {}
-
   void _goBack() {
     EmployeeDashboardNavigator.dashboard(context);
-  }
-
-  Future<void> _logout() async {
-    await ApiClient().logout();
-    await SecureStorageService().clearAll();
-    try {
-      if (!mounted) return;
-      context.read<EmployeeBloc>().add(StopTaskPolling());
-    } catch (_) {}
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-      '/employeeLogin',
-      (route) => false,
-    );
   }
 
   @override
@@ -97,15 +87,6 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
                       color: EmployeeDashboardV2Theme.textDark,
                     ),
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: _logout,
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFDC2626),
-                      textStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-                    ),
-                    child: const Text('Logout'),
-                  ),
                 ],
               ),
             ),
@@ -113,7 +94,9 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
               child: RefreshIndicator(
                 color: _green,
                 onRefresh: () async {
-                  context.read<PostBloc>().add(FetchPosts(category: _category));
+                  context.read<PostBloc>().add(
+            FetchPosts(category: _category, pageSize: _feedPageSize),
+          );
                   context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
                 },
                 child: SingleChildScrollView(
@@ -140,15 +123,17 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
                             selected: _category,
                             onSelected: (c) {
                               setState(() => _category = c);
-                              context.read<PostBloc>().add(FetchPosts(category: c));
+                              context.read<PostBloc>().add(FetchPosts(category: c, pageSize: _feedPageSize));
                             },
                           ),
                           const SizedBox(height: 22),
-                          const SurveyFeedSection(),
+                          const SurveyFeedSection(autoLoad: false),
                           const SizedBox(height: 16),
                           BlocBuilder<PostBloc, PostState>(
                             builder: (context, state) {
-                              if (state is PostLoading || state is PostInitial) {
+                              final bloc = context.read<PostBloc>();
+                              if ((state is PostLoading || state is PostInitial) &&
+                                  bloc.posts.isEmpty) {
                                 return const Padding(
                                   padding: EdgeInsets.only(top: 80),
                                   child: Center(
@@ -159,30 +144,37 @@ class _EmployeeFeedScreenDesktopState extends State<EmployeeFeedScreenDesktop> {
                                   ),
                                 );
                               }
-                              if (state is PostError) {
+                              if (state is PostError && bloc.posts.isEmpty) {
                                 return _ErrorWidget(message: state.message);
                               }
-                              if (state is PostLoaded) {
-                                final posts = state.posts;
-                                if (posts.isEmpty) return const _Empty();
-                                return Column(
-                                  children: posts
-                                      .map(
-                                        (p) => _SocialFeedCard(
-                                          post: p,
-                                          onOpen: () {
-                                            Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                builder: (_) => PostDetailScreen(postId: p.id),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      )
-                                      .toList(),
-                                );
-                              }
-                              return const SizedBox.shrink();
+                              final posts = state is PostLoaded
+                                  ? state.posts
+                                  : bloc.posts;
+                              if (posts.isEmpty) return const _Empty();
+                              return Column(
+                                children: posts
+                                    .map(
+                                      (p) => _SocialFeedCard(
+                                        post: p,
+                                        onOpen: () async {
+                                          await Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  PostDetailScreen(postId: p.id),
+                                            ),
+                                          );
+                                          if (!context.mounted) return;
+                                          context.read<PostBloc>().add(
+                                                FetchPosts(
+                                                  category: _category,
+                                                  pageSize: _feedPageSize,
+                                                ),
+                                              );
+                                        },
+                                      ),
+                                    )
+                                    .toList(),
+                              );
                             },
                           ),
                         ],
@@ -306,7 +298,12 @@ class _SocialFeedCard extends StatelessWidget {
     if (d.inMinutes < 1) return 'JUST NOW';
     if (d.inMinutes < 60) return '${d.inMinutes}M AGO';
     if (d.inHours < 24) return '${d.inHours}H AGO';
-    return DateFormat('MMM d').format(post.createdAt.toLocal()).toUpperCase();
+    final dt = post.createdAt.toLocal();
+    const months = [
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    ];
+    return '${months[dt.month - 1]} ${dt.day}';
   }
 
   Future<void> _handleMediaTap(BuildContext context, String url, String type) async {
@@ -457,91 +454,9 @@ class _SocialFeedCard extends StatelessWidget {
     return Icons.insert_drive_file_rounded;
   }
 
-  Widget _attachmentPreview(BuildContext context, String url, String type) {
-    // Image
-    if (_isImageFile(url, type)) {
-      return GestureDetector(
-        onTap: () => _handleMediaTap(context, url, type),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Image.network(
-            url,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFFF1F5F9),
-              alignment: Alignment.center,
-              child: const Icon(Icons.broken_image_outlined),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Video (preview as play tile)
-    if (_isVideoFile(url, type)) {
-      return GestureDetector(
-        onTap: () => _handleMediaTap(context, url, type),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Container(
-            color: const Color(0xFF0F172A),
-            alignment: Alignment.center,
-            child: const Icon(Icons.play_circle_fill_rounded,
-                size: 72, color: Colors.white),
-          ),
-        ),
-      );
-    }
-
-    // Any other file (pdf/word/etc): show file tile, click to open/download
-    final name = _fileNameFromUrl(url);
-    final icon = _fileIcon(url, type);
-    final isPdf = _isPdf(url, type);
-    final accent = isPdf ? const Color(0xFFEF4444) : _accent;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-      child: InkWell(
-        onTap: () => _handleMediaTap(context, url, type),
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _border),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, color: accent),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(Icons.open_in_new_rounded, size: 18, color: accent),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final photo = (post.createdByProfilePhoto ?? '').trim();
-    final hero = post.attachments.isEmpty ? null : post.attachments.first;
-    final heroUrl = hero?.file ?? '';
-    final heroType = hero?.fileType ?? '';
 
     final subtitle = _designation().isEmpty ? _timeAgo() : '${_designation().toUpperCase()} • ${_timeAgo()}';
 
@@ -601,13 +516,21 @@ class _SocialFeedCard extends StatelessWidget {
               ],
             ),
           ),
-          if (heroUrl.isNotEmpty) _attachmentPreview(context, heroUrl, heroType),
+          if (post.attachments.isNotEmpty)
+            PostAttachmentsPreview(
+              attachments: post.attachments,
+              onTap: (attachment) => _handleMediaTap(
+                context,
+                resolvePostAttachmentUrl(attachment.file),
+                attachment.fileType,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (heroUrl.isNotEmpty) const SizedBox(height: 10),
+                if (post.attachments.isNotEmpty) const SizedBox(height: 10),
                 if (_hasLink) ...[
                   InkWell(
                     onTap: () => _openLink(context),
@@ -654,30 +577,34 @@ class _SocialFeedCard extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (!post.isRead) ...[
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () => context.read<PostBloc>().add(MarkPostAsRead(post.id)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _accent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                      ),
-                      child: const Text(
-                        'MARK AS SEEN',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1,
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (!post.isRead) ...[
+                      ElevatedButton(
+                        onPressed: () => context.read<PostBloc>().add(MarkPostAsRead(post.id)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                        ),
+                        child: const Text(
+                          'MARK AS SEEN',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                      const SizedBox(width: 12),
+                    ],
+                    PostFeedStatusRow(post: post, compact: true),
+                  ],
+                ),
               ],
             ),
           ),

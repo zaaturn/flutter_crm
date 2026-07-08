@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
-enum NavSection { dashboard, sharedItems, cultureBoards, announcements }
+enum NavSection { dashboard, sharedItems, cultureBoards, announcements, myPosts }
 
 extension NavSectionX on NavSection {
   String get label {
@@ -15,6 +15,8 @@ extension NavSectionX on NavSection {
         return 'Culture Boards';
       case NavSection.announcements:
         return 'Announcements';
+      case NavSection.myPosts:
+        return 'My Posts';
     }
   }
 
@@ -28,6 +30,8 @@ extension NavSectionX on NavSection {
         return Icons.grid_view_rounded;
       case NavSection.announcements:
         return Icons.campaign_outlined;
+      case NavSection.myPosts:
+        return Icons.person_outline_rounded;
     }
   }
 }

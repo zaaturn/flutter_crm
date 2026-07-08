@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../services/leave_api_services.dart';
-import '../models/public_holiday.dart';
+import '../services/leave_holiday_repository.dart';
+import '../widgets/leave_holiday_month_calendar.dart';
 
 class PublicHolidayCalendarScreen extends StatefulWidget {
   const PublicHolidayCalendarScreen({super.key});
@@ -13,92 +13,162 @@ class PublicHolidayCalendarScreen extends StatefulWidget {
 }
 
 class _PublicHolidayCalendarScreenState
-    extends State<PublicHolidayCalendarScreen> with SingleTickerProviderStateMixin {
-  final LeaveApiService _apiService = LeaveApiService();
+    extends State<PublicHolidayCalendarScreen> {
+  static const _bg = Color(0xFFFAF3E0);
+  static const _terracotta = Color(0xFFC05E41);
+  static const _textDark = Color(0xFF3E2723);
+  static const _textMuted = Color(0xFF8D6E63);
+
+  final LeaveHolidayRepository _repository = LeaveHolidayRepository();
 
   late int _year;
-  bool _loading = true;
+  late int _month;
+  bool _loadingYear = true;
   String? _error;
-  List<PublicHoliday> _holidays = [];
-  AnimationController? _animationController;
-  Animation<double>? _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    _year = DateTime.now().year;
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController!,
-      curve: Curves.fastOutSlowIn,
-    );
-    _loadHolidays();
+    final now = DateTime.now();
+    _year = now.year;
+    _month = now.month;
+    _loadYear();
   }
 
-  @override
-  void dispose() {
-    _animationController?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadHolidays() async {
+  Future<void> _loadYear() async {
     setState(() {
-      _loading = true;
+      _loadingYear = true;
       _error = null;
     });
-
     try {
-      final data = await _apiService.getPublicHolidays(_year);
-      setState(() {
-        _holidays = data;
-      });
-      _animationController?.reset();
-      _animationController?.forward();
+      LeaveHolidayRepository.clearYear(_year);
+      await _repository.loadYear(_year, forceRefresh: true);
+      if (!mounted) return;
+      setState(() => _loadingYear = false);
     } catch (e) {
-      setState(() => _error = e.toString());
-    } finally {
-      setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loadingYear = false;
+      });
     }
+  }
+
+  void _changeYear(int delta) {
+    setState(() {
+      _year += delta;
+      _month = 1;
+    });
+    _loadYear();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF3E0),
+      backgroundColor: _bg,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xFFFAF3E0),
+        backgroundColor: _bg,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
-        title: const Text(
-          "Calendar",
-          style: TextStyle(
-            color: Color(0xFF3E2723),
+        title: Text(
+          DateFormat('MMMM yyyy').format(DateTime(_year, _month)),
+          style: const TextStyle(
+            color: _textDark,
             fontWeight: FontWeight.w800,
-            fontSize: 24,
-            letterSpacing: -1,
+            fontSize: 20,
+            letterSpacing: -0.5,
           ),
         ),
         actions: [
-          _buildActionChip("$_year"),
-          const SizedBox(width: 16),
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: _textMuted),
+            onPressed: () => _changeYear(-1),
+          ),
+          _buildActionChip('$_year'),
+          IconButton(
+            icon: const Icon(Icons.chevron_right, color: _textMuted),
+            onPressed: () => _changeYear(1),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: _loading
+      body: _loadingYear
           ? const Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFC05E41),
+                color: _terracotta,
               ),
             )
           : _error != null
-          ? _buildErrorState()
-          : FadeTransition(
-        opacity: _fadeAnimation!,
-        child: _buildTimelineContent(),
+              ? _buildErrorState()
+              : _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        _buildMonthSelector(),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0x33C05E41)),
+          ),
+          child: LeaveHolidayMonthCalendar(
+            key: ValueKey('$_year-$_month'),
+            year: _year,
+            month: _month,
+            holidayRepository: _repository,
+            onMonthChanged: (year, month) {
+              if (year != _year) {
+                setState(() => _year = year);
+                _loadYear();
+              } else if (month != _month) {
+                setState(() => _month = month);
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMonthSelector() {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: 12,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final month = index + 1;
+          final selected = month == _month;
+          final label = DateFormat('MMM').format(DateTime(_year, month));
+
+          return ChoiceChip(
+            label: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 12,
+                color: selected ? Colors.white : _textDark,
+              ),
+            ),
+            selected: selected,
+            onSelected: (_) => setState(() => _month = month),
+            selectedColor: _terracotta,
+            backgroundColor: const Color(0xFFEADBC8),
+            side: BorderSide(
+              color: selected ? _terracotta : const Color(0x33C05E41),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+          );
+        },
       ),
     );
   }
@@ -111,157 +181,13 @@ class _PublicHolidayCalendarScreenState
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0x33C05E41)),
       ),
-      child: Center(
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF8D6E63),
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-          ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: _textMuted,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
         ),
-      ),
-    );
-  }
-
-  Widget _buildTimelineContent() {
-    final holidaysByMonth = <int, List<PublicHoliday>>{};
-    for (var h in _holidays) {
-      holidaysByMonth.putIfAbsent(h.date.month, () => []).add(h);
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      physics: const BouncingScrollPhysics(),
-      itemCount: holidaysByMonth.length,
-      itemBuilder: (context, index) {
-        final month = holidaysByMonth.keys.elementAt(index);
-        final list = holidaysByMonth[month]!;
-        return _buildMonthRow(month, list);
-      },
-    );
-  }
-
-  Widget _buildMonthRow(int month, List<PublicHoliday> list) {
-    final monthName = DateFormat('MMMM').format(DateTime(_year, month));
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Vertical Month Indicator
-          SizedBox(
-            width: 50,
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                Text(
-                  monthName.substring(0, 3).toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF94A3B8),
-                    letterSpacing: 1,
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [const Color(0xFF6366F1).withOpacity(0.5), Colors.transparent],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Holiday Cards
-          Expanded(
-            child: Column(
-              children: list.map((h) => _buildMinimalHolidayCard(h)).toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMinimalHolidayCard(PublicHoliday holiday) {
-    final isUpcoming = holiday.date.isAfter(DateTime.now());
-    final isToday = DateUtils.isSameDay(holiday.date, DateTime.now());
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isToday ? const Color(0xFFEEF2FF) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isToday ? const Color(0xFF6366F1) : const Color(0xFFF1F5F9),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Date Circle
-          Container(
-            height: 44,
-            width: 44,
-            decoration: BoxDecoration(
-              color: isUpcoming ? const Color(0xFF6366F1) : const Color(0xFFF8FAFC),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                holiday.date.day.toString(),
-                style: TextStyle(
-                  color: isUpcoming ? Colors.white : const Color(0xFF64748B),
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  holiday.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                Text(
-                  DateFormat('EEEE').format(holiday.date),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF94A3B8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isUpcoming)
-            Container(
-              height: 8,
-              width: 8,
-              decoration: const BoxDecoration(
-                color: Color(0xFF10B981),
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -273,8 +199,8 @@ class _PublicHolidayCalendarScreenState
         children: [
           const Icon(Icons.info_outline, size: 40, color: Colors.grey),
           const SizedBox(height: 16),
-          const Text("Sync Error"),
-          TextButton(onPressed: _loadHolidays, child: const Text("Retry")),
+          const Text('Sync Error'),
+          TextButton(onPressed: _loadYear, child: const Text('Retry')),
         ],
       ),
     );

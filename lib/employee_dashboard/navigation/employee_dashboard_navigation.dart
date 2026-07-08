@@ -30,6 +30,8 @@ import 'package:my_app/leave_management/screens/device_specific/public_holiday_d
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 import 'package:my_app/employee_dashboard/screen/employee_feed_screen_desktop.dart';
 import 'package:my_app/dashboards/presentations/screens/feed_screen_mobile.dart';
+import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
+import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
 
 class EmployeeDashboardNavigator {
@@ -130,12 +132,28 @@ class EmployeeDashboardNavigator {
 
   // ================= FEED / SHARED POSTS =================
   static void feed(BuildContext context) {
-    _switchTab(
-      context,
-      _isDesktop(context)
-          ? const EmployeeFeedScreenDesktop()
-          : const FeedScreenMobile(),
-    );
+    PostBloc? postBloc;
+    SurveyEmployeeBloc? surveyBloc;
+    try {
+      postBloc = context.read<PostBloc>();
+      surveyBloc = context.read<SurveyEmployeeBloc>();
+    } catch (_) {}
+
+    final screen = _isDesktop(context)
+        ? const EmployeeFeedScreenDesktop()
+        : const FeedScreenMobile();
+
+    final child = (postBloc != null && surveyBloc != null)
+        ? MultiBlocProvider(
+            providers: [
+              BlocProvider<PostBloc>.value(value: postBloc),
+              BlocProvider<SurveyEmployeeBloc>.value(value: surveyBloc),
+            ],
+            child: screen,
+          )
+        : screen;
+
+    _switchTab(context, child);
   }
 
   // ================= SUB-SCREENS (STANDARD PUSH) =================

@@ -5,13 +5,15 @@ abstract class PostEvent {}
 class FetchPosts extends PostEvent {
   final String? category;
   final int? pageSize;
-  FetchPosts({this.category, this.pageSize});
+  final bool mine;
+  FetchPosts({this.category, this.pageSize, this.mine = false});
 }
 
 class LoadMorePosts extends PostEvent {
   final String? category;
   final int? pageSize;
-  LoadMorePosts({this.category, this.pageSize});
+  final bool mine;
+  LoadMorePosts({this.category, this.pageSize, this.mine = false});
 }
 
 class MarkPostAsRead extends PostEvent {

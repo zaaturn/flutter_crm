@@ -7,6 +7,7 @@ import '../block/leave_event.dart';
 import '../block/leave_state.dart';
 import '../models/leave_type.dart';
 import '../services/leave_api_services.dart';
+import '../widgets/leave_holiday_date_picker_dialog.dart';
 
 class ApplyLeaveScreen extends StatelessWidget {
   const ApplyLeaveScreen({super.key});
@@ -368,22 +369,12 @@ class _ApplyLeaveViewState extends State<_ApplyLeaveView> {
   Widget _datePicker(String label, DateTime? value, Function(DateTime) onPick) {
     return InkWell(
       onTap: () async {
-        final d = await showDatePicker(
-          context: context,
+        final d = await LeaveHolidayDatePickerDialog.show(
+          context,
           initialDate: value ?? DateTime.now(),
           firstDate: DateTime.now(),
           lastDate: DateTime(2100),
-          builder: (context, child) => Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primary: _terracotta,
-                    onPrimary: Colors.white,
-                    surface: _bg,
-                    onSurface: _textDark,
-                  ),
-            ),
-            child: child!,
-          ),
+          title: label,
         );
         if (d != null) onPick(d);
       },

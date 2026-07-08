@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:my_app/dashboards/domain/models/post_seen_by_viewer.dart';
 import 'package:my_app/dashboards/domain/repository/post_repository.dart';
 import 'package:my_app/dashboards/widgets/app_color.dart';
 
@@ -26,7 +27,7 @@ class AdminSeenByScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: FutureBuilder<List<dynamic>>(
+      body: FutureBuilder<List<PostSeenByViewer>>(
         future: repo.fetchSeenBy(postId),
         builder: (context, snap) {
           if (!snap.hasData) {
@@ -47,10 +48,8 @@ class AdminSeenByScreen extends StatelessWidget {
             itemCount: list.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
-              final raw = list[i];
-              final m = raw is Map ? raw.map((k, v) => MapEntry(k.toString(), v)) : <String, dynamic>{};
-              final name = (m['name'] ?? m['username'] ?? m['full_name'] ?? 'User').toString();
-              final seenAt = (m['seen_at'] ?? m['read_at'] ?? m['created_at'])?.toString();
+              final v = list[i];
+              final ago = formatPostViewTimeAgo(v.readAt);
               return Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -64,7 +63,9 @@ class AdminSeenByScreen extends StatelessWidget {
                       radius: 18,
                       backgroundColor: AppColors.cyanLight,
                       child: Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                        v.fullName.isNotEmpty
+                            ? v.fullName[0].toUpperCase()
+                            : 'U',
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
                           color: AppColors.cyan,
@@ -77,16 +78,16 @@ class AdminSeenByScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            v.fullName,
                             style: const TextStyle(
                               fontWeight: FontWeight.w900,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          if (seenAt != null && seenAt.trim().isNotEmpty) ...[
+                          if (ago.isNotEmpty) ...[
                             const SizedBox(height: 2),
                             Text(
-                              seenAt,
+                              ago,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w600,
@@ -109,4 +110,3 @@ class AdminSeenByScreen extends StatelessWidget {
     );
   }
 }
-

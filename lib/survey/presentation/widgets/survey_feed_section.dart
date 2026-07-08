@@ -13,9 +13,14 @@ import 'survey_feed_card.dart';
 
 /// Active surveys block for employee home / feed.
 class SurveyFeedSection extends StatefulWidget {
-  const SurveyFeedSection({super.key, this.compact = false});
+  const SurveyFeedSection({
+    super.key,
+    this.compact = false,
+    this.autoLoad = true,
+  });
 
   final bool compact;
+  final bool autoLoad;
 
   @override
   State<SurveyFeedSection> createState() => _SurveyFeedSectionState();
@@ -25,7 +30,9 @@ class _SurveyFeedSectionState extends State<SurveyFeedSection> {
   @override
   void initState() {
     super.initState();
-    _load();
+    if (widget.autoLoad) {
+      _load();
+    }
   }
 
   void _load() {

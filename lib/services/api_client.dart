@@ -419,7 +419,18 @@ class ApiClient {
   Map<String, dynamic> _parseMap(dynamic data) {
     if (data == null) return {};
     if (data is Map<String, dynamic>) return data;
-    if (data is String) return jsonDecode(data);
+    if (data is Map) {
+      return Map<String, dynamic>.from(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    if (data is List) {
+      return {'results': data};
+    }
+    if (data is String) {
+      final decoded = jsonDecode(data);
+      return _parseMap(decoded);
+    }
     return {};
   }
 
@@ -492,7 +503,20 @@ class ApiClient {
       final response = await _dio.get(url,
           queryParameters: queryParameters,
           cancelToken: _masterCancelToken);
-      if (response.data is List) return response.data as List<dynamic>;
+      final data = response.data;
+      if (data is List) return data;
+      if (data is Map) {
+        for (final key in [
+          'results',
+          'seen_by',
+          'viewers',
+          'data',
+          'items',
+        ]) {
+          final value = data[key];
+          if (value is List) return value;
+        }
+      }
       throw ApiException(500, "Expected list response");
     } on DioException catch (e) {
       throw _handleError(e);

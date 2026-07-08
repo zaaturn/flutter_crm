@@ -7,6 +7,7 @@ import 'package:my_app/dashboards/widgets/target_audience_panel.dart';
 import 'package:my_app/dashboards/presentations/screens/culture_board_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/shared_item_screen.dart';
 import 'package:my_app/dashboards/presentations/screens/announcement_screen.dart';
+import 'package:my_app/dashboards/presentations/screens/admin_posts_manager_screen.dart';
 import 'package:my_app/survey/navigation/survey_flow_controller.dart';
 import 'package:my_app/dashboards/presentations/widgets/share_survey_access_gate.dart';
 import 'package:my_app/dashboards/presentations/screens/share_dashboard_screen.dart';
@@ -37,6 +38,7 @@ class _ContentManagementPageState
         NavSection.sharedItems => 'Shared Items',
         NavSection.cultureBoards => 'Culture Boards',
         NavSection.announcements => 'Announcements',
+        NavSection.myPosts => 'My Posts',
       };
 
   @override
@@ -139,6 +141,8 @@ class _ContentManagementPageState
         return const AnnouncementsScreen();
       case NavSection.cultureBoards:
         return const CultureBoardsScreen();
+      case NavSection.myPosts:
+        return const AdminPostsManagerScreen(mineOnly: true);
     }
   }
 }

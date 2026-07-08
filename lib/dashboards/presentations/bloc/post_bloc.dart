@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/dashboards/domain/models/post_model.dart';
+import 'package:my_app/dashboards/domain/models/post_sort.dart';
 import 'package:my_app/dashboards/domain/repository/post_repository.dart';
 import 'post_event.dart';
 import 'post_state.dart';
@@ -11,6 +12,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   bool hasMore = true;
 
   List<PostModel> posts = [];
+
+  String? _lastCategory;
+  bool _lastMine = false;
+  int? _lastPageSize;
 
   PostBloc(this.repository) : super(PostInitial()) {
     on<FetchPosts>(_onFetchPosts);
@@ -27,15 +32,19 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
     try {
       currentPage = 1;
+      _lastCategory = event.category;
+      _lastMine = event.mine;
+      _lastPageSize = event.pageSize;
 
       final List<PostModel> fetchedPosts =
       await repository.fetchPosts(
         page: currentPage,
         category: event.category,
         pageSize: event.pageSize,
+        mine: event.mine,
       );
 
-      posts = fetchedPosts;
+      posts = sortPostsNewestFirst(fetchedPosts);
 
       final pageSize = event.pageSize ?? 10;
       hasMore = fetchedPosts.length == pageSize;
@@ -58,9 +67,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         page: currentPage,
         category: event.category,
         pageSize: event.pageSize,
+        mine: event.mine,
       );
 
-      posts.addAll(newPosts);
+      posts = sortPostsNewestFirst([...posts, ...newPosts]);
 
       final pageSize = event.pageSize ?? 10;
       hasMore = newPosts.length == pageSize;
@@ -81,29 +91,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
           .map((p) => p.id == event.postId ? _markRead(p) : p)
           .toList(growable: false);
       posts = List<PostModel>.from(updated);
-      emit(PostLoaded(updated, s.hasMore));
+      emit(PostLoaded(sortPostsNewestFirst(updated), s.hasMore));
     }
   }
 
-  PostModel _markRead(PostModel p) {
-    // Minimal copy (PostModel is immutable).
-    return PostModel(
-      id: p.id,
-      title: p.title,
-      link: p.link,
-      content: p.content,
-      category: p.category,
-      createdByFullName: p.createdByFullName,
-      createdByUsername: p.createdByUsername,
-      createdByDesignation: p.createdByDesignation,
-      createdByProfilePhoto: p.createdByProfilePhoto,
-      isPublished: p.isPublished,
-      isPinned: p.isPinned,
-      isRead: true,
-      createdAt: p.createdAt,
-      attachments: p.attachments,
-    );
-  }
+  PostModel _markRead(PostModel p) => p.copyWith(isRead: true);
 
   Future<void> _onCreatePost(
       CreatePostEvent event,
@@ -127,7 +119,13 @@ class PostBloc extends Bloc<PostEvent, PostState> {
       }
 
       emit(PostCreated(created));
-      add(FetchPosts(category: event.category)); // refresh category after creating
+      add(
+        FetchPosts(
+          category: _lastCategory ?? event.category,
+          mine: _lastMine,
+          pageSize: _lastPageSize ?? 30,
+        ),
+      );
     } catch (e) {
       emit(PostError(e.toString()));
     }
@@ -137,9 +135,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     FetchPostById event,
     Emitter<PostState> emit,
   ) async {
-    emit(PostLoading());
     try {
       final post = await repository.fetchPostById(event.postId);
+      posts = posts
+          .map((p) => p.id == post.id ? post : p)
+          .toList(growable: false);
       emit(PostDetailLoaded(post));
     } catch (e) {
       emit(PostError(e.toString()));
@@ -152,7 +152,13 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   ) async {
     try {
       await repository.publish(event.postId);
-      add(FetchPosts());
+      add(
+        FetchPosts(
+          category: _lastCategory,
+          mine: _lastMine,
+          pageSize: _lastPageSize ?? 30,
+        ),
+      );
     } catch (e) {
       emit(PostError(e.toString()));
     }

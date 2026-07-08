@@ -10,6 +10,7 @@ import 'package:my_app/leave_management/block/leave_state.dart';
 import 'package:my_app/leave_management/models/leave_balance_response.dart';
 import 'package:my_app/leave_management/models/leave_type.dart';
 import 'package:my_app/leave_management/models/leave_request.dart';
+import 'package:my_app/leave_management/widgets/leave_holiday_date_picker_dialog.dart';
 
 class ApplyLeaveForm extends StatefulWidget {
   final List<LeaveType> leaveTypes;
@@ -270,11 +271,16 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
   }
 
   Future<void> _pickDate(bool isStart) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: isStart ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
+    final initial = isStart
+        ? (_startDate ?? DateTime.now())
+        : (_endDate ?? _startDate ?? DateTime.now());
+
+    final picked = await LeaveHolidayDatePickerDialog.show(
+      context,
+      initialDate: initial,
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime(2100),
+      title: isStart ? 'Start date' : 'End date',
     );
 
     if (picked != null) {
@@ -282,6 +288,10 @@ class _ApplyLeaveFormState extends State<ApplyLeaveForm> {
         if (isStart) {
           _startDate = picked;
           _startDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+          if (_endDate != null && _endDate!.isBefore(picked)) {
+            _endDate = picked;
+            _endDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+          }
         } else {
           _endDate = picked;
           _endDateController.text = DateFormat('yyyy-MM-dd').format(picked);

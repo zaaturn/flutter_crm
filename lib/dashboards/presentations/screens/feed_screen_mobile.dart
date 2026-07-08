@@ -14,6 +14,8 @@ import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/survey/bloc/survey_employee_event.dart';
 import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
+import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
+import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
 import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
 class FeedScreenMobile extends StatefulWidget {
@@ -26,7 +28,8 @@ class FeedScreenMobile extends StatefulWidget {
 class _FeedScreenMobileState extends State<FeedScreenMobile> {
   static const _textMuted = Color(0xFF64748B);
 
-  String? _category;
+  String? _category = 'shared';
+  static const _feedPageSize = 30;
 
   void _goBack() {
     final nav = Navigator.of(context);
@@ -42,7 +45,9 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<PostBloc>().add(FetchPosts(category: _category));
+      context.read<PostBloc>().add(
+            FetchPosts(category: _category, pageSize: _feedPageSize),
+          );
       context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
     });
   }
@@ -80,7 +85,9 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
       bottomNavigationBar: const BottomNav(currentIndex: 2),
       body: RefreshIndicator(
         onRefresh: () async {
-          context.read<PostBloc>().add(FetchPosts(category: _category));
+          context.read<PostBloc>().add(
+            FetchPosts(category: _category, pageSize: _feedPageSize),
+          );
           context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
         },
         child: ListView(
@@ -92,15 +99,19 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
               selected: _category,
               onSelected: (c) {
                 setState(() => _category = c);
-                context.read<PostBloc>().add(FetchPosts(category: c));
+                context.read<PostBloc>().add(
+                      FetchPosts(category: c, pageSize: _feedPageSize),
+                    );
               },
             ),
             const SizedBox(height: 16),
-            const SurveyFeedSection(),
+            const SurveyFeedSection(autoLoad: false),
             const SizedBox(height: 8),
             BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
-                if (state is PostLoading || state is PostInitial) {
+                final bloc = context.read<PostBloc>();
+                if ((state is PostLoading || state is PostInitial) &&
+                    bloc.posts.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 40),
                     child: Center(
@@ -110,7 +121,7 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
                     ),
                   );
                 }
-                if (state is PostError) {
+                if (state is PostError && bloc.posts.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.only(top: 40),
                     child: Center(
@@ -118,45 +129,47 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
                     ),
                   );
                 }
-                if (state is PostLoaded) {
-                  if (state.posts.isEmpty) return const _Empty();
-                  return Column(
-                    children: state.posts
-                        .map((p) => _Row(
-                              post: p,
-                              onOpen: () {
-                                Navigator.of(context)
-                                    .push<void>(
-                                  PageRouteBuilder<void>(
-                                    opaque: true,
-                                    fullscreenDialog: true,
-                                    pageBuilder: (_, __, ___) =>
-                                        PostDetailScreenMobile(
-                                      postId: p.id,
-                                    ),
-                                    transitionsBuilder: (_, animation, __, child) {
-                                      return FadeTransition(
-                                        opacity: CurvedAnimation(
-                                          parent: animation,
-                                          curve: Curves.easeOut,
-                                        ),
-                                        child: child,
-                                      );
-                                    },
+                final posts =
+                    state is PostLoaded ? state.posts : bloc.posts;
+                if (posts.isEmpty) return const _Empty();
+                return Column(
+                  children: posts
+                      .map((p) => _Row(
+                            post: p,
+                            onOpen: () {
+                              Navigator.of(context)
+                                  .push<void>(
+                                PageRouteBuilder<void>(
+                                  opaque: true,
+                                  fullscreenDialog: true,
+                                  pageBuilder: (_, __, ___) =>
+                                      PostDetailScreenMobile(
+                                    postId: p.id,
                                   ),
-                                )
-                                    .then((_) {
-                                  if (!context.mounted) return;
-                                  context.read<PostBloc>().add(
-                                        FetchPosts(category: _category),
-                                      );
-                                });
-                              },
-                            ))
-                        .toList(),
-                  );
-                }
-                return const SizedBox.shrink();
+                                  transitionsBuilder: (_, animation, __, child) {
+                                    return FadeTransition(
+                                      opacity: CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOut,
+                                      ),
+                                      child: child,
+                                    );
+                                  },
+                                ),
+                              )
+                                  .then((_) {
+                                if (!context.mounted) return;
+                                context.read<PostBloc>().add(
+                                      FetchPosts(
+                                        category: _category,
+                                        pageSize: _feedPageSize,
+                                      ),
+                                    );
+                              });
+                            },
+                          ))
+                      .toList(),
+                );
               },
             ),
           ],
@@ -259,17 +272,6 @@ class _Row extends StatelessWidget {
     return DateFormat('MMM d').format(post.createdAt);
   }
 
-  bool _isImage(String fileType, String url) {
-    final ft = fileType.toLowerCase();
-    if (ft.contains('image')) return true;
-    final u = url.toLowerCase();
-    return u.endsWith('.png') ||
-        u.endsWith('.jpg') ||
-        u.endsWith('.jpeg') ||
-        u.endsWith('.webp') ||
-        u.endsWith('.gif');
-  }
-
   Future<void> _openLink(BuildContext context) async {
     final raw = (post.link ?? '').trim();
     if (raw.isEmpty) return;
@@ -360,6 +362,7 @@ class _Row extends StatelessWidget {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 4),
                   IconButton(
                     onPressed: () {},
                     icon: const Icon(
@@ -371,9 +374,9 @@ class _Row extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               if (post.attachments.isNotEmpty) ...[
-                _HeroMedia(
+                PostAttachmentsPreview(
                   attachments: post.attachments,
-                  isImage: _isImage,
+                  borderRadius: 12,
                 ),
                 const SizedBox(height: 12),
               ],
@@ -439,37 +442,42 @@ class _Row extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 14),
-              if (!post.isRead)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: OutlinedButton(
-                    onPressed: () => context
-                        .read<PostBloc>()
-                        .add(MarkPostAsRead(post.id)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: LeaveManagerColors.primary,
-                        width: 2,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (!post.isRead) ...[
+                    OutlinedButton(
+                      onPressed: () => context
+                          .read<PostBloc>()
+                          .add(MarkPostAsRead(post.id)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: LeaveManagerColors.primary,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
+                      child: Text(
+                        'MARK AS SEEN',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.0,
+                          color: LeaveManagerColors.primary,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      'MARK AS SEEN',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.0,
-                        color: LeaveManagerColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
+                    const SizedBox(width: 12),
+                  ],
+                  PostFeedStatusRow(post: post, compact: true),
+                ],
+              ),
             ],
           ),
         ),
@@ -524,60 +532,6 @@ class _Initials extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _HeroMedia extends StatelessWidget {
-  final List<dynamic> attachments;
-  final bool Function(String fileType, String url) isImage;
-  const _HeroMedia({required this.attachments, required this.isImage});
-
-  bool _isVideo(String fileType, String url) {
-    final ft = fileType.toLowerCase();
-    if (ft.contains('video')) return true;
-    final u = url.toLowerCase();
-    return u.endsWith('.mp4') || u.endsWith('.mov') || u.endsWith('.webm');
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (attachments.isEmpty) return const SizedBox.shrink();
-    final a = attachments.first;
-    final file = (a.file as String);
-    final type = (a.fileType as String?) ?? '';
-    final isImg = isImage(type, file);
-    final isVid = _isVideo(type, file);
-    if (isImg) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: AspectRatio(
-          aspectRatio: 16 / 9,
-          child: Image.network(
-            file,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFFF1F5F9),
-              alignment: Alignment.center,
-              child: const Icon(Icons.broken_image_outlined),
-            ),
-          ),
-        ),
-      );
-    }
-    if (isVid) {
-      return Container(
-        height: 180,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.center,
-        child: const Icon(Icons.play_circle_fill_rounded,
-            size: 56, color: Colors.white),
-      );
-    }
-    return const SizedBox.shrink();
   }
 }
 
