@@ -5,9 +5,9 @@ import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/mobile/notification_screen_mobile.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/auth/mobile_workspace_switch_sheet.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
-import 'package:my_app/screens/device_specific/welcome_mobile.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class TopBar extends StatefulWidget {
@@ -68,13 +68,9 @@ class _TopBarState extends State<TopBar> {
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(dialogContext);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreenmobile()),
-                      (route) => false,
-                );
+                await AuthSessionRedirect.logoutAndGoToLogin(context: context);
               },
               child: Text("Logout", style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
             ),

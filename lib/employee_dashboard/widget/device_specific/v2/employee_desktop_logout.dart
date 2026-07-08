@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
-import 'package:my_app/screens/welcome_screen.dart';
-import 'package:my_app/services/api_client.dart';
-import 'package:my_app/services/secure_storage_service.dart';
 
 /// Confirms and performs employee desktop logout (shared across v2 screens).
 Future<void> confirmEmployeeDesktopLogout(BuildContext context) async {
@@ -29,15 +27,12 @@ Future<void> confirmEmployeeDesktopLogout(BuildContext context) async {
 
   if (confirm != true || !context.mounted) return;
 
-  await ApiClient().logout();
-  await SecureStorageService().clearAll();
-  try {
-    context.read<EmployeeBloc>().add(StopTaskPolling());
-  } catch (_) {}
-
-  if (!context.mounted) return;
-  Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-    MaterialPageRoute(builder: (_) => const WelcomePage()),
-    (_) => false,
+  await AuthSessionRedirect.logoutAndGoToLogin(
+    context: context,
+    beforeNavigate: () async {
+      try {
+        context.read<EmployeeBloc>().add(StopTaskPolling());
+      } catch (_) {}
+    },
   );
 }

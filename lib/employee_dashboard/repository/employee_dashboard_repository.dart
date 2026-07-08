@@ -54,14 +54,22 @@ class EmployeeRepository {
 
   Future<WeeklyActivityModel> fetchWeeklyActivity() async {
     final iso = IsoWeek.current();
+    final emptyWeek = WeeklyActivityModel.forIsoWeek(iso.year, iso.week);
     try {
       final data = await _attendanceService.getWeeklyActivity(
         year: iso.year,
         week: iso.week,
       );
-      return WeeklyActivityModel.fromJson(Map<String, dynamic>.from(data));
-    } catch (_) {
-      return WeeklyActivityModel.forCalendarWeek();
+      return WeeklyActivityModel.fromJson(
+        Map<String, dynamic>.from(data),
+        year: iso.year,
+        week: iso.week,
+      );
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('fetchWeeklyActivity failed: $e\n$st');
+      }
+      return emptyWeek;
     }
   }
 

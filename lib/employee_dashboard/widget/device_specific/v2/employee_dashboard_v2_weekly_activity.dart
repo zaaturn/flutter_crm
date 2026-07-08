@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -39,12 +40,15 @@ class _EmployeeDashboardV2WeeklyActivityState
         final weekly =
             state.weeklyActivity ?? WeeklyActivityModel.forCalendarWeek();
         final days = weekly.days;
-        final maxStack = days.fold<double>(
-          0,
-          (max, d) {
-            final stack = d.workedHours + d.breakHours;
-            return stack > max ? stack : max;
-          },
+        final maxStack = math.max(
+          days.fold<double>(
+            0,
+            (max, d) {
+              final stack = d.workedHours + d.breakHours;
+              return stack > max ? stack : max;
+            },
+          ),
+          0.25,
         );
 
         return LayoutBuilder(
@@ -260,8 +264,10 @@ class _EmployeeDashboardV2WeeklyActivityState
     final totalRaw = rawWorkH + rawBreakH;
     final fitScale =
         totalRaw > availableForBars && totalRaw > 0 ? availableForBars / totalRaw : 1.0;
-    final workH = rawWorkH * fitScale;
-    final breakH = rawBreakH * fitScale;
+    var workH = rawWorkH * fitScale;
+    var breakH = rawBreakH * fitScale;
+    if (day.netWork.inSeconds > 0 && workH < 4) workH = 4;
+    if (day.totalBreak.inSeconds > 0 && breakH < 3) breakH = 3;
 
     return MouseRegion(
       onEnter: (_) => onHover(true),

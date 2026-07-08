@@ -3,9 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'sidebar_menu_config.dart';
 
-import 'package:my_app/main.dart';
-import 'package:my_app/services/auth_service.dart';
-import 'package:my_app/screens/welcome_screen.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 
 import 'package:my_app/admin_dashboard/screen/assign_task_screen.dart';
@@ -172,11 +170,6 @@ class SidebarHandler {
 
     if (confirm != true) return;
 
-    await AuthService().logout();
-
-    navigatorKey.currentState!.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const WelcomePage()),
-          (_) => false,
-    );
+    await AuthSessionRedirect.logoutAndGoToLogin();
   }
 }

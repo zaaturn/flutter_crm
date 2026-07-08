@@ -5,8 +5,7 @@ import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigati
 import '../bloc/employee_dashboard_bloc.dart';
 import '../bloc/employee_dashboard_state.dart';
 
-import '../../services/secure_storage_service.dart';
-import 'package:my_app/screens/welcome_screen.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -233,18 +232,7 @@ class AppDrawer extends StatelessWidget {
                 // Close dialog only
                 Navigator.of(context).pop();
 
-                // Clear storage BEFORE navigation
-                await SecureStorageService().clearAll();
-
-
-
-                // Remove entire stack safely
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const WelcomePage(),
-                  ),
-                      (route) => false,
-                );
+                await AuthSessionRedirect.logoutAndGoToLogin(context: context);
               },
               child: const Text("Logout"),
             ),

@@ -6,6 +6,7 @@ import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/core/auth/session_expiry_notice_storage.dart';
 import 'package:my_app/core/scaffold_messenger_scope.dart';
 import 'package:my_app/services/api_client.dart';
+import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 /// Sends the user to `/employeeLogin` when the backend/session is no longer valid.
@@ -213,6 +214,47 @@ class AuthSessionRedirect {
         title: message,
         subtitle: defaultSubtitle,
       );
+    });
+  }
+
+  /// User-initiated or guard redirect: clear session and open the login route.
+  static Future<void> logoutAndGoToLogin({
+    BuildContext? context,
+    Future<void> Function()? beforeNavigate,
+  }) async {
+    discardPendingSessionMessage();
+
+    try {
+      await AuthService().logout();
+    } catch (_) {
+      await SecureStorageService().clearAll();
+      ApiClient().forceUnauthenticated();
+    }
+
+    if (beforeNavigate != null) {
+      await beforeNavigate();
+    }
+
+    void go(NavigatorState nav) {
+      if (!_isAlreadyOnLogin(nav)) {
+        nav.pushNamedAndRemoveUntil(loginRoute, (_) => false);
+      }
+    }
+
+    if (context != null && context.mounted) {
+      go(Navigator.of(context, rootNavigator: true));
+      return;
+    }
+
+    final nav = _navigatorKey?.call()?.currentState;
+    if (nav != null) {
+      go(nav);
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final retryNav = _navigatorKey?.call()?.currentState;
+      if (retryNav != null) go(retryNav);
     });
   }
 

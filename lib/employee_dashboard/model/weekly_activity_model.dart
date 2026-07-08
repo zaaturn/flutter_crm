@@ -1,6 +1,7 @@
+import 'package:my_app/analytics/utils/iso_week.dart';
+
 /// One day of worked / break time for the employee weekly activity chart.
-class WeeklyActivityDay {
-  final DateTime date;
+class WeeklyActivityDay {  final DateTime date;
   final Duration netWork;
   final Duration totalBreak;
 
@@ -38,6 +39,17 @@ class WeeklyActivityModel {
   Duration get totalBreak =>
       days.fold(Duration.zero, (sum, d) => sum + d.totalBreak);
 
+  /// Empty scaffold for the ISO week requested from the API.
+  factory WeeklyActivityModel.forIsoWeek(int year, int week) {
+    final startUtc = IsoWeek.startOfWeek(year, week);
+    final monday = DateTime(startUtc.year, startUtc.month, startUtc.day);
+    final days = List.generate(
+      7,
+      (i) => WeeklyActivityDay(date: monday.add(Duration(days: i))),
+    );
+    return WeeklyActivityModel(days: days);
+  }
+
   /// Empty scaffold for the calendar week containing [anchor].
   factory WeeklyActivityModel.forCalendarWeek([DateTime? anchor]) {
     final now = (anchor ?? DateTime.now()).toLocal();
@@ -68,21 +80,43 @@ class WeeklyActivityModel {
   }
 
   WeeklyActivityModel mergeToday(WeeklyActivityDay today) =>
-      withDay(today.date, today.netWork, today.totalBreak);
+      mergeDayKeepingMax(today);
+
+  /// Updates one day without lowering hours already loaded from the API.
+  WeeklyActivityModel mergeDayKeepingMax(WeeklyActivityDay patch) {
+    final key = _dateKey(patch.date);
+    return WeeklyActivityModel(
+      days: days
+          .map(
+            (d) {
+              if (_dateKey(d.date) != key) return d;
+              return d.copyWith(
+                netWork: patch.netWork.inSeconds > d.netWork.inSeconds
+                    ? patch.netWork
+                    : d.netWork,
+                totalBreak: patch.totalBreak.inSeconds > d.totalBreak.inSeconds
+                    ? patch.totalBreak
+                    : d.totalBreak,
+              );
+            },
+          )
+          .toList(),
+    );
+  }
 
   factory WeeklyActivityModel.fromJson(
     Map<String, dynamic> json, {
     DateTime? anchor,
+    int? year,
+    int? week,
   }) {
-    final scaffold = WeeklyActivityModel.forCalendarWeek(anchor);
+    final scaffold = (year != null && week != null)
+        ? WeeklyActivityModel.forIsoWeek(year, week)
+        : WeeklyActivityModel.forCalendarWeek(anchor);
     final data = _unwrap(json);
-    final list = data['days'] ??
-        data['rows'] ??
-        data['daily_rows'] ??
-        data['daily'] ??
-        data['results'];
+    final list = _extractDayList(data);
 
-    if (list is! List || list.isEmpty) return scaffold;
+    if (list.isEmpty) return scaffold;
 
     var result = scaffold;
     for (final item in list) {
@@ -91,23 +125,63 @@ class WeeklyActivityModel {
       final date = _parseDate(m['date'] ?? m['day'] ?? m['attendance_date']);
       if (date == null) continue;
 
-      final netWork = _parseDuration(
-        seconds: m['net_work_seconds'],
-        minutes: m['net_work_minutes'],
-        hours: m['net_hours'] ?? m['hours'] ?? m['worked_hours'],
-      );
-      final totalBreak = _parseDuration(
-        seconds: m['total_break_seconds'],
-        minutes: m['total_break_minutes'],
-        hours: m['break_hours'] ?? m['total_break_hours'],
-      );
+      final netWork = _parseWorkDuration(m);
+      final totalBreak = _parseBreakDuration(m);
 
       result = result.withDay(date, netWork, totalBreak);
     }
     return result;
   }
 
+  static List<dynamic> _extractDayList(Map<String, dynamic> data) {
+    for (final key in const [
+      'days',
+      'rows',
+      'daily_rows',
+      'daily',
+      'results',
+      'attendance_days',
+      'week_days',
+    ]) {
+      final value = data[key];
+      if (value is List) return value;
+    }
+    return const [];
+  }
+
+  static Duration _parseWorkDuration(Map<String, dynamic> m) {
+    return _parseDuration(
+      seconds: m['net_work_seconds'] ??
+          m['total_worked_seconds'] ??
+          m['worked_seconds'],
+      minutes: m['net_work_minutes'] ??
+          m['total_worked_minutes'] ??
+          m['worked_minutes'],
+      hours: m['total_worked_hours'] ??
+          m['total_worked'] ??
+          m['total_work_hours'] ??
+          m['net_hours'] ??
+          m['hours'] ??
+          m['worked_hours'],
+    );
+  }
+
+  static Duration _parseBreakDuration(Map<String, dynamic> m) {
+    return _parseDuration(
+      seconds: m['total_break_seconds'] ?? m['break_seconds'],
+      minutes: m['total_break_minutes'] ?? m['break_minutes'],
+      hours: m['total_break_hours'] ??
+          m['break_hours'] ??
+          m['total_break'],
+    );
+  }
+
   static Map<String, dynamic> _unwrap(Map<String, dynamic> json) {
+    if (json['days'] is List ||
+        json['rows'] is List ||
+        json['daily_rows'] is List) {
+      return json;
+    }
     final nested = json['data'] ?? json['attendance'] ?? json['week'];
     if (nested is Map) return Map<String, dynamic>.from(nested);
     return json;

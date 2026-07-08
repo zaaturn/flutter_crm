@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/auth/mobile_workspace_switch_sheet.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/screen/mobile/notification_screen_mobile.dart';
-import 'package:my_app/screens/device_specific/welcome_mobile.dart';
-import 'package:my_app/services/api_client.dart';
 
 abstract final class AdminMobileTerracottaTheme {
   static const terracotta = Color(0xFFC05C39);
@@ -80,12 +79,8 @@ class AdminTopBarMobile extends StatelessWidget {
     );
 
     if (confirm != true) return;
-    await ApiClient().logout();
     if (!context.mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreenmobile()),
-      (route) => false,
-    );
+    await AuthSessionRedirect.logoutAndGoToLogin(context: context);
   }
 
   @override

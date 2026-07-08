@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:my_app/screens/device_specific/welcome_mobile.dart';
+import 'package:my_app/core/auth/auth_session_redirect.dart';
 
 class Header extends StatelessWidget {
   const Header({super.key});
@@ -41,11 +41,7 @@ class Header extends StatelessWidget {
 
 
     if (context.mounted) {
-
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreenmobile()),
-            (route) => false,
-      );
+      await AuthSessionRedirect.logoutAndGoToLogin(context: context);
     }
   }
 

@@ -26,6 +26,7 @@ import 'package:my_app/event_management/features/calendar/presentation/screen/ca
 
 import 'package:my_app/core/layout/adaptive_layout.dart';
 import 'package:my_app/core/auth/admin_access_guard.dart';
+import 'package:my_app/core/auth/auth_shell_guard.dart';
 import 'package:my_app/core/router/startup_gate.dart';
 
 import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
@@ -74,10 +75,13 @@ class AppRouter {
     // =====================
       case '/employeeDashboard':
         return MaterialPageRoute(
-          builder: (_) => AdaptiveLayout(
-            mobile: const EmployeeDashboardScreen(),
-            tablet: const EmployeeDashboardScreen(),
-            webDesktop: const EmployeeDashboardDesktop(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: AdaptiveLayout(
+              mobile: const EmployeeDashboardScreen(),
+              tablet: const EmployeeDashboardScreen(),
+              webDesktop: const EmployeeDashboardDesktop(),
+            ),
           ),
         );
 
@@ -86,25 +90,34 @@ class AppRouter {
     // =====================
       case '/adminDashboard':
         return MaterialPageRoute(
-          builder: (_) => const AdminRouteGuard(
-            child: AdaptiveLayout(
-              mobile: AdminDashboardMobile(),
-              tablet: AdminDashboardMobile(),
-              webDesktop: AdminDashboardDesktop(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: const AdminRouteGuard(
+              child: AdaptiveLayout(
+                mobile: AdminDashboardMobile(),
+                tablet: AdminDashboardMobile(),
+                webDesktop: AdminDashboardDesktop(),
+              ),
             ),
           ),
         );
 
       case '/dashboardChooser':
         return MaterialPageRoute(
-          builder: (_) => const AdminRouteGuard(
-            child: DashboardChooserScreen(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: const AdminRouteGuard(
+              child: DashboardChooserScreen(),
+            ),
           ),
         );
 
       case '/superadmin':
         return MaterialPageRoute(
-          builder: (_) => const SuperadminUsersScreen(),
+          settings: settings,
+          builder: (_) => const AuthShellGuard(
+            child: SuperadminUsersScreen(),
+          ),
         );
 
     // =====================
@@ -112,10 +125,13 @@ class AppRouter {
     // =====================
       case '/profile':
         return MaterialPageRoute(
-          builder: (_) => AdaptiveLayout(
-            mobile: const ProfileScreen(),
-            tablet: const ProfileScreen(),
-            webDesktop: const ProfileScreenDesktop(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: AdaptiveLayout(
+              mobile: const ProfileScreen(),
+              tablet: const ProfileScreen(),
+              webDesktop: const ProfileScreenDesktop(),
+            ),
           ),
         );
 
@@ -124,10 +140,13 @@ class AppRouter {
     // =====================
       case '/calendar':
         return MaterialPageRoute(
-          builder: (_) => AdaptiveLayout(
-            mobile: const CalendarScreenMobile(),
-            tablet: const CalendarScreenDesktop(),
-            webDesktop: const CalendarScreenDesktop(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: AdaptiveLayout(
+              mobile: const CalendarScreenMobile(),
+              tablet: const CalendarScreenDesktop(),
+              webDesktop: const CalendarScreenDesktop(),
+            ),
           ),
         );
 
@@ -136,10 +155,13 @@ class AppRouter {
     // =====================
       case '/feed':
         return MaterialPageRoute(
-          builder: (_) => AdaptiveLayout(
-            mobile: const FeedScreenMobile(),
-            tablet: const FeedScreenMobile(),
-            webDesktop: const EmployeeFeedScreenDesktop(),
+          settings: settings,
+          builder: (_) => AuthShellGuard(
+            child: AdaptiveLayout(
+              mobile: const FeedScreenMobile(),
+              tablet: const FeedScreenMobile(),
+              webDesktop: const EmployeeFeedScreenDesktop(),
+            ),
           ),
         );
 

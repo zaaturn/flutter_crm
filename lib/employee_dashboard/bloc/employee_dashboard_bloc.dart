@@ -120,15 +120,48 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
   ) {
     final base = weekly ?? WeeklyActivityModel.forCalendarWeek();
     if (attendance == null) return base;
+
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    WeeklyActivityDay? existing;
+    for (final d in base.days) {
+      if (_isSameDay(d.date, today)) {
+        existing = d;
+        break;
+      }
+    }
+
+    final backendWork = existing?.netWork ?? Duration.zero;
+    final backendBreak = existing?.totalBreak ?? Duration.zero;
+
+    final Duration netWork;
+    final Duration totalBreak;
+
+    if (attendance.isCheckedIn) {
+      netWork = attendance.netWork >= backendWork
+          ? attendance.netWork
+          : backendWork;
+      totalBreak = attendance.totalBreak >= backendBreak
+          ? attendance.totalBreak
+          : backendBreak;
+    } else {
+      netWork = backendWork.inSeconds > 0 ? backendWork : attendance.netWork;
+      totalBreak =
+          backendBreak.inSeconds > 0 ? backendBreak : attendance.totalBreak;
+    }
+
     return base.mergeToday(
       WeeklyActivityDay(
-        date: DateTime(now.year, now.month, now.day),
-        netWork: attendance.netWork,
-        totalBreak: attendance.totalBreak,
+        date: today,
+        netWork: netWork,
+        totalBreak: totalBreak,
       ),
     );
   }
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   AttendanceModel _mergeAttendance(
     AttendanceModel? current,
@@ -177,9 +210,13 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     try {
       final serverAttendance = await repo.fetchAttendance();
       final attendance = _mergeAttendance(state.attendance, serverAttendance);
+      WeeklyActivityModel? weekly = state.weeklyActivity;
+      try {
+        weekly = await repo.fetchWeeklyActivity();
+      } catch (_) {}
       emit(state.copyWith(
         attendance: attendance,
-        weeklyActivity: _weeklyWithLiveToday(state.weeklyActivity, attendance),
+        weeklyActivity: _weeklyWithLiveToday(weekly, attendance),
       ));
       _startLiveTicker();
     } catch (err) {

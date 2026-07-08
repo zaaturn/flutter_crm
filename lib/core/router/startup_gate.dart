@@ -7,7 +7,6 @@ import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/auth/jwt_utils.dart';
 import 'package:my_app/core/auth/admin_access_guard.dart';
 import 'package:my_app/core/auth/shell_route_persistence.dart';
-import 'package:my_app/services/auth_service.dart';
 import 'package:my_app/services/api_client.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
@@ -31,18 +30,8 @@ class _StartupGateState extends State<StartupGate> {
   static const _storageTimeout = Duration(seconds: 12);
 
   Future<void> _redirectToLogin() async {
-    AuthSessionRedirect.discardPendingSessionMessage();
-    try {
-      await AuthService().logout();
-    } catch (_) {
-      await SecureStorageService().clearAll();
-      ApiClient().forceUnauthenticated();
-    }
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-      '/employeeLogin',
-      (route) => false,
-    );
+    await AuthSessionRedirect.logoutAndGoToLogin(context: context);
   }
 
   void _goEmployee() {
