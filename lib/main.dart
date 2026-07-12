@@ -16,6 +16,7 @@ import 'admin_page/repository/lead_repository.dart';
 
 // Employee
 import 'employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'employee_dashboard/repository/employee_dashboard_repository.dart';
 
 // Leave
@@ -364,11 +365,19 @@ class _RealtimeWsBootstrapState extends State<_RealtimeWsBootstrap> {
       }
     }
 
-    if (notifType == 'task_updated' ||
+    if (notifType == 'task_assigned' ||
+        notifType == 'task_updated' ||
+        notifType == 'task_completed' ||
+        notifType == 'task_approved' ||
         notifType == 'task_due_reminder' ||
         notifType == 'leave_status' ||
         data.containsKey('task_id') ||
         data.containsKey('leave_id')) {
+      if (notifType.startsWith('task_') || data.containsKey('task_id')) {
+        try {
+          ctx.read<EmployeeBloc>().add(PollTasksRequested());
+        } catch (_) {}
+      }
       NotificationPayloadRouter.handleWithContext(ctx, data);
       return;
     }
@@ -429,6 +438,9 @@ class _NotificationAppResumeRefreshState
         if (ctx == null || !ctx.mounted) return;
         try {
           ctx.read<NotificationBloc>().add(NotificationLoadRequested());
+        } catch (_) {}
+        try {
+          ctx.read<EmployeeBloc>().add(PollTasksRequested());
         } catch (_) {}
       });
     }

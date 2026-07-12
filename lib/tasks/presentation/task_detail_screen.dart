@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import 'package:my_app/admin_dashboard/shared/admin_content_shell.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/core/ui/adaptive_layout.dart';
 import 'package:my_app/tasks/models/crm_task.dart';
 import 'package:my_app/tasks/presentation/task_edit_screen.dart';
 import 'package:my_app/tasks/services/crm_task_api_service.dart';
@@ -36,6 +37,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   static const _statuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED'];
 
+  static const _terracotta = Color(0xFFC05C39);
+  static const _terracottaDark = Color(0xFFA84A2E);
+  static const _cream = Color(0xFFFAF9F6);
+  static const _creamMuted = Color(0xFFF2EDE4);
+  static const _border = Color(0xFFE8DFD4);
+  static const _textDark = Color(0xFF2C241E);
+  static const _textMuted = Color(0xFF8A7A6E);
+
+  bool get _mobile => AdaptiveLayout.useMobileUi(context);
+
+  Color get _accent =>
+      _mobile ? _terracotta : AdminDashboardTheme.teal;
+  Color get _accentLight =>
+      _mobile ? _creamMuted : AdminDashboardTheme.tealLight;
+  Color get _accentDark =>
+      _mobile ? _terracottaDark : AdminDashboardTheme.tealDark;
+  Color get _fg =>
+      _mobile ? _textDark : AdminDashboardTheme.textDark;
+  Color get _muted =>
+      _mobile ? _textMuted : AdminDashboardTheme.textMuted;
+  Color get _cardBorder =>
+      _mobile ? _border : AdminDashboardTheme.border;
+  Color get _surfaceMuted =>
+      _mobile ? _creamMuted : AdminDashboardTheme.surfaceMuted;
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +80,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             'Task due: $hint',
             style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
           ),
-          backgroundColor: AdminDashboardTheme.teal,
+          backgroundColor: _accent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
@@ -132,17 +158,52 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Color _priorityColor(String p) => switch (p.toUpperCase()) {
         'HIGH' => const Color(0xFFEF4444),
         'LOW' => const Color(0xFF10B981),
-        _ => AdminDashboardTheme.teal,
+        _ => _accent,
       };
 
   Color _statusColor(String s) => switch (s.toUpperCase()) {
         'COMPLETED' => const Color(0xFF10B981),
-        'IN_PROGRESS' => AdminDashboardTheme.teal,
-        _ => AdminDashboardTheme.textMuted,
+        'IN_PROGRESS' => _accent,
+        _ => _muted,
       };
 
   @override
   Widget build(BuildContext context) {
+    final body = _loading
+        ? Center(child: CircularProgressIndicator(color: _accent))
+        : _error != null
+            ? Center(
+                child: Text(
+                  _error!,
+                  style: GoogleFonts.plusJakartaSans(color: _muted),
+                ),
+              )
+            : _buildBody(_task!);
+
+    if (_mobile) {
+      return Scaffold(
+        backgroundColor: _cream,
+        appBar: AppBar(
+          backgroundColor: _terracotta,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            'Task details',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+          ),
+          actions: [
+            if (_canEdit && _task != null && !_task!.isApproved)
+              IconButton(
+                onPressed: _openEdit,
+                icon: const Icon(Icons.edit_rounded),
+                tooltip: 'Edit',
+              ),
+          ],
+        ),
+        body: body,
+      );
+    }
+
     return AdminContentShell(
       title: 'Task details',
       onBack: () => Navigator.pop(context),
@@ -152,45 +213,28 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: TextButton.icon(
               onPressed: _openEdit,
-              icon: const Icon(
-                Icons.edit_rounded,
-                size: 18,
-                color: AdminDashboardTheme.teal,
-              ),
+              icon: Icon(Icons.edit_rounded, size: 18, color: _accent),
               label: Text(
                 'Edit',
                 style: GoogleFonts.plusJakartaSans(
-                  color: AdminDashboardTheme.teal,
+                  color: _accent,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
           ),
       ],
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AdminDashboardTheme.teal),
-            )
-          : _error != null
-              ? Center(
-                  child: Text(
-                    _error!,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: AdminDashboardTheme.textMuted,
-                    ),
-                  ),
-                )
-              : _buildBody(_task!),
+      body: body,
     );
   }
 
   Widget _buildBody(CrmTask task) {
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(_mobile ? 16 : 24),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 700;
+          final isWide = !_mobile && constraints.maxWidth > 700;
           if (isWide) {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +248,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           return Column(
             children: [
               _mainCard(task),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               _metaCard(task),
             ],
           );
@@ -216,7 +260,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Widget _mainCard(CrmTask task) {
     return _card(
       title: 'Overview',
-      icon: Icons.assignment_outlined,
+      icon: Icons.assignment_rounded,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -224,53 +268,55 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           Text(
             task.title,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 24,
+              fontSize: _mobile ? 20 : 24,
               fontWeight: FontWeight.w800,
-              color: AdminDashboardTheme.textDark,
+              color: _fg,
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _label('Description'),
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AdminDashboardTheme.surfaceMuted,
+              color: _surfaceMuted,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AdminDashboardTheme.border),
+              border: Border.all(color: _cardBorder),
             ),
             child: Text(
-              task.description.isEmpty ? 'No description provided.' : task.description,
+              task.description.isEmpty
+                  ? 'No description provided.'
+                  : task.description,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
                 height: 1.6,
-                color: AdminDashboardTheme.textMuted,
+                color: _muted,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           if (task.attachment != null && task.attachment!.isNotEmpty) ...[
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _label('Attachment'),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AdminDashboardTheme.tealLight,
+                color: _accentLight,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AdminDashboardTheme.border),
+                border: Border.all(color: _cardBorder),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file_rounded, color: AdminDashboardTheme.teal, size: 20),
+                  Icon(Icons.attach_file_rounded, color: _accent, size: 20),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       task.attachment!,
                       style: GoogleFonts.plusJakartaSans(
-                        color: AdminDashboardTheme.tealDark,
+                        color: _accentDark,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -333,16 +379,16 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(_mobile ? 18 : 28),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AdminDashboardTheme.border),
+        borderRadius: BorderRadius.circular(_mobile ? 18 : 20),
+        border: Border.all(color: _cardBorder),
         boxShadow: [
           BoxShadow(
-            color: AdminDashboardTheme.teal.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: _accent.withValues(alpha: 0.08),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -354,11 +400,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AdminDashboardTheme.tealLight,
+                  color: _accentLight,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AdminDashboardTheme.border),
+                  border: Border.all(color: _cardBorder),
                 ),
-                child: Icon(icon, size: 18, color: AdminDashboardTheme.teal),
+                child: Icon(icon, size: 18, color: _accent),
               ),
               const SizedBox(width: 12),
               Text(
@@ -366,12 +412,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AdminDashboardTheme.textDark,
+                  color: _fg,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           child,
         ],
       ),
@@ -390,7 +436,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.lock_outline_rounded, color: Color(0xFFB45309), size: 18),
+          const Icon(Icons.lock_outline_rounded,
+              color: Color(0xFFB45309), size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -413,7 +460,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       style: GoogleFonts.plusJakartaSans(
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        color: AdminDashboardTheme.textMuted,
+        color: _muted,
         letterSpacing: 1.1,
       ),
     );
@@ -432,7 +479,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: AdminDashboardTheme.teal),
+              Icon(icon, size: 18, color: _accent),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -443,7 +490,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: AdminDashboardTheme.textMuted,
+                        color: _muted,
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -453,7 +500,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: valueColor ?? AdminDashboardTheme.textDark,
+                        color: valueColor ?? _fg,
                       ),
                     ),
                   ],
@@ -462,7 +509,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             ],
           ),
         ),
-        if (showDivider) const Divider(height: 1, color: AdminDashboardTheme.border),
+        if (showDivider) Divider(height: 1, color: _cardBorder),
       ],
     );
   }
@@ -472,7 +519,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: 1, color: AdminDashboardTheme.border),
+        Divider(height: 1, color: _cardBorder),
         Padding(
           padding: const EdgeInsets.only(top: 14, bottom: 8),
           child: _label('Status'),
@@ -480,18 +527,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: AdminDashboardTheme.surfaceMuted,
+            color: _surfaceMuted,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AdminDashboardTheme.border),
+            border: Border.all(color: _cardBorder),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: current,
               isExpanded: true,
-              icon: const Icon(Icons.unfold_more_rounded, size: 20, color: AdminDashboardTheme.textMuted),
+              icon: Icon(Icons.unfold_more_rounded, size: 20, color: _muted),
               style: GoogleFonts.plusJakartaSans(
                 fontWeight: FontWeight.w600,
-                color: AdminDashboardTheme.textDark,
+                color: _fg,
               ),
               items: _statuses.map((s) {
                 return DropdownMenuItem(
@@ -514,7 +561,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   String _fmtDate(String? raw) {
     if (raw == null || raw.isEmpty) return '—';
     try {
-      return DateFormat('EEE, MMM dd, yyyy').format(DateTime.parse(raw));
+      return DateFormat('EEE, d MMM yyyy').format(DateTime.parse(raw));
     } catch (_) {
       return raw;
     }

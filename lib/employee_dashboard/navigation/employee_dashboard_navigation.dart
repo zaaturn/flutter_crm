@@ -33,6 +33,7 @@ import 'package:my_app/dashboards/presentations/screens/feed_screen_mobile.dart'
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/event_management/shared/widgets/event_management_shell.dart';
+import 'package:my_app/asset_management/navigation/asset_flow_controller.dart';
 
 class EmployeeDashboardNavigator {
 
@@ -128,6 +129,12 @@ class EmployeeDashboardNavigator {
       context,
       MaterialPageRoute(builder: (_) => const EventManagementShell()),
     );
+  }
+
+  // ================= ASSETS =================
+  static Future<void> assets(BuildContext context) {
+    _safeCloseDrawer(context);
+    return AssetFlowController.openEmployee(context);
   }
 
   // ================= FEED / SHARED POSTS =================

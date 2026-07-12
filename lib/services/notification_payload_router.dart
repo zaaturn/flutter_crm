@@ -8,6 +8,7 @@ import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/auth/auth_session.dart';
 
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
+import 'package:my_app/employee_dashboard/bloc/employee_dashboard_event.dart';
 import 'package:my_app/employee_dashboard/screen/employee_task_tracker_screen.dart';
 import 'package:my_app/employee_dashboard/widget/employee_task_tracker_screen_mobile.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen.dart';
@@ -26,6 +27,8 @@ import 'package:my_app/admin_dashboard/screen/device_specific/track_task_desktop
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/track_task_screen_mobile.dart';
 import 'package:my_app/leave_management/screens/device_specific/admin_leave_approve_panel.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/asset_management/navigation/asset_flow_controller.dart';
+import 'package:my_app/asset_management/presentation/screens/asset_detail_screen.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/survey/bloc/survey_employee_event.dart';
 import 'package:my_app/survey/models/survey_models.dart';
@@ -191,6 +194,11 @@ abstract final class NotificationPayloadRouter {
       return;
     }
 
+    if (_isAssetType(type)) {
+      await _openAssetNotification(context, data, type!, isAdmin: isAdmin);
+      return;
+    }
+
     final taskId = int.tryParse(taskIdStr ?? '');
     if (taskId != null && _isTaskDetailType(type)) {
       final dueHint = type == 'task_due_reminder'
@@ -231,6 +239,70 @@ abstract final class NotificationPayloadRouter {
     }
   }
 
+  static bool _isAssetType(String? type) {
+    if (type == null) return false;
+    return type == 'asset_request' ||
+        type == 'asset_return_requested' ||
+        type == 'asset_damage_reported' ||
+        type == 'asset_status' ||
+        type == 'asset_overdue' ||
+        type == 'asset_warranty_expiring';
+  }
+
+  static Future<void> _openAssetNotification(
+    BuildContext context,
+    Map<String, dynamic> data,
+    String type, {
+    required bool isAdmin,
+  }) async {
+    final assetCode = _str(data, 'asset_code');
+    final status = _str(data, 'status')?.toLowerCase();
+
+    switch (type) {
+      case 'asset_request':
+        if (isAdmin) {
+          await AssetFlowController.openPendingRequests(context);
+        }
+        return;
+      case 'asset_return_requested':
+        if (isAdmin) {
+          await AssetFlowController.openPendingReturns(context);
+        }
+        return;
+      case 'asset_damage_reported':
+        if (isAdmin) {
+          await AssetFlowController.openPendingDamage(context);
+        }
+        return;
+      case 'asset_overdue':
+      case 'asset_warranty_expiring':
+        if (isAdmin) {
+          await AssetFlowController.openDashboard(context);
+        }
+        return;
+      case 'asset_status':
+        if (assetCode != null && assetCode.isNotEmpty) {
+          final mobile = AdaptiveLayout.useMobileUi(context);
+          await Navigator.of(context, rootNavigator: true).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => AssetDetailScreen(
+                assetCode: assetCode,
+                useMobileTheme: mobile,
+              ),
+            ),
+          );
+          return;
+        }
+        if (status == 'approved' ||
+            status == 'rejected' ||
+            status == 'return_verified' ||
+            status == 'return_rejected') {
+          await AssetFlowController.openMyAssets(context);
+        }
+        return;
+    }
+  }
+
   static void _openPost(BuildContext context, int postId) {
     final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(
@@ -258,6 +330,9 @@ abstract final class NotificationPayloadRouter {
       Navigator.of(context, rootNavigator: true).pushNamed('/employeeDashboard');
       return;
     }
+
+    bloc.add(PollTasksRequested());
+    bloc.add(StartTaskPolling());
 
     final wide = AdaptiveLayout.isWide(context);
     Navigator.of(context, rootNavigator: true).push<void>(

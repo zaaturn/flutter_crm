@@ -37,7 +37,15 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     on<RegisterNotificationDevice>(_onRegisterNotificationDevice);
     on<EmployeeProfileUpdated>(_onEmployeeProfileUpdated);
     on<RefreshEmployeeProfile>(_onRefreshEmployeeProfile);
+    on<RefreshEvent>(_onRefreshEvent);
     on<LogoutEvent>(_onLogout);
+  }
+
+  Future<void> _onRefreshEvent(
+    RefreshEvent event,
+    Emitter<EmployeeState> emit,
+  ) async {
+    add(PollTasksRequested());
   }
 
   // =========================================================
@@ -81,6 +89,10 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
 
       _startAttendancePolling();
       _startLiveTicker();
+      // Keep task polling alive across tab switches (Home dispose must not kill it).
+      if (_pollingTimer == null) {
+        add(StartTaskPolling());
+      }
     } catch (err) {
       emit(state.copyWith(
         loading: false,

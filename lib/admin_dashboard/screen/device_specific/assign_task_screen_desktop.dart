@@ -7,6 +7,7 @@ import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
 import 'package:my_app/admin_dashboard/model/user.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 import 'package:my_app/admin_dashboard/widget/device_specific/employee_search_desktop.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 
 class AssignTaskScreenDesktop extends StatefulWidget {
   const AssignTaskScreenDesktop({super.key});
@@ -450,8 +451,9 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
     setState(() => submitting = true);
 
     try {
+      final assignee = selectedUser!;
       await _repository.createTask(
-        assignedTo: selectedUser!.id,
+        assignedTo: assignee.id,
         title: taskController.text.trim(),
         description: descriptionController.text.trim(),
         priority: priority,
@@ -459,25 +461,29 @@ class _AssignTaskScreenState extends State<AssignTaskScreenDesktop> {
       );
 
       if (mounted) {
-        // --- THE SUCCESS SNACKBAR ---
-        ScaffoldMessenger.of(context).showSnackBar(
+        rootScaffoldMessengerKey.currentState?.showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle_outline, color: Colors.white),
                 const SizedBox(width: 12),
-                Text("Task assigned to ${selectedUser!.username} successfully!"),
+                Expanded(
+                  child: Text(
+                    'Task assigned to ${assignee.displayName}',
+                  ),
+                ),
               ],
             ),
-            backgroundColor: const Color(0xFF10B981), // Modern Emerald Green
+            backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             duration: const Duration(seconds: 3),
           ),
         );
 
-        // Return true so the calling screen knows it was successful
         Navigator.pop(context, true);
       }
     } catch (e) {

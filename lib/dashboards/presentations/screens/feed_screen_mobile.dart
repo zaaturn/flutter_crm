@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:my_app/dashboards/domain/models/post_model.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_state.dart';
 import 'package:my_app/dashboards/presentations/screens/post_detail_screen_mobile.dart';
+import 'package:my_app/dashboards/widgets/employee_social_feed_card.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
 import 'package:my_app/employee_dashboard/widget/bottom_nav.dart';
 import 'package:my_app/survey/bloc/survey_employee_bloc.dart';
 import 'package:my_app/survey/bloc/survey_employee_event.dart';
 import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
-import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
-import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
-import 'package:my_app/leave_management/screens/mobile_screen/widget/leave_manager_colors.dart';
 
+/// Mobile Activity Feed — same posts API, tabs, surveys, and card behavior as desktop.
 class FeedScreenMobile extends StatefulWidget {
   const FeedScreenMobile({super.key});
 
@@ -26,7 +22,10 @@ class FeedScreenMobile extends StatefulWidget {
 }
 
 class _FeedScreenMobileState extends State<FeedScreenMobile> {
-  static const _textMuted = Color(0xFF64748B);
+  static const _terracotta = Color(0xFFC05C39);
+  static const _cream = Color(0xFFFAF9F6);
+  static const _border = Color(0xFFE8DFD4);
+  static const _textMuted = Color(0xFF8A7A6E);
 
   String? _category = 'shared';
   static const _feedPageSize = 30;
@@ -52,51 +51,55 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
     });
   }
 
+  Future<void> _refresh() async {
+    context.read<PostBloc>().add(
+          FetchPosts(category: _category, pageSize: _feedPageSize),
+        );
+    context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LeaveManagerColors.background,
+      backgroundColor: _cream,
       appBar: AppBar(
-        backgroundColor: LeaveManagerColors.surface,
+        backgroundColor: _terracotta,
+        foregroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        foregroundColor: LeaveManagerColors.primary,
         leading: IconButton(
           onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(
-          'Feeds',
-          style: GoogleFonts.manrope(
-            fontWeight: FontWeight.w900,
+          'Activity Feed',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
             fontSize: 18,
-            color: LeaveManagerColors.onBackground,
           ),
         ),
         centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            color: LeaveManagerColors.outlineVariant.withValues(alpha: 0.35),
-          ),
-        ),
       ),
       bottomNavigationBar: const BottomNav(currentIndex: 2),
       body: RefreshIndicator(
-        onRefresh: () async {
-          context.read<PostBloc>().add(
-            FetchPosts(category: _category, pageSize: _feedPageSize),
-          );
-          context.read<SurveyEmployeeBloc>().add(const SurveyEmployeeLoadActive());
-        },
+        color: _terracotta,
+        onRefresh: _refresh,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
-            const SizedBox(height: 4),
+            Text(
+              'Curated updates from across the organization.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                color: _textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
             _Tabs(
               selected: _category,
+              accent: _terracotta,
               onSelected: (c) {
                 setState(() => _category = c);
                 context.read<PostBloc>().add(
@@ -104,70 +107,85 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
                     );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             const SurveyFeedSection(autoLoad: false),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             BlocBuilder<PostBloc, PostState>(
               builder: (context, state) {
                 final bloc = context.read<PostBloc>();
                 if ((state is PostLoading || state is PostInitial) &&
                     bloc.posts.isEmpty) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 40),
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 60),
                     child: Center(
-                      child: CircularProgressIndicator(
-                        color: LeaveManagerColors.primary,
-                      ),
+                      child: CircularProgressIndicator(color: _terracotta),
                     ),
                   );
                 }
                 if (state is PostError && bloc.posts.isEmpty) {
                   return Padding(
-                    padding: const EdgeInsets.only(top: 40),
+                    padding: const EdgeInsets.only(top: 60),
                     child: Center(
-                      child: Text(state.message, style: const TextStyle(color: _textMuted)),
+                      child: Text(
+                        state.message,
+                        style: GoogleFonts.plusJakartaSans(
+                          color: _textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   );
                 }
-                final posts =
-                    state is PostLoaded ? state.posts : bloc.posts;
-                if (posts.isEmpty) return const _Empty();
+                final posts = state is PostLoaded ? state.posts : bloc.posts;
+                if (posts.isEmpty) {
+                  return Container(
+                    margin: const EdgeInsets.only(top: 24),
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _border),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.inbox_rounded, color: _border, size: 40),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No feeds in this category yet.',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: _textMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
                 return Column(
                   children: posts
-                      .map((p) => _Row(
-                            post: p,
-                            onOpen: () {
-                              Navigator.of(context)
-                                  .push<void>(
-                                PageRouteBuilder<void>(
-                                  opaque: true,
-                                  fullscreenDialog: true,
-                                  pageBuilder: (_, __, ___) =>
-                                      PostDetailScreenMobile(
-                                    postId: p.id,
+                      .map(
+                        (p) => EmployeeSocialFeedCard(
+                          post: p,
+                          accent: _terracotta,
+                          border: _border,
+                          shadowColor: _terracotta,
+                          onOpen: () async {
+                            await Navigator.of(context).push<void>(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    PostDetailScreenMobile(postId: p.id),
+                              ),
+                            );
+                            if (!context.mounted) return;
+                            context.read<PostBloc>().add(
+                                  FetchPosts(
+                                    category: _category,
+                                    pageSize: _feedPageSize,
                                   ),
-                                  transitionsBuilder: (_, animation, __, child) {
-                                    return FadeTransition(
-                                      opacity: CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOut,
-                                      ),
-                                      child: child,
-                                    );
-                                  },
-                                ),
-                              )
-                                  .then((_) {
-                                if (!context.mounted) return;
-                                context.read<PostBloc>().add(
-                                      FetchPosts(
-                                        category: _category,
-                                        pageSize: _feedPageSize,
-                                      ),
-                                    );
-                              });
-                            },
-                          ))
+                                );
+                          },
+                        ),
+                      )
                       .toList(),
                 );
               },
@@ -181,8 +199,13 @@ class _FeedScreenMobileState extends State<FeedScreenMobile> {
 
 class _Tabs extends StatelessWidget {
   final String? selected;
+  final Color accent;
   final ValueChanged<String?> onSelected;
-  const _Tabs({required this.selected, required this.onSelected});
+  const _Tabs({
+    required this.selected,
+    required this.accent,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -200,28 +223,25 @@ class _Tabs extends StatelessWidget {
             padding: const EdgeInsets.only(right: 10),
             child: InkWell(
               onTap: () => onSelected(it.$2),
-              borderRadius: BorderRadius.circular(999),
-              child: Container(
+              borderRadius: BorderRadius.circular(12),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                 decoration: BoxDecoration(
-                  color: isSel
-                      ? LeaveManagerColors.primary
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(999),
+                  color: isSel ? accent : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSel
-                        ? LeaveManagerColors.primary
-                        : const Color(0xFFE2E8F0),
+                    color: isSel ? accent : const Color(0xFFE8DFD4),
+                    width: 1.5,
                   ),
                 ),
                 child: Text(
                   it.$1,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.9,
-                    color: isSel ? Colors.white : const Color(0xFF475569),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isSel ? Colors.white : const Color(0xFF5A4A3E),
                   ),
                 ),
               ),
@@ -232,331 +252,3 @@ class _Tabs extends StatelessWidget {
     );
   }
 }
-
-class _Row extends StatelessWidget {
-  final PostModel post;
-  final VoidCallback onOpen;
-  const _Row({required this.post, required this.onOpen});
-
-  bool get _hasLink => (post.link ?? '').trim().isNotEmpty;
-
-  String _authorName() {
-    final n = (post.createdByFullName ?? '').trim();
-    if (n.isNotEmpty) return n;
-    final u = (post.createdByUsername ?? '').trim();
-    if (u.isNotEmpty) return u;
-    return 'User';
-  }
-
-  String _designation() => (post.createdByDesignation ?? '').trim();
-
-  String _initials() {
-    final parts = _authorName()
-        .split(RegExp(r'\s+'))
-        .where((p) => p.trim().isNotEmpty)
-        .toList();
-    if (parts.isEmpty) return 'U';
-    final first = parts.first.trim();
-    final last = parts.length > 1 ? parts.last.trim() : '';
-    final a = first.isNotEmpty ? first[0] : 'U';
-    final b = last.isNotEmpty ? last[0] : '';
-    return (a + b).toUpperCase();
-  }
-
-  String _timeAgo() {
-    final d = DateTime.now().difference(post.createdAt);
-    if (d.inMinutes < 1) return 'just now';
-    if (d.inMinutes < 60) return '${d.inMinutes}m ago';
-    if (d.inHours < 24) return '${d.inHours}h ago';
-    if (d.inDays < 7) return '${d.inDays}d ago';
-    return DateFormat('MMM d').format(post.createdAt);
-  }
-
-  Future<void> _openLink(BuildContext context) async {
-    final raw = (post.link ?? '').trim();
-    if (raw.isEmpty) return;
-    final uri = Uri.tryParse(_normalizeUrl(raw));
-    if (uri == null) return;
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link')),
-      );
-    }
-  }
-
-  String _normalizeUrl(String raw) {
-    final s = raw.trim();
-    if (s.isEmpty) return s;
-    final u = s.toLowerCase();
-    if (u.startsWith('http://') || u.startsWith('https://')) return s;
-    if (u.startsWith('www.')) return 'https://$s';
-    if (s.contains('.') && !s.contains(' ')) return 'https://$s';
-    return s;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final title = post.title?.trim().isNotEmpty == true
-        ? post.title!.trim()
-        : post.category.replaceAll('_', ' ');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: LeaveManagerColors.primary.withValues(alpha: 0.45),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: InkWell(
-        onTap: onOpen,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _Avatar(
-                    photoUrl: (post.createdByProfilePhoto ?? '').trim(),
-                    initials: _initials(),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _authorName(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _designation().isEmpty
-                              ? _timeAgo().toUpperCase()
-                              : '${_designation().toUpperCase()} • ${_timeAgo().toUpperCase()}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF64748B),
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.more_horiz_rounded,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (post.attachments.isNotEmpty) ...[
-                PostAttachmentsPreview(
-                  attachments: post.attachments,
-                  borderRadius: 12,
-                ),
-                const SizedBox(height: 12),
-              ],
-              if (_hasLink) ...[
-                InkWell(
-                  onTap: () => _openLink(context),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: LeaveManagerColors.primary),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.link,
-                          size: 16,
-                          color: LeaveManagerColors.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            post.link!.trim(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: LeaveManagerColors.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  color: Color(0xFF0F172A),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              if (post.content.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  post.content.trim(),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF5A6062),
-                    height: 1.35,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (!post.isRead) ...[
-                    OutlinedButton(
-                      onPressed: () => context
-                          .read<PostBloc>()
-                          .add(MarkPostAsRead(post.id)),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: LeaveManagerColors.primary,
-                          width: 2,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                      ),
-                      child: Text(
-                        'MARK AS SEEN',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.0,
-                          color: LeaveManagerColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
-                  PostFeedStatusRow(post: post, compact: true),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  final String photoUrl;
-  final String initials;
-  const _Avatar({required this.photoUrl, required this.initials});
-
-  @override
-  Widget build(BuildContext context) {
-    if (photoUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(999),
-        child: Image.network(
-          photoUrl,
-          width: 42,
-          height: 42,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _Initials(initials: initials),
-        ),
-      );
-    }
-    return _Initials(initials: initials);
-  }
-}
-
-class _Initials extends StatelessWidget {
-  final String initials;
-  const _Initials({required this.initials});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF3FF),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        initials,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-          color: LeaveManagerColors.primary,
-        ),
-      ),
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.inbox_outlined, color: Color(0xFF94A3B8)),
-          SizedBox(width: 10),
-          Expanded(
-            child: Text('No posts found.', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-

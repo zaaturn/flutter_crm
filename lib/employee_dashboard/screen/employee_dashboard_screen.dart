@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/core/auth/shell_route_persistence.dart';
@@ -24,6 +27,8 @@ class EmployeeDashboardScreen extends StatefulWidget {
 }
 
 class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
+  StreamSubscription<RemoteMessage>? _fcmSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -38,11 +43,23 @@ class _EmployeeDashboardScreenState extends State<EmployeeDashboardScreen> {
         context.read<NotificationBloc>().add(NotificationLoadRequested());
       } catch (_) {}
     });
+
+    _fcmSubscription = FirebaseMessaging.onMessage.listen((message) {
+      final type = '${message.data['type'] ?? ''}'.toLowerCase();
+      if (type == 'task_assigned' ||
+          type == 'task_updated' ||
+          type == 'task_completed' ||
+          type == 'task_approved' ||
+          type == 'task_due_reminder') {
+        if (!mounted) return;
+        context.read<EmployeeBloc>().add(PollTasksRequested());
+      }
+    });
   }
 
   @override
   void dispose() {
-    context.read<EmployeeBloc>().add(StopTaskPolling());
+    _fcmSubscription?.cancel();
     super.dispose();
   }
 

@@ -12,6 +12,7 @@ import 'package:my_app/client tracker/features/clients/screen/mobile_screen/scre
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/event_management/features/calendar/presentation/screen/calendar_screen_mobile.dart';
 import 'package:my_app/payroll/navigation/payroll_flow_controller.dart';
+import 'package:my_app/asset_management/navigation/asset_flow_controller.dart';
 import 'package:my_app/analytics/navigation/analytics_flow_controller.dart';
 import 'package:my_app/auth/manage_users_navigation.dart';
 import 'package:my_app/admin_dashboard/presentation/mobile/live_attendance_mobile_screen.dart';
@@ -126,6 +127,7 @@ class MobileFeatureGrid extends StatelessWidget {
         label: 'Assets & Resources',
         bgColor: palette[colorIdx++],
         iconColor: getContrast(palette[colorIdx - 1]),
+        onTap: () => AssetFlowController.openAdmin(context),
       ),
       DashboardItem(
         icon: Icons.event_busy_rounded,

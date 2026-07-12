@@ -8,6 +8,7 @@ import '../repository/admin_repository.dart';
 import '../model/user.dart';
 import '../../admin_dashboard/widget/employee_search_field.dart';
 import '../../admin_dashboard/widget/section_card.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 
 class AssignTaskScreen extends StatefulWidget {
   const AssignTaskScreen({super.key});
@@ -280,15 +281,48 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
     setState(() => submitting = true);
 
-    await _repository.createTask(
-      assignedTo: selectedUser!.id,
-      title: taskController.text.trim(),
-      description: descriptionController.text.trim(),
-      priority: priority,
-      dueDate: DateFormat("yyyy-MM-dd").format(dueDate!),
-    );
+    try {
+      final assignee = selectedUser!;
+      await _repository.createTask(
+        assignedTo: assignee.id,
+        title: taskController.text.trim(),
+        description: descriptionController.text.trim(),
+        priority: priority,
+        dueDate: DateFormat("yyyy-MM-dd").format(dueDate!),
+      );
 
-    if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('Task assigned to ${assignee.displayName}'),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 

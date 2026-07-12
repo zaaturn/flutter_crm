@@ -42,6 +42,12 @@ class _EmployeeTaskTrackerScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final bloc = context.read<EmployeeBloc>();
+      bloc.add(PollTasksRequested());
+      bloc.add(StartTaskPolling());
+    });
     if (widget.focusTaskId != null) {
       _isBoardView = false;
     }

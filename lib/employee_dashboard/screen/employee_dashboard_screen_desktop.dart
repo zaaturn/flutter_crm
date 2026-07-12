@@ -60,8 +60,13 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     });
 
     _fcmSubscription = FirebaseMessaging.onMessage.listen((message) {
-      if (message.data['type'] == 'TASK_ASSIGNED') {
-        _employeeBloc.add(LoadDashboard());
+      final type = '${message.data['type'] ?? ''}'.toLowerCase();
+      if (type == 'task_assigned' ||
+          type == 'task_updated' ||
+          type == 'task_completed' ||
+          type == 'task_approved' ||
+          type == 'task_due_reminder') {
+        _employeeBloc.add(PollTasksRequested());
       }
     });
   }
@@ -71,7 +76,7 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
     _autoCheckoutTimer?.cancel();
     _fcmSubscription?.cancel();
     _scrollController.dispose();
-    _employeeBloc.add(StopTaskPolling());
+    // Keep task polling running while the employee session is active.
     super.dispose();
   }
 

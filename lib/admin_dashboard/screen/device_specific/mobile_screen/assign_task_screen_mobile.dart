@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/model/user.dart';
 import 'package:my_app/admin_dashboard/repository/admin_repository.dart';
+import 'package:my_app/core/scaffold_messenger_scope.dart';
 
 class AssignTaskScreenMobile extends StatefulWidget {
   const AssignTaskScreenMobile({super.key});
@@ -344,16 +345,46 @@ class _AssignTaskScreenMobileState extends State<AssignTaskScreenMobile> {
     }
     setState(() => submitting = true);
     try {
+      final assignee = selectedUser!;
       await _repository.createTask(
-        assignedTo: selectedUser!.id,
+        assignedTo: assignee.id,
         title: taskController.text.trim(),
         description: descriptionController.text.trim(),
         priority: priority,
         dueDate: DateFormat("yyyy-MM-dd").format(dueDate!),
       );
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Task assigned to ${assignee.displayName}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) setState(() => submitting = false);
+      if (mounted) {
+        setState(() => submitting = false);
+        _showErrorSnackBar(e.toString());
+      }
     }
   }
 }

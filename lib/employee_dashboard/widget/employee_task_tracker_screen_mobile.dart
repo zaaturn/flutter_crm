@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // Ensure these imports match your project structure exactly
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
@@ -25,6 +26,12 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final bloc = context.read<EmployeeBloc>();
+      bloc.add(PollTasksRequested());
+      bloc.add(StartTaskPolling());
+    });
     if (widget.focusTaskId != null) {
       _isBoardView = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -42,13 +49,13 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
   final TextEditingController _searchCtrl = TextEditingController();
 
   // Mobile terracotta palette (matches other mobile modules)
-  static const _bg = Color(0xFFFAF3E0); // cream
-  static const _surface = Color(0xFFF6E7D2); // beige card
-  static const _terracotta = Color(0xFFD9822B);
-  static const _terracottaDark = Color(0xFFB85C1E);
-  static const _textMain = Color(0xFF3E2C1C);
-  static const _textMuted = Color(0xFF7A5C3E);
-  static const _border = Color(0x33B85C1E);
+  static const _bg = Color(0xFFFAF9F6); // cream
+  static const _surface = Color(0xFFF2EDE4);
+  static const _terracotta = Color(0xFFC05C39);
+  static const _terracottaDark = Color(0xFFA84A2E);
+  static const _textMain = Color(0xFF2C241E);
+  static const _textMuted = Color(0xFF8A7A6E);
+  static const _border = Color(0xFFE8DFD4);
 
   @override
   void dispose() {
@@ -89,11 +96,25 @@ class _EmployeeTaskTrackerScreenMobileState extends State<EmployeeTaskTrackerScr
             children: [
               _buildSearchBar(),
               Expanded(
-                child: filteredTasks.isEmpty
-                    ? _buildEmptyState()
-                    : _isBoardView
-                    ? _buildBoardView(filteredTasks)
-                    : _buildListView(filteredTasks),
+                child: RefreshIndicator(
+                  color: _terracotta,
+                  onRefresh: () async {
+                    context.read<EmployeeBloc>().add(PollTasksRequested());
+                  },
+                  child: filteredTasks.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.sizeOf(context).height * 0.45,
+                              child: _buildEmptyState(),
+                            ),
+                          ],
+                        )
+                      : _isBoardView
+                          ? _buildBoardView(filteredTasks)
+                          : _buildListView(filteredTasks),
+                ),
               ),
             ],
           ),
@@ -349,13 +370,8 @@ class _MobileTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const bg = _EmployeeTaskTrackerScreenMobileState._bg;
-    const surface = _EmployeeTaskTrackerScreenMobileState._surface;
     const terracotta = _EmployeeTaskTrackerScreenMobileState._terracotta;
     const terracottaDark = _EmployeeTaskTrackerScreenMobileState._terracottaDark;
-    const textMain = _EmployeeTaskTrackerScreenMobileState._textMain;
-    const textMuted = _EmployeeTaskTrackerScreenMobileState._textMuted;
-    const border = _EmployeeTaskTrackerScreenMobileState._border;
 
     return InkWell(
       onTap: () {
@@ -368,121 +384,153 @@ class _MobileTaskCard extends StatelessWidget {
           ),
         );
       },
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: highlight ? terracottaDark : border,
-          width: highlight ? 2.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: highlight
-                ? terracottaDark.withOpacity(0.16)
-                : Colors.black.withOpacity(0.05),
-            blurRadius: highlight ? 16 : 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // Shrinks to fit content
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _priorityBadge(task.priority),
-              _statusPicker(context, task),
-            ],
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: terracotta,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: highlight ? Colors.white : terracottaDark,
+            width: highlight ? 2 : 1,
           ),
-          const SizedBox(height: 14),
-          Text(task.title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textMain)),
-          const SizedBox(height: 8),
-          // Description expands to full length
-          Text(
-            task.description,
-            style: const TextStyle(color: textMuted, fontSize: 14, height: 1.5),
-          ),
-          if (task.assignedByName != null && task.assignedByName!.trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.person_outline_rounded, size: 14, color: textMuted),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Assigned by ${task.assignedByName}',
-                    style: const TextStyle(
-                      color: textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: terracottaDark.withValues(alpha: 0.28),
+              blurRadius: 14,
+              offset: const Offset(0, 5),
             ),
           ],
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _priorityBadge(task.priority),
+                _statusPicker(context, task),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              task.title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              task.description,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 14,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (task.assignedByName != null &&
+                task.assignedByName!.trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline_rounded,
+                    size: 14,
+                    color: Colors.white.withValues(alpha: 0.85),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Assigned by ${task.assignedByName}',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
   Widget _priorityBadge(String priority) {
-    // Keep priority distinct but harmonized with terracotta palette.
     final Color color = switch (priority.toUpperCase()) {
+      'HIGH' => const Color(0xFFFFE4E1),
+      'MEDIUM' => const Color(0xFFFFF1D6),
+      _ => const Color(0xFFE8F0FF),
+    };
+    final Color text = switch (priority.toUpperCase()) {
       'HIGH' => const Color(0xFFB42318),
-      'MEDIUM' => const Color(0xFFB85C1E),
+      'MEDIUM' => const Color(0xFF92400E),
       _ => const Color(0xFF1D4ED8),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-      child: Text(priority, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900)),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        priority,
+        style: GoogleFonts.plusJakartaSans(
+          color: text,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 
   Widget _statusPicker(BuildContext context, TaskModel task) {
     return PopupMenuButton<String>(
       onSelected: (val) {
-        context.read<EmployeeBloc>().add(UpdateTaskStatus(taskId: task.id, status: val));
+        context
+            .read<EmployeeBloc>()
+            .add(UpdateTaskStatus(taskId: task.id, status: val));
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: _EmployeeTaskTrackerScreenMobileState._terracottaDark.withOpacity(0.08),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _EmployeeTaskTrackerScreenMobileState._border),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(task.status.replaceAll('_', ' '),
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: _EmployeeTaskTrackerScreenMobileState._terracottaDark,
-                )),
+            Text(
+              task.status.replaceAll('_', ' '),
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
             const SizedBox(width: 4),
             const Icon(
               Icons.keyboard_arrow_down_rounded,
               size: 14,
-              color: _EmployeeTaskTrackerScreenMobileState._terracottaDark,
+              color: Colors.white,
             ),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        const PopupMenuItem(value: 'PENDING', child: Text("Pending")),
-        const PopupMenuItem(value: 'IN_PROGRESS', child: Text("In Progress")),
-        const PopupMenuItem(value: 'COMPLETED', child: Text("Completed")),
+        const PopupMenuItem(value: 'PENDING', child: Text('Pending')),
+        const PopupMenuItem(value: 'IN_PROGRESS', child: Text('In Progress')),
+        const PopupMenuItem(value: 'COMPLETED', child: Text('Completed')),
       ],
     );
   }

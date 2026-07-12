@@ -52,6 +52,14 @@ class AppDrawer extends StatelessWidget {
                   ),
 
                   _drawerItem(
+                    icon: Icons.inventory_2_outlined,
+                    title: "Assets & Resources",
+                    onTap: () {
+                      EmployeeDashboardNavigator.assets(context);
+                    },
+                  ),
+
+                  _drawerItem(
                     icon: Icons.receipt_long_outlined,
                     title: "Payslip",
                     onTap: () {

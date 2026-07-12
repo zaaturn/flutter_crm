@@ -39,6 +39,7 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
     (label: 'Activity Feed', icon: Icons.auto_awesome_mosaic_outlined),
     (label: 'Leave Request', icon: Icons.calendar_today_rounded),
     (label: 'Events', icon: Icons.event_note_rounded),
+    (label: 'Assets', icon: Icons.inventory_2_outlined),
   ];
 
   @override
@@ -81,6 +82,9 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
         break;
       case 4:
         EmployeeDashboardNavigator.events(context);
+        break;
+      case 5:
+        EmployeeDashboardNavigator.assets(context);
         break;
     }
   }

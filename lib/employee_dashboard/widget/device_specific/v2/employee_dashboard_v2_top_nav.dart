@@ -43,6 +43,7 @@ class _EmployeeDashboardV2TopNavState extends State<EmployeeDashboardV2TopNav> {
     (label: 'Activity Feed', icon: Icons.auto_awesome_mosaic_outlined),
     (label: 'Leave Request', icon: Icons.calendar_today_outlined),
     (label: 'Events', icon: Icons.event_note_outlined),
+    (label: 'Assets', icon: Icons.inventory_2_outlined),
   ];
 
   @override
@@ -88,6 +89,8 @@ class _EmployeeDashboardV2TopNavState extends State<EmployeeDashboardV2TopNav> {
         EmployeeDashboardNavigator.leaveDashboard(context);
       case 4:
         EmployeeDashboardNavigator.events(context);
+      case 5:
+        EmployeeDashboardNavigator.assets(context);
     }
   }
 

@@ -19,12 +19,6 @@ class AdminTilesMobile extends StatelessWidget {
   final VoidCallback onAssets;
   final VoidCallback onLeave;
 
-  static void _soon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Feature launching soon')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -86,7 +80,7 @@ class AdminTilesMobile extends StatelessWidget {
                 selected: false,
                 icon: Icons.inventory_2_outlined,
                 label: 'Assets',
-                onTap: () => _soon(context),
+                onTap: onAssets,
               ),
             ),
             const SizedBox(width: 14),
