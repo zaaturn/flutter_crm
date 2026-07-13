@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/core/widgets/survey_icons.dart';
+
 import '../../bloc/survey_admin_bloc.dart';
 import '../../bloc/survey_admin_event.dart';
 import '../../models/survey_models.dart';
@@ -30,11 +33,11 @@ class SurveyFilterRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <(SurveyStatus?, String, IconData)>[
-      (null, 'All surveys', Icons.list_alt_outlined),
-      (SurveyStatus.draft, 'Draft', Icons.edit_note_outlined),
-      (SurveyStatus.active, 'Active', Icons.play_circle_outline),
-      (SurveyStatus.closed, 'Closed', Icons.inventory_2_outlined),
+    final items = <(SurveyStatus?, String, SurveyIconType)>[
+      (null, 'All surveys', SurveyIconType.list),
+      (SurveyStatus.draft, 'Draft', SurveyIconType.draft),
+      (SurveyStatus.active, 'Active', SurveyIconType.active),
+      (SurveyStatus.closed, 'Closed', SurveyIconType.closed),
     ];
 
     return SurveyAdminCompactRail(
@@ -42,18 +45,28 @@ class SurveyFilterRail extends StatelessWidget {
       footer: onCreate == null
           ? null
           : SurveyAdminRailIcon(
-              icon: Icons.add,
               tooltip: 'Create survey',
               selected: false,
               onTap: onCreate!,
+              child: const SurveyIcon(
+                type: SurveyIconType.add,
+                size: 22,
+                color: AdminDashboardTheme.iconInactive,
+              ),
             ),
       children: [
         for (final item in items)
           SurveyAdminRailIcon(
-            icon: item.$3,
             tooltip: item.$2,
             selected: selected == item.$1,
             onTap: () => _onFilterTap(context, item.$1),
+            child: SurveyIcon(
+              type: item.$3,
+              size: 22,
+              color: selected == item.$1
+                  ? AdminDashboardTheme.textDark
+                  : AdminDashboardTheme.iconInactive,
+            ),
           ),
       ],
     );

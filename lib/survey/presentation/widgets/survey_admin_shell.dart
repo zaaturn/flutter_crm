@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
-import 'package:my_app/core/widgets/app_material_icon.dart';
+import 'package:my_app/core/widgets/survey_icons.dart';
 import 'package:my_app/survey/theme/survey_theme.dart';
 
 /// Mint admin canvas + compact icon rail + white content panel.
@@ -94,9 +94,13 @@ class SurveyAdminCompactRail extends StatelessWidget {
                 children: [
                   if (onBack != null)
                     SurveyAdminRailIcon(
-                      icon: Icons.arrow_back_rounded,
                       tooltip: 'Back',
                       onTap: onBack!,
+                      child: const SurveyIcon(
+                        type: SurveyIconType.arrowBack,
+                        size: 22,
+                        color: AdminDashboardTheme.iconInactive,
+                      ),
                     ),
                   ...children,
                   if (footer != null) ...[
@@ -122,8 +126,8 @@ class SurveyAdminCompactRail extends StatelessWidget {
           child: Image.asset(
             'assets/images/logo.png',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const AppMaterialIcon(
-              Icons.poll_outlined,
+            errorBuilder: (_, __, ___) => const SurveyIcon(
+              type: SurveyIconType.poll,
               color: AdminDashboardTheme.teal,
             ),
           ),
@@ -136,15 +140,15 @@ class SurveyAdminCompactRail extends StatelessWidget {
 class SurveyAdminRailIcon extends StatelessWidget {
   const SurveyAdminRailIcon({
     super.key,
-    required this.icon,
     required this.tooltip,
     required this.onTap,
+    required this.child,
     this.selected = false,
   });
 
-  final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
+  final Widget child;
   final bool selected;
 
   @override
@@ -170,13 +174,7 @@ class SurveyAdminRailIcon extends StatelessWidget {
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: AppMaterialIcon(
-                icon,
-                size: 22,
-                color: selected
-                    ? AdminDashboardTheme.textDark
-                    : AdminDashboardTheme.iconInactive,
-              ),
+              child: child,
             ),
           ),
         ),
@@ -207,7 +205,11 @@ class _SurveyAdminHeader extends StatelessWidget {
           if (onBack != null) ...[
             IconButton(
               onPressed: onBack,
-              icon: const AppMaterialIcon(Icons.arrow_back_rounded),
+              icon: const SurveyIcon(
+                type: SurveyIconType.arrowBack,
+                size: 22,
+                color: AdminDashboardTheme.textDark,
+              ),
               color: AdminDashboardTheme.textDark,
               tooltip: 'Back',
             ),

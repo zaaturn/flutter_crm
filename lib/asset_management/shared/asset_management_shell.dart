@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/core/ui/adaptive_layout.dart';
-import 'package:my_app/core/widgets/app_material_icon.dart';
 
 import '../bloc/asset_bloc.dart';
 import '../bloc/asset_event.dart';
@@ -11,6 +10,7 @@ import '../bloc/asset_state.dart';
 import '../theme/asset_theme.dart';
 import '../presentation/screens/asset_scan_screen.dart';
 import '../presentation/screens/asset_tab_body.dart';
+import '../presentation/widgets/asset_nav_icon.dart';
 
 /// Admin-only Assets & Resources (dashboard, inventory, approvals).
 class AssetAdminShell extends StatelessWidget {
@@ -206,8 +206,8 @@ class _DesktopShell extends StatelessWidget {
                           children: [
                             IconButton(
                               onPressed: () => Navigator.pop(context),
-                              icon: const AppMaterialIcon(
-                                Icons.arrow_back_rounded,
+                              icon: const Icon(
+                                Icons.arrow_back,
                                 color: Colors.white,
                               ),
                             ),
@@ -255,8 +255,7 @@ class _DesktopShell extends StatelessWidget {
                               children: [
                                 for (final tab in tabs)
                                   _NavTile(
-                                    label: tab.label,
-                                    icon: _iconFor(tab),
+                                    tab: tab,
                                     selected: state.tab == tab,
                                     onTap: () => context
                                         .read<AssetBloc>()
@@ -341,9 +340,10 @@ class _MobileShell extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const AppMaterialIcon(
-                      Icons.qr_code_scanner,
+                    icon: const AssetNavIcon(
+                      tab: AssetShellTab.scan,
                       color: Colors.white,
+                      size: 22,
                     ),
                   ),
               ],
@@ -358,13 +358,6 @@ class _MobileShell extends StatelessWidget {
                   return GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                    color: Colors.white.withValues(alpha: selected ? 1 : 0.78),
-                  );
-                }),
-                iconTheme: WidgetStateProperty.resolveWith((states) {
-                  final selected = states.contains(WidgetState.selected);
-                  return IconThemeData(
-                    size: 22,
                     color: Colors.white.withValues(alpha: selected ? 1 : 0.78),
                   );
                 }),
@@ -384,13 +377,13 @@ class _MobileShell extends StatelessWidget {
                 destinations: [
                   for (final tab in bottomTabs)
                     NavigationDestination(
-                      icon: AppMaterialIcon(
-                        _iconFor(tab),
+                      icon: AssetNavIcon(
+                        tab: tab,
                         size: 22,
                         color: Colors.white.withValues(alpha: 0.78),
                       ),
-                      selectedIcon: AppMaterialIcon(
-                        _iconFor(tab),
+                      selectedIcon: AssetNavIcon(
+                        tab: tab,
                         size: 22,
                         color: Colors.white,
                       ),
@@ -417,9 +410,10 @@ class _MobileShell extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const AppMaterialIcon(
-                              Icons.inventory_2_outlined,
+                            child: const AssetNavIcon(
+                              tab: AssetShellTab.inventory,
                               color: Colors.white,
+                              size: 24,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -450,8 +444,7 @@ class _MobileShell extends StatelessWidget {
                     const SizedBox(height: 8),
                     for (final tab in tabs)
                       _DrawerTile(
-                        label: tab.label,
-                        icon: _iconFor(tab),
+                        tab: tab,
                         selected: state.tab == tab,
                         onTap: () {
                           Navigator.pop(context);
@@ -494,41 +487,14 @@ class _MobileShell extends StatelessWidget {
   }
 }
 
-IconData _iconFor(AssetShellTab tab) {
-  switch (tab) {
-    case AssetShellTab.dashboard:
-      return Icons.dashboard_outlined;
-    case AssetShellTab.inventory:
-      return Icons.inventory_2_outlined;
-    case AssetShellTab.myAssets:
-      return Icons.devices_other_outlined;
-    case AssetShellTab.scan:
-      return Icons.qr_code_scanner;
-    case AssetShellTab.search:
-      return Icons.search;
-    case AssetShellTab.calendar:
-      return Icons.calendar_month_outlined;
-    case AssetShellTab.pendingRequests:
-      return Icons.pending_actions;
-    case AssetShellTab.pendingReturns:
-      return Icons.assignment_return;
-    case AssetShellTab.pendingDamage:
-      return Icons.report_problem_outlined;
-    case AssetShellTab.guests:
-      return Icons.person_outline;
-  }
-}
-
 class _NavTile extends StatelessWidget {
   const _NavTile({
-    required this.label,
-    required this.icon,
+    required this.tab,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
-  final IconData icon;
+  final AssetShellTab tab;
   final bool selected;
   final VoidCallback onTap;
 
@@ -548,11 +514,11 @@ class _NavTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
-                AppMaterialIcon(icon, size: 20, color: Colors.white),
+                AssetNavIcon(tab: tab, size: 20, color: Colors.white),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    label,
+                    tab.label,
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight:
                           selected ? FontWeight.w800 : FontWeight.w600,
@@ -572,14 +538,12 @@ class _NavTile extends StatelessWidget {
 
 class _DrawerTile extends StatelessWidget {
   const _DrawerTile({
-    required this.label,
-    required this.icon,
+    required this.tab,
     required this.selected,
     required this.onTap,
   });
 
-  final String label;
-  final IconData icon;
+  final AssetShellTab tab;
   final bool selected;
   final VoidCallback onTap;
 
@@ -593,9 +557,9 @@ class _DrawerTile extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
-          leading: AppMaterialIcon(icon, color: Colors.white),
+          leading: AssetNavIcon(tab: tab, color: Colors.white),
           title: Text(
-            label,
+            tab.label,
             style: GoogleFonts.plusJakartaSans(
               color: Colors.white,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
