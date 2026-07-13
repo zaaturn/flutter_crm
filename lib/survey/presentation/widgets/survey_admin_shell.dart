@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
 import 'package:my_app/survey/theme/survey_theme.dart';
 
 /// Mint admin canvas + compact icon rail + white content panel.
@@ -121,8 +122,8 @@ class SurveyAdminCompactRail extends StatelessWidget {
           child: Image.asset(
             'assets/images/logo.png',
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const Icon(
-              Icons.poll_rounded,
+            errorBuilder: (_, __, ___) => const AppMaterialIcon(
+              Icons.poll_outlined,
               color: AdminDashboardTheme.teal,
             ),
           ),
@@ -169,7 +170,7 @@ class SurveyAdminRailIcon extends StatelessWidget {
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: AppMaterialIcon(
                 icon,
                 size: 22,
                 color: selected
@@ -206,7 +207,7 @@ class _SurveyAdminHeader extends StatelessWidget {
           if (onBack != null) ...[
             IconButton(
               onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
+              icon: const AppMaterialIcon(Icons.arrow_back_rounded),
               color: AdminDashboardTheme.textDark,
               tooltip: 'Back',
             ),

@@ -9,6 +9,7 @@ import '../../../bloc/survey_admin_state.dart';
 import '../../../models/survey_models.dart';
 import '../../../theme/survey_theme.dart';
 import '../../widgets/survey_delete_action.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
 import 'package:my_app/core/widgets/survey_icons.dart';
 import 'survey_builder_screen_mobile.dart';
 import 'survey_results_screen_mobile.dart';
@@ -162,9 +163,9 @@ class _MobileSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(SurveyStatus?, String, IconData)>[
-      (null, 'All', Icons.list_alt_rounded),
-      (SurveyStatus.draft, 'Draft', Icons.edit_note_rounded),
-      (SurveyStatus.active, 'Active', Icons.play_circle_outline_rounded),
+      (null, 'All', Icons.list_alt_outlined),
+      (SurveyStatus.draft, 'Draft', Icons.edit_note_outlined),
+      (SurveyStatus.active, 'Active', Icons.play_circle_outline),
       (SurveyStatus.closed, 'Closed', Icons.inventory_2_outlined),
     ];
 
@@ -230,7 +231,7 @@ class _MobileSidebar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Column(
                           children: [
-                            Icon(
+                            AppMaterialIcon(
                               item.$3,
                               size: 18,
                               color: active ? SurveyTheme.purple : SurveyTheme.textMuted,

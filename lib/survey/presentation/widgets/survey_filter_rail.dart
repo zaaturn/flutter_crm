@@ -31,9 +31,9 @@ class SurveyFilterRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <(SurveyStatus?, String, IconData)>[
-      (null, 'All surveys', Icons.list_alt_rounded),
-      (SurveyStatus.draft, 'Draft', Icons.edit_note_rounded),
-      (SurveyStatus.active, 'Active', Icons.play_circle_outline_rounded),
+      (null, 'All surveys', Icons.list_alt_outlined),
+      (SurveyStatus.draft, 'Draft', Icons.edit_note_outlined),
+      (SurveyStatus.active, 'Active', Icons.play_circle_outline),
       (SurveyStatus.closed, 'Closed', Icons.inventory_2_outlined),
     ];
 
@@ -42,7 +42,7 @@ class SurveyFilterRail extends StatelessWidget {
       footer: onCreate == null
           ? null
           : SurveyAdminRailIcon(
-              icon: Icons.add_rounded,
+              icon: Icons.add,
               tooltip: 'Create survey',
               selected: false,
               onTap: onCreate!,

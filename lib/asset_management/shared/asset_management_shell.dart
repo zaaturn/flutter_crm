@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:my_app/core/ui/adaptive_layout.dart';
+import 'package:my_app/core/widgets/app_material_icon.dart';
 
 import '../bloc/asset_bloc.dart';
 import '../bloc/asset_event.dart';
@@ -205,7 +206,7 @@ class _DesktopShell extends StatelessWidget {
                           children: [
                             IconButton(
                               onPressed: () => Navigator.pop(context),
-                              icon: const Icon(
+                              icon: const AppMaterialIcon(
                                 Icons.arrow_back_rounded,
                                 color: Colors.white,
                               ),
@@ -340,7 +341,10 @@ class _MobileShell extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.qr_code_scanner_rounded),
+                    icon: const AppMaterialIcon(
+                      Icons.qr_code_scanner,
+                      color: Colors.white,
+                    ),
                   ),
               ],
             ),
@@ -380,8 +384,16 @@ class _MobileShell extends StatelessWidget {
                 destinations: [
                   for (final tab in bottomTabs)
                     NavigationDestination(
-                      icon: Icon(_iconFor(tab)),
-                      selectedIcon: Icon(_iconFor(tab)),
+                      icon: AppMaterialIcon(
+                        _iconFor(tab),
+                        size: 22,
+                        color: Colors.white.withValues(alpha: 0.78),
+                      ),
+                      selectedIcon: AppMaterialIcon(
+                        _iconFor(tab),
+                        size: 22,
+                        color: Colors.white,
+                      ),
                       label: _shortLabel(tab),
                     ),
                 ],
@@ -405,8 +417,8 @@ class _MobileShell extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: const Icon(
-                              Icons.inventory_2_rounded,
+                            child: const AppMaterialIcon(
+                              Icons.inventory_2_outlined,
                               color: Colors.white,
                             ),
                           ),
@@ -485,25 +497,25 @@ class _MobileShell extends StatelessWidget {
 IconData _iconFor(AssetShellTab tab) {
   switch (tab) {
     case AssetShellTab.dashboard:
-      return Icons.dashboard_rounded;
+      return Icons.dashboard_outlined;
     case AssetShellTab.inventory:
-      return Icons.inventory_2_rounded;
+      return Icons.inventory_2_outlined;
     case AssetShellTab.myAssets:
-      return Icons.devices_other_rounded;
+      return Icons.devices_other_outlined;
     case AssetShellTab.scan:
-      return Icons.qr_code_scanner_rounded;
+      return Icons.qr_code_scanner;
     case AssetShellTab.search:
-      return Icons.search_rounded;
+      return Icons.search;
     case AssetShellTab.calendar:
-      return Icons.calendar_month_rounded;
+      return Icons.calendar_month_outlined;
     case AssetShellTab.pendingRequests:
-      return Icons.pending_actions_rounded;
+      return Icons.pending_actions;
     case AssetShellTab.pendingReturns:
-      return Icons.assignment_return_rounded;
+      return Icons.assignment_return;
     case AssetShellTab.pendingDamage:
-      return Icons.build_circle_rounded;
+      return Icons.report_problem_outlined;
     case AssetShellTab.guests:
-      return Icons.person_outline_rounded;
+      return Icons.person_outline;
   }
 }
 
@@ -536,7 +548,7 @@ class _NavTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
-                Icon(icon, size: 20, color: Colors.white),
+                AppMaterialIcon(icon, size: 20, color: Colors.white),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -581,7 +593,7 @@ class _DrawerTile extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
-          leading: Icon(icon, color: Colors.white),
+          leading: AppMaterialIcon(icon, color: Colors.white),
           title: Text(
             label,
             style: GoogleFonts.plusJakartaSans(

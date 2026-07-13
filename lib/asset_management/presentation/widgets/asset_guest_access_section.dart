@@ -89,16 +89,6 @@ class _AssetGuestsHubBodyState extends State<AssetGuestsHubBody> {
               color: _textDark,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Everyone with guest access — self-registered walk-ins and '
-            'admin-issued credentials — and the assets they requested.',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              height: 1.45,
-              color: _textMuted,
-            ),
-          ),
           const SizedBox(height: 20),
           if (_loading)
             const Padding(
