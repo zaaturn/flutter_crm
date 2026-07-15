@@ -17,6 +17,7 @@ import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_das
 import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_weekly_activity.dart';
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/survey/presentation/widgets/survey_assignment_billboard.dart';
 
 import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/screens/device_specific/profile_screen_desktop.dart';
@@ -124,6 +125,7 @@ class _EmployeeDashboardDesktopState extends State<EmployeeDashboardDesktop> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 const EmployeeDashboardV2Header(),
+                                const SurveyAssignmentBillboard(),
                                 const SizedBox(height: 22),
                                 const EmployeeDashboardV2KpiStrip(),
                                 const SizedBox(height: 22),

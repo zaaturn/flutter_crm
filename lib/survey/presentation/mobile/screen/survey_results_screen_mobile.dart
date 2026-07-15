@@ -80,12 +80,16 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: SurveyMobileTheme.screenBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: SurveyMobileTheme.primary,
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text('Results', style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+        title: Text(
+          'Results',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
             onPressed: () => SurveyPdfDownload.downloadFullReport(
@@ -93,7 +97,6 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
               surveyId: widget.surveyId,
             ),
             icon: const Icon(Icons.download_rounded),
-            color: SurveyMobileTheme.primary,
             tooltip: 'Download full report',
           ),
           BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
@@ -112,7 +115,6 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
                           popOnSuccess: true,
                         ),
                 icon: const Icon(Icons.delete_outline_rounded),
-                color: Colors.red.shade400,
                 tooltip: 'Delete survey',
               );
             },
@@ -124,10 +126,14 @@ class _SurveyResultsScreenMobileState extends State<SurveyResultsScreenMobile>
         ],
         bottom: TabBar(
           controller: _tabs,
-          labelColor: SurveyMobileTheme.primary,
-          unselectedLabelColor: SurveyMobileTheme.textMuted,
-          indicatorColor: SurveyMobileTheme.primary,
-          labelStyle: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 13),
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelStyle: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            fontSize: 13,
+          ),
           tabs: const [
             Tab(text: 'Summary'),
             Tab(text: 'User responses'),

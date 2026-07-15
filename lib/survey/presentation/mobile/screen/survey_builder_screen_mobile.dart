@@ -9,7 +9,6 @@ import '../../../bloc/survey_admin_event.dart';
 import '../../../bloc/survey_admin_state.dart';
 import '../../../models/survey_models.dart';
 import '../../../theme/survey_mobile_theme.dart';
-import '../../../theme/survey_theme.dart';
 import '../../widgets/survey_question_editor.dart';
 import '../../widgets/survey_audience_section.dart';
 import 'survey_results_screen_mobile.dart';
@@ -112,12 +111,16 @@ class _SurveyBuilderScreenMobileState extends State<SurveyBuilderScreenMobile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: SurveyTheme.background,
+      backgroundColor: SurveyMobileTheme.screenBg,
       appBar: AppBar(
-        backgroundColor: SurveyTheme.background,
+        backgroundColor: SurveyMobileTheme.primary,
+        foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Text('Build Survey', style: GoogleFonts.manrope(fontWeight: FontWeight.w900)),
+        title: Text(
+          'Build Survey',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
+        ),
       ),
       bottomNavigationBar: BlocBuilder<SurveyAdminBloc, SurveyAdminState>(
         builder: (context, state) {

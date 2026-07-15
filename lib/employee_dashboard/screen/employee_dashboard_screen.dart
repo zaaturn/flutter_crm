@@ -7,6 +7,7 @@ import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:my_app/event_management/features/notification/presentation/bloc/notification_bloc.dart';
 import 'package:my_app/event_management/features/dashboard/presentation/widgets/main_dashboard_events_panel.dart';
+import 'package:my_app/survey/presentation/widgets/survey_assignment_billboard.dart';
 import 'package:my_app/survey/presentation/widgets/survey_feed_section.dart';
 import 'package:my_app/employee_dashboard/widget/shared_posts_section.dart';
 import '../bloc/employee_dashboard_bloc.dart';
@@ -121,6 +122,8 @@ class _DashboardBody extends StatelessWidget {
               children: [
                 const SizedBox(height: 16),
                 const DashboardGreeting(),
+                const SizedBox(height: 12),
+                const SurveyAssignmentBillboard(),
                 const SizedBox(height: 16),
                 const SessionOverviewSection(),
                 const SizedBox(height: 32),
