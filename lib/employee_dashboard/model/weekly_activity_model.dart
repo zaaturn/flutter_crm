@@ -1,9 +1,13 @@
 import 'package:my_app/analytics/utils/iso_week.dart';
 
 /// One day of worked / break time for the employee weekly activity chart.
-class WeeklyActivityDay {  final DateTime date;
+class WeeklyActivityDay {
+  final DateTime date;
   final Duration netWork;
   final Duration totalBreak;
+
+  /// Company workday cap used by analytics / auto-logout.
+  static const maxWorkDay = Duration(hours: 9);
 
   const WeeklyActivityDay({
     required this.date,
@@ -23,7 +27,11 @@ class WeeklyActivityDay {  final DateTime date;
     );
   }
 
-  double get workedHours => netWork.inSeconds / 3600;
+  /// Clamped so forgotten check-outs never render as 70h+ bars.
+  Duration get cappedNetWork =>
+      netWork > maxWorkDay ? maxWorkDay : netWork;
+
+  double get workedHours => cappedNetWork.inSeconds / 3600;
   double get breakHours => totalBreak.inSeconds / 3600;
 }
 
@@ -34,7 +42,7 @@ class WeeklyActivityModel {
   const WeeklyActivityModel({required this.days});
 
   Duration get totalWorked =>
-      days.fold(Duration.zero, (sum, d) => sum + d.netWork);
+      days.fold(Duration.zero, (sum, d) => sum + d.cappedNetWork);
 
   Duration get totalBreak =>
       days.fold(Duration.zero, (sum, d) => sum + d.totalBreak);
@@ -127,8 +135,11 @@ class WeeklyActivityModel {
 
       final netWork = _parseWorkDuration(m);
       final totalBreak = _parseBreakDuration(m);
+      final capped = netWork > WeeklyActivityDay.maxWorkDay
+          ? WeeklyActivityDay.maxWorkDay
+          : netWork;
 
-      result = result.withDay(date, netWork, totalBreak);
+      result = result.withDay(date, capped, totalBreak);
     }
     return result;
   }

@@ -255,7 +255,7 @@ class _EmployeeDashboardV2WeeklyActivityState
     final todayKey = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final dayKey = DateFormat('yyyy-MM-dd').format(day.date);
     final isToday = dayKey == todayKey;
-    final hasData = day.netWork.inSeconds > 0 || day.totalBreak.inSeconds > 0;
+    final hasData = day.cappedNetWork.inSeconds > 0 || day.totalBreak.inSeconds > 0;
     final stackHeight = (height - _dayFooterHeight).clamp(0.0, double.infinity);
     final availableForBars =
         (stackHeight - _hourLabelHeight - _hourLabelGap).clamp(0.0, double.infinity);
@@ -266,7 +266,7 @@ class _EmployeeDashboardV2WeeklyActivityState
         totalRaw > availableForBars && totalRaw > 0 ? availableForBars / totalRaw : 1.0;
     var workH = rawWorkH * fitScale;
     var breakH = rawBreakH * fitScale;
-    if (day.netWork.inSeconds > 0 && workH < 4) workH = 4;
+    if (day.cappedNetWork.inSeconds > 0 && workH < 4) workH = 4;
     if (day.totalBreak.inSeconds > 0 && breakH < 3) breakH = 3;
 
     return MouseRegion(
@@ -291,7 +291,7 @@ class _EmployeeDashboardV2WeeklyActivityState
                         child: Align(
                           alignment: Alignment.bottomCenter,
                           child: Text(
-                            formatWeeklyHours(day.netWork),
+                            formatWeeklyHours(day.cappedNetWork),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.plusJakartaSans(
@@ -428,7 +428,7 @@ class _BarHoverTooltip extends StatelessWidget {
                 _tooltipRow(
                   color: const Color(0xFF059669),
                   label: 'Working time',
-                  value: formatWeeklyHours(day.netWork),
+                  value: formatWeeklyHours(day.cappedNetWork),
                 ),
                 const SizedBox(height: 3),
                 _tooltipRow(

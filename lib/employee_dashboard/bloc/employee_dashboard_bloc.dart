@@ -166,7 +166,9 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     return base.mergeToday(
       WeeklyActivityDay(
         date: today,
-        netWork: netWork,
+        netWork: netWork > WeeklyActivityDay.maxWorkDay
+            ? WeeklyActivityDay.maxWorkDay
+            : netWork,
         totalBreak: totalBreak,
       ),
     );
