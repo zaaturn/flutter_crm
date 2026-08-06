@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:my_app/auth/auth_session.dart';
+import 'package:my_app/auth/admin_landing.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/core/auth/jwt_utils.dart';
@@ -48,6 +49,18 @@ class _StartupGateState extends State<StartupGate> {
     );
   }
 
+  Future<void> _prepareRestrictedLanding(AuthSession? session) async {
+    if (session == null) {
+      AdminLandingIntent.setPending(null);
+      return;
+    }
+    if (session.hasRestrictedAdminModules) {
+      AdminLandingIntent.setPending(session.firstAssignedSidebarAction);
+    } else {
+      AdminLandingIntent.setPending(null);
+    }
+  }
+
   void _goChooser() {
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
       '/dashboardChooser',
@@ -78,6 +91,7 @@ class _StartupGateState extends State<StartupGate> {
     }
 
     if (lastShellRoute == ShellRoutePersistence.admin && canAccessAdmin) {
+      await _prepareRestrictedLanding(session);
       await ShellRoutePersistence.markAdminShell();
       if (!mounted) return;
       _goAdmin();
@@ -93,6 +107,7 @@ class _StartupGateState extends State<StartupGate> {
         return;
       }
       if (dash == ActiveDashboard.admin) {
+        await _prepareRestrictedLanding(session);
         await ShellRoutePersistence.markAdminShell();
         if (!mounted) return;
         _goAdmin();

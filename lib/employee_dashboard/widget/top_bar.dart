@@ -8,7 +8,7 @@ import 'package:my_app/event_management/features/notification/presentation/scree
 import 'package:my_app/core/auth/auth_session_redirect.dart';
 import 'package:my_app/auth/mobile_workspace_switch_sheet.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
-import 'package:my_app/services/secure_storage_service.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_workspace_access.dart';
 
 class TopBar extends StatefulWidget {
   final BuildContext scaffoldContext;
@@ -43,9 +43,9 @@ class _TopBarState extends State<TopBar> {
   void _onAuthSessionEpoch() => _loadRole();
 
   Future<void> _loadRole() async {
-    final r = await SecureStorageService().readRole();
+    final canSwitch = await employeeCanSwitchWorkspace();
     if (!mounted) return;
-    setState(() => _canOpenAdminWorkspace = r?.toLowerCase() == 'admin');
+    setState(() => _canOpenAdminWorkspace = canSwitch);
   }
 
   void _showLogoutDialog(BuildContext context) {

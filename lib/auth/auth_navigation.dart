@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:my_app/admin_dashboard/screen/device_specific/admin_dashboard_desktop.dart';
 import 'package:my_app/auth/screens/superadmin_users_screen.dart';
+import 'package:my_app/auth/admin_landing.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/screens/dashboard_chooser_screen.dart';
 import 'package:my_app/core/layout/adaptive_layout.dart';
@@ -9,11 +10,25 @@ import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/main
 import 'package:my_app/core/auth/admin_access_guard.dart';
 import 'package:my_app/core/auth/shell_route_persistence.dart';
 import 'package:my_app/services/auth_service.dart';
+import 'package:my_app/services/secure_storage_service.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/aniamtion_welcome.dart';
 
 /// Central post-login and shell switching (employee / admin / superadmin).
 class AuthNavigation {
   AuthNavigation._();
+
+  static Future<void> _prepareAdminLanding(AuthSession session) async {
+    if (session.hasRestrictedAdminModules) {
+      AdminLandingIntent.setPending(session.firstAssignedSidebarAction);
+    } else {
+      AdminLandingIntent.setPending(null);
+    }
+  }
+
+  static Future<AuthSession?> _readSession() async {
+    final raw = await SecureStorageService().readAuthSessionJson();
+    return AuthSession.fromStorageString(raw);
+  }
 
   static Future<void> navigateAfterLogin(
     BuildContext context,
@@ -32,7 +47,6 @@ class AuthNavigation {
     if (session.isAdmin) {
       final existing = await auth.readActiveDashboard();
       if (existing == null) {
-        // Default first-time admin login to the admin shell.
         await auth.setActiveDashboard(ActiveDashboard.admin);
         if (!context.mounted) return;
         await _pushDashboardForAdmin(context, ActiveDashboard.admin, loginResponse);
@@ -43,7 +57,6 @@ class AuthNavigation {
       return;
     }
 
-    // employee, client, or unknown → employee shell
     await ShellRoutePersistence.markEmployeeShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
@@ -70,12 +83,16 @@ class AuthNavigation {
         return;
       }
 
+      await _prepareAdminLanding(session);
+
       final String? displayName = () {
         try {
           final user = loginResponse['user'];
           if (user is Map) {
-            final first = (user['first_name'] ?? user['firstName'] ?? '').toString().trim();
-            final last = (user['last_name'] ?? user['lastName'] ?? '').toString().trim();
+            final first =
+                (user['first_name'] ?? user['firstName'] ?? '').toString().trim();
+            final last =
+                (user['last_name'] ?? user['lastName'] ?? '').toString().trim();
             final full = ('$first $last').trim();
             if (full.isNotEmpty) return full;
           }
@@ -83,20 +100,25 @@ class AuthNavigation {
         return null;
       }();
 
+      final skipWelcome = session.hasRestrictedAdminModules;
+
       Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
         MaterialPageRoute(
           settings: const RouteSettings(name: '/adminDashboard'),
           builder: (routeCtx) {
             return AdaptiveLayout(
-              mobile: AdminWelcomeScreen(
-                displayName: displayName,
-                onDone: () {
-                  Navigator.of(routeCtx, rootNavigator: true).pushNamedAndRemoveUntil(
-                    '/adminDashboard',
-                    (_) => false,
-                  );
-                },
-              ),
+              mobile: skipWelcome
+                  ? AdminDashboardMobile()
+                  : AdminWelcomeScreen(
+                      displayName: displayName,
+                      onDone: () {
+                        Navigator.of(routeCtx, rootNavigator: true)
+                            .pushNamedAndRemoveUntil(
+                          '/adminDashboard',
+                          (_) => false,
+                        );
+                      },
+                    ),
               tablet: AdminDashboardMobile(),
               webDesktop: AdminDashboardDesktop(),
             );
@@ -116,20 +138,16 @@ class AuthNavigation {
 
   static Future<void> openAdminShell(BuildContext context) async {
     if (!await AdminAccessGuard.ensureAccess(context)) return;
+    final session = await _readSession();
+    if (session != null) await _prepareAdminLanding(session);
+    await AuthService().setActiveDashboard(ActiveDashboard.admin);
     await ShellRoutePersistence.markAdminShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(
         settings: const RouteSettings(name: '/adminDashboard'),
         builder: (routeCtx) => AdaptiveLayout(
-          mobile: AdminWelcomeScreen(
-            onDone: () {
-              Navigator.of(routeCtx, rootNavigator: true).pushNamedAndRemoveUntil(
-                '/adminDashboard',
-                (_) => false,
-              );
-            },
-          ),
+          mobile: AdminDashboardMobile(),
           tablet: AdminDashboardMobile(),
           webDesktop: AdminDashboardDesktop(),
         ),
@@ -139,6 +157,7 @@ class AuthNavigation {
   }
 
   static Future<void> openEmployeeShell(BuildContext context) async {
+    await AuthService().setActiveDashboard(ActiveDashboard.employee);
     await ShellRoutePersistence.markEmployeeShell();
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(

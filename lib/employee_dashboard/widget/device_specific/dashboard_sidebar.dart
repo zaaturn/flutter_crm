@@ -4,8 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_bloc.dart';
 import 'package:my_app/employee_dashboard/bloc/employee_dashboard_state.dart';
 import 'package:my_app/employee_dashboard/navigation/employee_dashboard_navigation.dart';
+import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_workspace_access.dart';
 import 'package:my_app/auth/profile_remote_sync.dart';
-import 'package:my_app/services/secure_storage_service.dart';
 
 import 'dashboard_sidebar_content.dart';
 import 'dashboard_sidebar_theme.dart';
@@ -58,9 +58,9 @@ class _DashboardSidebarState extends State<DashboardSidebar> {
   void _onAuthSessionEpoch() => _loadRole();
 
   Future<void> _loadRole() async {
-    final r = await SecureStorageService().readRole();
+    final canSwitch = await employeeCanSwitchWorkspace();
     if (!mounted) return;
-    setState(() => _canOpenAdminWorkspace = r?.toLowerCase() == 'admin');
+    setState(() => _canOpenAdminWorkspace = canSwitch);
   }
 
   void _onTap(int index) {

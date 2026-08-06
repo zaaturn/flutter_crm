@@ -16,7 +16,7 @@ class AssetFlowController {
     if (!context.mounted) return;
     final session = AuthSession.fromStorageString(raw);
 
-    if (session != null && !session.moduleAllowed('assets')) {
+    if (session != null && !session.moduleAllowed('asset_management')) {
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
