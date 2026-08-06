@@ -116,14 +116,26 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     final a = state.attendance;
     if (a == null || !a.isCheckedIn) return;
 
-    final updated = a.onBreak
-        ? a.copyWith(totalBreak: a.totalBreak + const Duration(seconds: 1))
-        : a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
+    final AttendanceModel updated;
+    if (a.onBreak) {
+      updated = a.copyWith(
+        totalBreak: a.totalBreak + const Duration(seconds: 1),
+      );
+    } else if (a.checkInTime != null) {
+      // Drive the clock from check-in time so refresh/poll never drifts
+      // backward (e.g. 1:05 → 1:00 from minute-truncated API values).
+      var net = DateTime.now().difference(a.checkInTime!) - a.totalBreak;
+      if (net.isNegative) net = Duration.zero;
+      if (net < a.netWork) net = a.netWork;
+      updated = a.copyWith(netWork: net);
+    } else {
+      updated = a.copyWith(netWork: a.netWork + const Duration(seconds: 1));
+    }
 
-    emit(state.copyWith(attendance: updated, weeklyActivity: _weeklyWithLiveToday(
-      state.weeklyActivity,
-      updated,
-    )));
+    emit(state.copyWith(
+      attendance: updated,
+      weeklyActivity: _weeklyWithLiveToday(state.weeklyActivity, updated),
+    ));
   }
 
   WeeklyActivityModel _weeklyWithLiveToday(
@@ -182,12 +194,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
     AttendanceModel incoming,
   ) {
     // First load / not checked in previously.
-    if (current == null) return incoming;
+    if (current == null) return incoming.syncedToNow();
 
     // New day/session: check-in timestamp changed, or we were previously logged out.
     final isNewSession = !current.isCheckedIn ||
         current.checkInTime != incoming.checkInTime;
-    if (isNewSession) return incoming;
+    if (isNewSession) return incoming.syncedToNow();
 
     // While checked in: keep times monotonic and prevent net work from increasing on break.
     final mergedNetWork = incoming.onBreak
@@ -198,10 +210,12 @@ class EmployeeBloc extends Bloc<EmployeeEvent, EmployeeState> {
         ? incoming.totalBreak
         : current.totalBreak;
 
-    return incoming.copyWith(
-      netWork: mergedNetWork,
-      totalBreak: mergedBreak,
-    );
+    return incoming
+        .copyWith(
+          netWork: mergedNetWork,
+          totalBreak: mergedBreak,
+        )
+        .syncedToNow();
   }
 
   void _startAttendancePolling() {

@@ -112,14 +112,14 @@ const sidebarMenuConfig = [
     title: "Assets & Resources",
     icon: Icons.inventory_2_outlined,
     action: SidebarAction.assets,
-    moduleKey: 'assets',
+    moduleKey: 'asset_management',
   ),
 
   SidebarMenuItem(
     title: 'Leave Management',
     icon: Icons.time_to_leave,
     action: SidebarAction.leaveManagement,
-    moduleKey: 'leave',
+    moduleKey: 'leave_management',
     showDividerAfter: true,
   ),
 
@@ -175,9 +175,9 @@ String? moduleKeyForSidebarAction(SidebarAction action) {
     case SidebarAction.client:
       return 'clients';
     case SidebarAction.assets:
-      return 'assets';
+      return 'asset_management';
     case SidebarAction.leaveManagement:
-      return 'leave';
+      return 'leave_management';
     case SidebarAction.billingGenerate:
       return 'billing';
     case SidebarAction.payroll:

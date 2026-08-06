@@ -3,7 +3,7 @@ class AttendanceModel {
   final bool onBreak;
   final DateTime? checkInTime;
   final DateTime? checkOutTime;
-  /// Net working time for today (server truth).
+  /// Net working time for today (server truth / live-synced).
   final Duration netWork;
 
   /// Total break time for today (server truth).
@@ -46,6 +46,19 @@ class AttendanceModel {
     );
   }
 
+  /// Recompute net work from check-in so refresh does not lose seconds
+  /// when the API only sent whole minutes (or after a slow round-trip).
+  AttendanceModel syncedToNow([DateTime? now]) {
+    if (!isCheckedIn || checkInTime == null || onBreak) return this;
+    final clock = now ?? DateTime.now();
+    var net = clock.difference(checkInTime!) - totalBreak;
+    if (net.isNegative) net = Duration.zero;
+    // Prefer the higher of server baseline and clock so we never jump backward
+    // from a slightly-ahead live ticker during the same session.
+    if (net < netWork) net = netWork;
+    return copyWith(netWork: net);
+  }
+
   factory AttendanceModel.fromMap(Map<String, dynamic> m) {
     bool truthy(dynamic v) {
       if (v == null) return false;
@@ -72,27 +85,22 @@ class AttendanceModel {
       return int.tryParse(v.toString()) ?? 0;
     }
 
-    Duration parseSecondsOrMinutes({
-      required dynamic seconds,
-      required dynamic minutes,
+    Duration parseDuration({
+      required Map<String, dynamic> map,
+      required List<String> secondsKeys,
+      required List<String> minutesKeys,
     }) {
-      final s = parseInt(seconds);
-      if (s > 0) return Duration(seconds: s);
-      final min = parseInt(minutes);
-      return Duration(minutes: min);
+      for (final key in secondsKeys) {
+        if (!map.containsKey(key) || map[key] == null) continue;
+        return Duration(seconds: parseInt(map[key]));
+      }
+      for (final key in minutesKeys) {
+        if (!map.containsKey(key) || map[key] == null) continue;
+        return Duration(minutes: parseInt(map[key]));
+      }
+      return Duration.zero;
     }
 
-    final netWork = parseSecondsOrMinutes(
-      seconds: m['net_work_seconds'],
-      minutes: m['net_work_minutes'],
-    );
-    final totalBreak = parseSecondsOrMinutes(
-      seconds: m['total_break_seconds'],
-      minutes: m['total_break_minutes'],
-    );
-
-    // Some endpoints may return a partial payload (e.g. break start/end).
-    // If `is_checked_in` is missing, infer from check-in/out timestamps.
     final checkInTime = parseDate(m['check_in_time'] ?? m['check_in']);
     final checkOutTime = parseDate(m['check_out_time'] ?? m['check_out']);
 
@@ -127,6 +135,38 @@ class AttendanceModel {
           )
         : false;
 
+    final totalBreak = parseDuration(
+      map: m,
+      secondsKeys: const ['total_break_seconds', 'break_seconds'],
+      minutesKeys: const ['total_break_minutes', 'break_minutes'],
+    );
+
+    var netWork = parseDuration(
+      map: m,
+      secondsKeys: const [
+        'net_work_seconds',
+        'total_worked_seconds',
+        'worked_seconds',
+      ],
+      minutesKeys: const [
+        'net_work_minutes',
+        'total_worked_minutes',
+        'worked_minutes',
+      ],
+    );
+
+    // If API only sent minutes (legacy), rebuild from check-in for second accuracy.
+    if (isCheckedIn &&
+        checkInTime != null &&
+        !onBreak &&
+        !m.containsKey('net_work_seconds') &&
+        !m.containsKey('total_worked_seconds') &&
+        !m.containsKey('worked_seconds')) {
+      var computed = DateTime.now().difference(checkInTime) - totalBreak;
+      if (computed.isNegative) computed = Duration.zero;
+      netWork = computed;
+    }
+
     return AttendanceModel(
       isCheckedIn: isCheckedIn,
       onBreak: onBreak,
@@ -135,6 +175,6 @@ class AttendanceModel {
       netWork: netWork,
       totalBreak: totalBreak,
       breakCount: parseInt(m['break_count']),
-    );
+    ).syncedToNow();
   }
 }
