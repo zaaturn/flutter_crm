@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/admin_top_bar_mobile.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
 
@@ -29,31 +30,6 @@ class AdminPalette {
   Color get surfaceMuted =>
       wide ? AdminDashboardTheme.surfaceMuted : AdminMobileTerracottaTheme.creamMuted;
   Color get danger => const Color(0xFFC0392B);
-
-  InputDecoration input(String label, {String? hint, Widget? suffix, String? helper}) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      helperText: helper,
-      helperMaxLines: 2,
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: border),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primary, width: 1.6),
-      ),
-    );
-  }
 }
 
 /// Page frame shared by the settings screens: app bar, and on desktop the
@@ -75,6 +51,19 @@ class AdminSettingsScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = AdminPalette.of(context);
+    final base = Theme.of(context);
+    // Same typeface as the dashboard. Dialogs opened from these screens
+    // inherit it too (showDialog captures the surrounding theme).
+    return Theme(
+      data: base.copyWith(
+        textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme),
+        colorScheme: base.colorScheme.copyWith(primary: p.primary),
+      ),
+      child: _buildScaffold(context, p),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, AdminPalette p) {
     return Scaffold(
       backgroundColor: p.background,
       floatingActionButton: floatingActionButton,
@@ -87,7 +76,11 @@ class AdminSettingsScaffold extends StatelessWidget {
         centerTitle: false,
         title: Text(
           title,
-          style: TextStyle(fontWeight: FontWeight.w900, color: p.text, fontSize: 20),
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w800,
+            color: p.text,
+            fontSize: 20,
+          ),
         ),
         actions: actions,
       ),
@@ -115,7 +108,10 @@ void showAdminSnack(BuildContext context, String message, {bool error = false}) 
     SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: error ? p.danger : p.primaryDark,
-      content: Text(message, style: const TextStyle(fontWeight: FontWeight.w700)),
+      content: Text(
+        message,
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, color: Colors.white),
+      ),
     ),
   );
 }

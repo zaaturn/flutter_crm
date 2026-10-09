@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_app/admin_settings/admin_palette.dart';
 import 'package:my_app/admin_settings/data/holiday_admin_repository.dart';
+import 'package:my_app/admin_settings/widgets/admin_form.dart';
 
 /// Settings → Holidays.
 ///
@@ -190,7 +191,7 @@ class _HolidaysAdminScreenState extends State<HolidaysAdminScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: p.danger)),
+            Text(_error!, textAlign: TextAlign.center, style: adminFont(color: p.danger)),
             const SizedBox(height: 8),
             TextButton(onPressed: _load, child: const Text('Try again')),
           ],
@@ -208,14 +209,14 @@ class _HolidaysAdminScreenState extends State<HolidaysAdminScreen> {
               const SizedBox(height: 12),
               Text(
                 'No holidays for $_year yet',
-                style: TextStyle(fontWeight: FontWeight.w800, color: p.text, fontSize: 16),
+                style: adminFont(weight: FontWeight.w800, color: p.text, size: 16),
               ),
               if (widget.canEdit) ...[
                 const SizedBox(height: 6),
                 Text(
                   'Add them one by one, or import a CSV with date and name columns.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: p.muted),
+                  style: adminFont(color: p.muted),
                 ),
               ],
             ],
@@ -238,9 +239,9 @@ class _HolidaysAdminScreenState extends State<HolidaysAdminScreen> {
             padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
             child: Text(
               DateFormat('MMMM').format(DateTime(_year, month)).toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
+              style: adminFont(
+                size: 11,
+                weight: FontWeight.w900,
                 letterSpacing: 1.2,
                 color: p.primary,
               ),
@@ -292,7 +293,7 @@ class _Header extends StatelessWidget {
               ),
               Text(
                 '$year',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: p.text),
+                style: adminFont(size: 22, weight: FontWeight.w900, color: p.text),
               ),
               IconButton(
                 onPressed: onNext,
@@ -302,7 +303,7 @@ class _Header extends StatelessWidget {
               const Spacer(),
               Text(
                 '$count holiday${count == 1 ? '' : 's'}',
-                style: TextStyle(color: p.muted, fontWeight: FontWeight.w700),
+                style: adminFont(color: p.muted, weight: FontWeight.w700),
               ),
             ],
           ),
@@ -323,7 +324,7 @@ class _Header extends StatelessWidget {
                         ? 'On these days nobody gets the check-in reminder email. '
                             'Sundays are already skipped.'
                         : 'Office holidays. Only a super admin can change this list.',
-                    style: TextStyle(color: p.primaryDark, fontSize: 13, fontWeight: FontWeight.w600),
+                    style: adminFont(color: p.primaryDark, size: 13, weight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -376,15 +377,15 @@ class _HolidayTile extends StatelessWidget {
                 children: [
                   Text(
                     '${holiday.date.day}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                    style: adminFont(
+                      size: 18,
+                      weight: FontWeight.w900,
                       color: p.primaryDark,
                     ),
                   ),
                   Text(
                     DateFormat('MMM').format(holiday.date),
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: p.primary),
+                    style: adminFont(size: 11, weight: FontWeight.w700, color: p.primary),
                   ),
                 ],
               ),
@@ -396,7 +397,7 @@ class _HolidayTile extends StatelessWidget {
                 children: [
                   Text(
                     holiday.name,
-                    style: TextStyle(fontWeight: FontWeight.w800, color: p.text, fontSize: 15),
+                    style: adminFont(weight: FontWeight.w800, color: p.text, size: 15),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -404,7 +405,7 @@ class _HolidayTile extends StatelessWidget {
                       DateFormat('EEEE').format(holiday.date),
                       if (holiday.localName.isNotEmpty) holiday.localName,
                     ].join(' · '),
-                    style: TextStyle(color: p.muted, fontSize: 12, fontWeight: FontWeight.w600),
+                    style: adminFont(color: p.muted, size: 12, weight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -507,57 +508,52 @@ class _HolidayEditorDialogState extends State<_HolidayEditorDialog> {
   @override
   Widget build(BuildContext context) {
     final p = AdminPalette.of(context);
-    return AlertDialog(
-      title: Text(widget.holiday == null ? 'Add holiday' : 'Edit holiday'),
-      content: SizedBox(
-        width: 380,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(12),
-              child: InputDecorator(
-                decoration: p.input('Date', suffix: const Icon(Icons.calendar_month_rounded)),
-                child: Text(
-                  _date == null ? 'Select a date' : DateFormat('EEE, d MMM yyyy').format(_date!),
-                  style: TextStyle(color: _date == null ? p.muted : p.text),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _name,
-              maxLength: 255,
-              textCapitalization: TextCapitalization.words,
-              decoration: p.input('Name', hint: 'e.g. Diwali'),
-            ),
-            TextField(
-              controller: _local,
-              maxLength: 255,
-              decoration: p.input('Local name (optional)', hint: 'e.g. ದೀಪಾವಳಿ'),
-            ),
-            if (_error != null)
-              Text(_error!, style: TextStyle(color: p.danger, fontWeight: FontWeight.w600)),
-          ],
+    final adding = widget.holiday == null;
+    return AdminFormDialog(
+      icon: Icons.beach_access_rounded,
+      title: adding ? 'Add holiday' : 'Edit holiday',
+      subtitle: 'No check-in reminder emails on this day.',
+      primaryLabel: adding ? 'Add holiday' : 'Save changes',
+      onPrimary: _save,
+      busy: _saving,
+      error: _error,
+      children: [
+        AdminField(
+          label: 'Date',
+          required: true,
+          child: AdminDateBox(value: _date, onTap: _pickDate),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+        if (_date != null && _date!.weekday == DateTime.sunday) ...[
+          const SizedBox(height: 8),
+          Text(
+            'This is a Sunday — reminders already skip Sundays.',
+            style: adminFont(size: 12, weight: FontWeight.w500, color: p.muted),
+          ),
+        ],
+        const SizedBox(height: 18),
+        AdminField(
+          label: 'Holiday name',
+          required: true,
+          child: TextField(
+            controller: _name,
+            maxLength: 255,
+            textCapitalization: TextCapitalization.words,
+            style: adminFont(color: p.text),
+            decoration: adminBox(p, hint: 'e.g. Diwali'),
+            onSubmitted: (_) => _save(),
+          ),
         ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          style: FilledButton.styleFrom(backgroundColor: p.primary),
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                )
-              : const Text('Save'),
+        const SizedBox(height: 18),
+        AdminField(
+          label: 'Local name',
+          helper: 'Optional — shown under the name, e.g. in Kannada.',
+          child: TextField(
+            controller: _local,
+            maxLength: 255,
+            style: adminFont(color: p.text),
+            decoration: adminBox(p, hint: 'e.g. ದೀಪಾವಳಿ'),
+            onSubmitted: (_) => _save(),
+          ),
         ),
       ],
     );
@@ -646,86 +642,106 @@ class _ImportPreviewDialogState extends State<_ImportPreviewDialog> {
   Widget build(BuildContext context) {
     final p = AdminPalette.of(context);
     final preview = _preview;
-    return AlertDialog(
-      title: const Text('Import holidays'),
-      content: SizedBox(
-        width: 460,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final label = adminFont(size: 13, weight: FontWeight.w700, color: p.text);
+    return AdminFormDialog(
+      icon: Icons.upload_file_rounded,
+      title: 'Import holidays',
+      subtitle: widget.fileName,
+      width: 500,
+      primaryLabel: preview == null ? 'Import' : 'Import ${preview.validRows}',
+      onPrimary: preview == null || preview.validRows == 0 ? null : _confirm,
+      busy: _busy,
+      error: _error,
+      children: [
+        if (preview == null && _busy)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator(color: p.primary)),
+          ),
+        if (preview != null) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Text(widget.fileName, style: TextStyle(color: p.muted, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              if (_busy && preview == null)
-                Center(child: CircularProgressIndicator(color: p.primary)),
-              if (_error != null)
-                Text(_error!, style: TextStyle(color: p.danger, fontWeight: FontWeight.w600)),
-              if (preview != null) ...[
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _chip(p, '${preview.created} new'),
-                    _chip(p, '${preview.updated} renamed'),
-                    if (preview.removed > 0) _chip(p, '${preview.removed} removed', warn: true),
-                    if (preview.errors.isNotEmpty)
-                      _chip(p, '${preview.errors.length} skipped', warn: true),
-                  ],
+              _chip(p, '${preview.created} new'),
+              _chip(p, '${preview.updated} renamed'),
+              if (preview.removed > 0) _chip(p, '${preview.removed} removed', warn: true),
+              if (preview.errors.isNotEmpty)
+                _chip(p, '${preview.errors.length} skipped', warn: true),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              color: p.surfaceMuted,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.border),
+            ),
+            child: CheckboxListTile(
+              activeColor: p.primary,
+              value: _replaceYears,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onChanged: _busy
+                  ? null
+                  : (v) {
+                      setState(() => _replaceYears = v ?? false);
+                      _runPreview();
+                    },
+              title: Text('Replace the whole list for these years', style: label),
+              subtitle: Text(
+                'Holidays in the same years that are not in this file get deleted.',
+                style: adminFont(size: 12, weight: FontWeight.w500, color: p.muted),
+              ),
+            ),
+          ),
+          if (preview.errors.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Text('Rows that will be skipped', style: label),
+            const SizedBox(height: 6),
+            for (final e in preview.errors.take(20))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Line ${e.line}: ${e.error}',
+                  style: adminFont(size: 13, weight: FontWeight.w500, color: p.danger),
                 ),
-                const SizedBox(height: 12),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeColor: p.primary,
-                  value: _replaceYears,
-                  onChanged: _busy
-                      ? null
-                      : (v) {
-                          setState(() => _replaceYears = v ?? false);
-                          _runPreview();
-                        },
-                  title: const Text('Replace the whole list for these years'),
-                  subtitle: const Text(
-                    'Holidays in the same years that are not in this file get deleted.',
-                  ),
-                ),
-                if (preview.errors.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text('Rows that will be skipped',
-                      style: TextStyle(fontWeight: FontWeight.w800, color: p.text)),
-                  for (final e in preview.errors.take(20))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text('Line ${e.line}: ${e.error}',
-                          style: TextStyle(color: p.danger, fontSize: 13)),
+              ),
+          ],
+          const SizedBox(height: 18),
+          Text('Holidays in the file', style: label),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.border),
+            ),
+            child: Column(
+              children: [
+                for (final (i, h) in preview.holidays.take(60).indexed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: i == 0 ? null : Border(top: BorderSide(color: p.border)),
                     ),
-                ],
-                const SizedBox(height: 12),
-                Text('Holidays in the file',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: p.text)),
-                for (final h in preview.holidays.take(60))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      '${DateFormat('d MMM yyyy').format(h.date)} — ${h.name}',
-                      style: TextStyle(color: p.text, fontSize: 13),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 92,
+                          child: Text(
+                            DateFormat('d MMM yyyy').format(h.date),
+                            style: adminFont(size: 13, weight: FontWeight.w700, color: p.primaryDark),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(h.name, style: adminFont(size: 13, color: p.text)),
+                        ),
+                      ],
                     ),
                   ),
               ],
-            ],
+            ),
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _busy || preview == null || preview.validRows == 0 ? null : _confirm,
-          style: FilledButton.styleFrom(backgroundColor: p.primary),
-          child: Text(preview == null ? 'Import' : 'Import ${preview.validRows}'),
-        ),
+        ],
       ],
     );
   }
@@ -739,9 +755,9 @@ class _ImportPreviewDialogState extends State<_ImportPreviewDialog> {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 12,
+        style: adminFont(
+          weight: FontWeight.w800,
+          size: 12,
           color: warn ? p.danger : p.primaryDark,
         ),
       ),

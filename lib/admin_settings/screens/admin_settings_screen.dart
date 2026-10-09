@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_app/admin_settings/admin_palette.dart';
+import 'package:my_app/admin_settings/widgets/admin_form.dart';
 import 'package:my_app/admin_settings/screens/holidays_admin_screen.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/services/secure_storage_service.dart';
@@ -107,10 +108,10 @@ class _SettingsTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: p.text),
+                      style: adminFont(weight: FontWeight.w900, size: 16, color: p.text),
                     ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: TextStyle(color: p.muted, fontSize: 13, height: 1.35)),
+                    Text(subtitle, style: adminFont(color: p.muted, size: 13, height: 1.35)),
                   ],
                 ),
               ),

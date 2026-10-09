@@ -428,6 +428,9 @@ class ApiClient {
       return {'results': data};
     }
     if (data is String) {
+      // 204 No Content (every successful DELETE) has an empty body —
+      // decoding "" threw a FormatException and turned success into an error.
+      if (data.trim().isEmpty) return {};
       final decoded = jsonDecode(data);
       return _parseMap(decoded);
     }
