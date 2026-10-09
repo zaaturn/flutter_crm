@@ -80,7 +80,11 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   List<SidebarAction> _visibleActions() {
     final actions = <SidebarAction>[];
-    if (_isSuperuser) actions.add(SidebarAction.superadminUsers);
+    if (_isSuperuser) {
+      actions
+        ..add(SidebarAction.superadminUsers)
+        ..add(SidebarAction.addUser);
+    }
     for (final item in sidebarMenuConfig) {
       if (item.children != null && item.children!.isNotEmpty) {
         for (final child in item.children!) {
@@ -124,7 +128,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
 
   void _onAction(SidebarAction? action) {
     if (action == null) return;
-    if (action != SidebarAction.logout) {
+    if (action != SidebarAction.logout && action != SidebarAction.settings) {
       setState(() => _selectedAction = action);
     }
     SidebarHandler.handle(context, widget.parentContext, action);
@@ -194,11 +198,15 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     final widgets = <Widget>[];
 
     if (_isSuperuser) {
-      widgets.add(_railIcon(
-        icon: Icons.manage_accounts_outlined,
-        tooltip: 'Manage users',
-        selected: _selectedAction == SidebarAction.superadminUsers,
-        onTap: () => _onAction(SidebarAction.superadminUsers),
+      // Flyout like the other grouped items: manage existing users, or add one.
+      widgets.add(_RailIconAnchor(
+        builder: (anchorCtx) => _railIcon(
+          icon: Icons.manage_accounts_outlined,
+          tooltip: 'Manage users',
+          selected: _selectedAction == SidebarAction.superadminUsers ||
+              _selectedAction == SidebarAction.addUser,
+          onTap: () => _openGroupMenu(anchorCtx, _manageUsersGroup, _manageUsersGroup.children!),
+        ),
       ));
     }
 
@@ -339,7 +347,7 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
                     icon: Icons.settings_outlined,
                     tooltip: 'Settings',
                     selected: false,
-                    onTap: () {},
+                    onTap: () => _onAction(SidebarAction.settings),
                     customIcon: SidebarSettingsIcon(
                       size: 22,
                       color: AdminDashboardTheme.iconInactive,
@@ -405,6 +413,24 @@ class _DesktopSidebarState extends State<DesktopSidebar> {
     );
   }
 }
+
+const _manageUsersGroup = SidebarMenuItem(
+  title: 'Users',
+  icon: Icons.manage_accounts_outlined,
+  isGroup: true,
+  children: [
+    SidebarMenuItem(
+      title: 'Manage users',
+      icon: Icons.people_alt_outlined,
+      action: SidebarAction.superadminUsers,
+    ),
+    SidebarMenuItem(
+      title: 'Add user',
+      icon: Icons.person_add_alt_1_outlined,
+      action: SidebarAction.addUser,
+    ),
+  ],
+);
 
 /// Provides [BuildContext] at the icon for positioning flyout menus.
 class _RailIconAnchor extends StatelessWidget {

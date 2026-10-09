@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_app/admin_dashboard/shared/admin_dashboard_theme.dart';
+import 'package:my_app/admin_settings/screens/user_form_screen.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/superadmin_repository.dart';
 
@@ -114,6 +115,20 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
     }
   }
 
+  Future<void> _addUser() async {
+    final created = await UserFormScreen.open(context);
+    if (created != null && mounted) _runSearch();
+  }
+
+  Future<void> _editDetails() async {
+    final id = _selectedUser == null ? null : _userId(_selectedUser!);
+    if (id == null) return;
+    final saved = await UserFormScreen.open(context, userId: id);
+    if (saved == null || !mounted) return;
+    setState(() => _selectedUser = {..._selectedUser!, 'name': saved.fullName, 'email': saved.email});
+    _runSearch();
+  }
+
   void _goBackToList() {
     setState(() {
       _step = _ManageStep.pickEmployee;
@@ -143,6 +158,34 @@ class _SuperadminUsersScreenState extends State<SuperadminUsersScreen> {
           onPressed: _goBackToList,
         )
             : null,
+        actions: [
+          if (_step == _ManageStep.pickEmployee)
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: _wide
+                  ? FilledButton.icon(
+                      onPressed: _addUser,
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      label: const Text('Add user'),
+                      style: FilledButton.styleFrom(backgroundColor: _primary),
+                    )
+                  : IconButton(
+                      tooltip: 'Add user',
+                      onPressed: _addUser,
+                      icon: Icon(Icons.person_add_alt_1_rounded, color: _primary),
+                    ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextButton.icon(
+                onPressed: _editDetails,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Edit details'),
+                style: TextButton.styleFrom(foregroundColor: _primary),
+              ),
+            ),
+        ],
         title: Text(
           _step == _ManageStep.pickEmployee ? 'Manage Users' : 'Permission Access',
           style: GoogleFonts.plusJakartaSans(

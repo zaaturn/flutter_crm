@@ -25,6 +25,12 @@ enum SidebarAction {
   /// Superadmin only — opens user access management.
   superadminUsers,
 
+  /// Superadmin only — add a new user (no Django admin needed).
+  addUser,
+
+  /// Admin settings (holidays).
+  settings,
+
   logout,
 }
 
@@ -164,6 +170,8 @@ String? moduleKeyForSidebarAction(SidebarAction action) {
   switch (action) {
     case SidebarAction.logout:
     case SidebarAction.superadminUsers:
+    case SidebarAction.addUser:
+    case SidebarAction.settings:
       return null;
     case SidebarAction.employees:
       return 'employees';

@@ -465,6 +465,16 @@ class ApiClient {
     if (data is Map<String, dynamic>) {
       final detail = data['detail'] ?? data['message'] ?? data['error'];
       if (detail != null) return detail.toString();
+      // DRF form errors: {"email": ["Another user already has this email."]}.
+      for (final entry in data.entries) {
+        final value = entry.value;
+        final first = value is List && value.isNotEmpty ? value.first : value;
+        if (first is String && first.isNotEmpty) {
+          if (entry.key == 'non_field_errors') return first;
+          final field = entry.key.replaceAll('_', ' ');
+          return '${field[0].toUpperCase()}${field.substring(1)}: $first';
+        }
+      }
     }
     if (data is String && data.isNotEmpty) {
       if (data.contains('<html') || data.contains('<!DOCTYPE')) {

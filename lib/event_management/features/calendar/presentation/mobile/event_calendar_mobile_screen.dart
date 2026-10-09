@@ -104,7 +104,10 @@ class _EventCalendarMobileScreenState extends State<EventCalendarMobileScreen> {
     DateTime next;
     switch (view) {
       case CalendarView.month:
-        final target = DateTime(anchor.year, anchor.month + delta, 1);
+        // From the month on screen — a swipe moves it without moving the
+        // selected day, and stepping from that day would jump back.
+        final shown = cal.state.focusedMonth;
+        final target = DateTime(shown.year, shown.month + delta, 1);
         final lastDay = DateTime(target.year, target.month + 1, 0).day;
         final day = anchor.day.clamp(1, lastDay);
         cal.add(MonthChanged(target));

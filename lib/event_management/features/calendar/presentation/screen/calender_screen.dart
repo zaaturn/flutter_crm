@@ -102,8 +102,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
     DateTime next;
     switch (view) {
       case CalendarView.month:
-        next = DateTime(anchor.year, anchor.month + delta, 1);
-        cal.add(MonthChanged(next));
+        // Step from the month on screen, not the selected day. The selected
+        // day never moved while paging, so every click computed "today's
+        // month + 1" and the calendar stuck one month after the current one.
+        final shown = cal.state.focusedMonth;
+        final target = DateTime(shown.year, shown.month + delta, 1);
+        final lastDay = DateTime(target.year, target.month + 1, 0).day;
+        cal.add(MonthChanged(target));
+        cal.add(DateSelected(
+          DateTime(target.year, target.month, anchor.day.clamp(1, lastDay)),
+        ));
         break;
       case CalendarView.week:
         next = anchor.add(Duration(days: 7 * delta));

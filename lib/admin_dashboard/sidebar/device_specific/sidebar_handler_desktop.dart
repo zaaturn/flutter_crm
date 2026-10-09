@@ -39,6 +39,8 @@ import 'package:my_app/client tracker/features/clients/repository/client_reposit
 import 'package:my_app/client tracker/features/payment/repository/payment_repository.dart';
 import 'package:my_app/auth/auth_session.dart';
 import 'package:my_app/auth/screens/superadmin_users_screen.dart';
+import 'package:my_app/admin_settings/screens/admin_settings_screen.dart';
+import 'package:my_app/admin_settings/screens/user_form_screen.dart';
 import 'package:my_app/services/secure_storage_service.dart';
 
 class SidebarHandler {
@@ -57,7 +59,8 @@ class SidebarHandler {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!parentContext.mounted) return;
 
-      if (action == SidebarAction.superadminUsers) {
+      if (action == SidebarAction.superadminUsers ||
+          action == SidebarAction.addUser) {
         final raw = await SecureStorageService().readAuthSessionJson();
         if (!parentContext.mounted) return;
         final session = AuthSession.fromStorageString(raw);
@@ -194,6 +197,14 @@ class SidebarHandler {
 
         case SidebarAction.superadminUsers:
           _push(parentContext, const SuperadminUsersScreen());
+          break;
+
+        case SidebarAction.addUser:
+          _push(parentContext, const UserFormScreen());
+          break;
+
+        case SidebarAction.settings:
+          _push(parentContext, const AdminSettingsScreen());
           break;
 
         case SidebarAction.logout:

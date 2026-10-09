@@ -209,8 +209,10 @@ class _LeaveHolidayMonthCalendarState extends State<LeaveHolidayMonthCalendar> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TableCalendar<void>(
-          firstDay: DateTime(widget.year, 1, 1),
-          lastDay: DateTime(widget.year, 12, 31),
+          // A year either side: in Oct–Dec people plan leave for January, and
+          // a calendar that ends on 31 Dec simply stops moving.
+          firstDay: DateTime(widget.year - 1, 1, 1),
+          lastDay: DateTime(widget.year + 1, 12, 31),
           focusedDay: _focusedDay,
           selectedDayPredicate: widget.selectedDay == null
               ? null
