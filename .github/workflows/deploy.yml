@@ -25,6 +25,18 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --pwa-strategy=none --dart-define=BASE_URL=https://crm-application-zaaturn.up.railway.app
 
+      # Flutter reuses asset file names on every build (the icon font is
+      # trimmed to the icons in use), and Firebase caches /assets for a year.
+      # Moving assets into a per-commit folder gives every deploy fresh URLs,
+      # so browsers can never mix new code with an old cached icon font.
+      - name: Version asset URLs
+        run: |
+          VER="${GITHUB_SHA::8}"
+          mkdir -p "build/web/v/$VER"
+          mv build/web/assets "build/web/v/$VER/assets"
+          sed -i "s#__ASSET_BASE__#/v/$VER/#" build/web/flutter_bootstrap.js
+          grep -q "/v/$VER/" build/web/flutter_bootstrap.js
+
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
