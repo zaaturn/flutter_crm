@@ -218,6 +218,9 @@ class _LeaveHolidayMonthCalendarState extends State<LeaveHolidayMonthCalendar> {
               ? null
               : (day) => isSameDay(day, widget.selectedDay),
           startingDayOfWeek: StartingDayOfWeek.monday,
+          // Vertical swipes switch month/week format, which we don't use, and
+          // they swallow scroll gestures when the calendar sits in a scroll view.
+          availableGestures: AvailableGestures.horizontalSwipe,
           rowHeight: rowHeight,
           daysOfWeekHeight: widget.compact ? 24 : 28,
           onDaySelected: _handleDaySelected,

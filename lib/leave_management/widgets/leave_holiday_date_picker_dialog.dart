@@ -50,6 +50,7 @@ class _LeaveHolidayDatePickerDialogState
   late int _year;
   late int _month;
   final _repository = LeaveHolidayRepository();
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -57,6 +58,12 @@ class _LeaveHolidayDatePickerDialogState
     _selected = widget.initialDate;
     _year = _selected.year;
     _month = _selected.month;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -90,25 +97,36 @@ class _LeaveHolidayDatePickerDialogState
                 ),
               ),
               const SizedBox(height: 16),
-              LeaveHolidayMonthCalendar(
-                year: _year,
-                month: _month,
-                selectedDay: _selected,
-                compact: true,
-                holidayRepository: _repository,
-                onDaySelected: (day) {
-                  if (day.isBefore(_stripTime(widget.firstDate)) ||
-                      day.isAfter(_stripTime(widget.lastDate))) {
-                    return;
-                  }
-                  setState(() => _selected = day);
-                },
-                onMonthChanged: (year, month) {
-                  setState(() {
-                    _year = year;
-                    _month = month;
-                  });
-                },
+              // The holiday list grows with the month, so on shorter phones the
+              // calendar scrolls and the action buttons stay pinned in view.
+              Flexible(
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: LeaveHolidayMonthCalendar(
+                      year: _year,
+                      month: _month,
+                      selectedDay: _selected,
+                      compact: true,
+                      holidayRepository: _repository,
+                      onDaySelected: (day) {
+                        if (day.isBefore(_stripTime(widget.firstDate)) ||
+                            day.isAfter(_stripTime(widget.lastDate))) {
+                          return;
+                        }
+                        setState(() => _selected = day);
+                      },
+                      onMonthChanged: (year, month) {
+                        setState(() {
+                          _year = year;
+                          _month = month;
+                        });
+                      },
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               Row(
