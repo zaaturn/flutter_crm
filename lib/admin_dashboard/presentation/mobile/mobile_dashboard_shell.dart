@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
+import 'package:my_app/admin_dashboard/presentation/mobile/admin_module_access.dart';
 import 'package:my_app/admin_dashboard/presentation/mobile/mobile_dashboard_home_tab.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/admin_top_bar_mobile.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/bottom_nav.dart';
@@ -10,6 +11,7 @@ import 'package:my_app/admin_dashboard/sidebar/device_specific/sidebar_menu_conf
 import 'package:my_app/analytics/navigation/analytics_flow_controller.dart';
 import 'package:my_app/asset_management/navigation/asset_flow_controller.dart';
 import 'package:my_app/auth/admin_landing.dart';
+import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/billing/navigation/billing_flow_controller.dart';
 import 'package:my_app/client tracker/core/layout/app_shell.dart';
 import 'package:my_app/client tracker/features/clients/bloc/client_bloc.dart';
@@ -32,11 +34,31 @@ class MobileDashboardShell extends StatefulWidget {
 class _MobileDashboardShellState extends State<MobileDashboardShell> {
   int _selectedIndex = 0;
   bool _openedLandingModule = false;
+  bool _showStaff = true;
 
   @override
   void initState() {
     super.initState();
+    ProfileRemoteSync.authSessionEpoch.addListener(_reloadAccess);
+    _reloadAccess();
     WidgetsBinding.instance.addPostFrameCallback((_) => _openLandingIfNeeded());
+  }
+
+  @override
+  void dispose() {
+    ProfileRemoteSync.authSessionEpoch.removeListener(_reloadAccess);
+    super.dispose();
+  }
+
+  Future<void> _reloadAccess() async {
+    final access = await AdminModuleAccess.load();
+    if (!mounted) return;
+    setState(() {
+      _showStaff = access.canSeeEmployees;
+      if (!_showStaff && _selectedIndex == 1) {
+        _selectedIndex = 0;
+      }
+    });
   }
 
   Future<void> _openLandingIfNeeded() async {
@@ -79,7 +101,7 @@ class _MobileDashboardShellState extends State<MobileDashboardShell> {
           MaterialPageRoute(builder: (_) => const EventManagementShell()),
         );
       case SidebarAction.employees:
-        setState(() => _selectedIndex = 1);
+        if (_showStaff) setState(() => _selectedIndex = 1);
       default:
         break;
     }
@@ -105,6 +127,7 @@ class _MobileDashboardShellState extends State<MobileDashboardShell> {
           ),
           bottomNavigationBar: BottomNav(
             selectedIndex: _selectedIndex,
+            showStaff: _showStaff,
             onTap: (i) => setState(() => _selectedIndex = i),
           ),
         );

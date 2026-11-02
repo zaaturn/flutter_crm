@@ -4,12 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_state.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_bloc.dart';
 import 'package:my_app/admin_dashboard/bloc/admin_dashboard_event.dart';
+import 'package:my_app/admin_dashboard/presentation/mobile/admin_module_access.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/bottom_nav.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/admin_top_bar_mobile.dart';
 import 'package:my_app/admin_dashboard/model/employee.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/widgets/admin_dashboard_widgets/dashboard_grid.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/mobile_employee_section.dart';
 import 'package:my_app/admin_dashboard/screen/device_specific/mobile_screen/mainscreen/employee_card_mobile.dart';
+import 'package:my_app/auth/profile_remote_sync.dart';
 import 'package:my_app/screens/device_specific/profile_screen_mobile.dart';
 
 import 'employee_list_screen_mobile.dart';
@@ -24,10 +26,13 @@ class DashboardView extends StatefulWidget {
 class _DashboardViewState extends State<DashboardView> {
   int _selectedIndex = 0;
   Timer? _liveStatusTimer;
+  bool _showStaff = true;
 
   @override
   void initState() {
     super.initState();
+    ProfileRemoteSync.authSessionEpoch.addListener(_reloadAccess);
+    _reloadAccess();
     _liveStatusTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!mounted) return;
       context.read<AdminDashboardBloc>().add(const AdminDashboardRefreshed());
@@ -36,8 +41,20 @@ class _DashboardViewState extends State<DashboardView> {
 
   @override
   void dispose() {
+    ProfileRemoteSync.authSessionEpoch.removeListener(_reloadAccess);
     _liveStatusTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _reloadAccess() async {
+    final access = await AdminModuleAccess.load();
+    if (!mounted) return;
+    setState(() {
+      _showStaff = access.canSeeEmployees;
+      if (!_showStaff && _selectedIndex == 1) {
+        _selectedIndex = 0;
+      }
+    });
   }
 
   @override
@@ -45,7 +62,7 @@ class _DashboardViewState extends State<DashboardView> {
     return BlocBuilder<AdminDashboardBloc, AdminDashboardState>(
       builder: (context, state) {
         return Scaffold(
-          backgroundColor:Color(0xFFFAF9F6),
+          backgroundColor: const Color(0xFFFAF9F6),
           body: IndexedStack(
             index: _selectedIndex,
             children: [
@@ -53,12 +70,13 @@ class _DashboardViewState extends State<DashboardView> {
               EmployeeListScreenMobile(
                 onBack: () => setState(() => _selectedIndex = 0),
               ),
-              _buildPlaceholder("Logs"),
+              _buildPlaceholder('Logs'),
               const ProfileScreen(),
             ],
           ),
           bottomNavigationBar: BottomNav(
             selectedIndex: _selectedIndex,
+            showStaff: _showStaff,
             onTap: (i) => setState(() => _selectedIndex = i),
           ),
         );
@@ -99,20 +117,23 @@ class _DashboardViewState extends State<DashboardView> {
                       totalEmployeeCount: state.totalEmployeeCount,
                       isSuperuser: state.isSuperuser,
                     ),
-                    const SizedBox(height: 24),
-                    MobileEmployeeSection(
-                      embedded: true,
-                      totalEmployeeCount: state.totalEmployeeCount,
-                      employees: displayList,
-                      onEmployeeTap: (employee) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EmployeeCardMobile(employee: employee),
-                          ),
-                        );
-                      },
-                    ),
+                    if (_showStaff) ...[
+                      const SizedBox(height: 24),
+                      MobileEmployeeSection(
+                        embedded: true,
+                        totalEmployeeCount: state.totalEmployeeCount,
+                        employees: displayList,
+                        onEmployeeTap: (employee) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  EmployeeCardMobile(employee: employee),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -135,5 +156,4 @@ class _DashboardViewState extends State<DashboardView> {
       ),
     );
   }
-
 }

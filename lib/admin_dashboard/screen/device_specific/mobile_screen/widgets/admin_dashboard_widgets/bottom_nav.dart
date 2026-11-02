@@ -7,36 +7,54 @@ class BottomNav extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
 
+  /// Hide STAFF when the managed admin lacks the `employees` module.
+  final bool showStaff;
+
   const BottomNav({
     super.key,
     required this.selectedIndex,
     required this.onTap,
+    this.showStaff = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final items = [
-      _BottomNavItem(
-        icon: Icons.grid_view_rounded,
-        activeIcon: Icons.grid_view_rounded,
-        label: 'DASH',
+    // (stackIndex, item) — stack indices stay stable even when STAFF is hidden.
+    final tabs = <(int, _BottomNavItem)>[
+      (
+        0,
+        const _BottomNavItem(
+          icon: Icons.grid_view_rounded,
+          activeIcon: Icons.grid_view_rounded,
+          label: 'DASH',
+        ),
       ),
-      _BottomNavItem(
-        icon: Icons.people_outline_rounded,
-        activeIcon: Icons.people_rounded,
-        label: 'STAFF',
+      if (showStaff)
+        (
+          1,
+          const _BottomNavItem(
+            icon: Icons.people_outline_rounded,
+            activeIcon: Icons.people_rounded,
+            label: 'STAFF',
+          ),
+        ),
+      (
+        2,
+        const _BottomNavItem(
+          icon: Icons.chat_bubble_outline_rounded,
+          activeIcon: Icons.chat_bubble_rounded,
+          label: 'CHAT',
+        ),
       ),
-      _BottomNavItem(
-        icon: Icons.chat_bubble_outline_rounded,
-        activeIcon: Icons.chat_bubble_rounded,
-        label: 'CHAT',
-      ),
-      _BottomNavItem(
-        icon: Icons.person_outline_rounded,
-        activeIcon: Icons.person_rounded,
-        label: 'PROFILE',
+      (
+        3,
+        const _BottomNavItem(
+          icon: Icons.person_outline_rounded,
+          activeIcon: Icons.person_rounded,
+          label: 'PROFILE',
+        ),
       ),
     ];
 
@@ -56,13 +74,14 @@ class BottomNav extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(8, 6, 8, 6 + bottomInset),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: List.generate(items.length, (index) {
-            final item = items[index];
-            final isSelected = selectedIndex == index;
+          children: List.generate(tabs.length, (i) {
+            final stackIndex = tabs[i].$1;
+            final item = tabs[i].$2;
+            final isSelected = selectedIndex == stackIndex;
 
             return InkWell(
               onTap: () {
-                if (index == 2) {
+                if (stackIndex == 2) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Feature launching soon'),
@@ -71,7 +90,7 @@ class BottomNav extends StatelessWidget {
                   );
                   return;
                 }
-                onTap(index);
+                onTap(stackIndex);
               },
               borderRadius: BorderRadius.circular(6),
               child: AnimatedContainer(
