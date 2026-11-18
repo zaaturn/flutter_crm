@@ -7,7 +7,6 @@ import 'package:my_app/dashboards/domain/models/post_model.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_bloc.dart';
 import 'package:my_app/dashboards/presentations/bloc/post_event.dart';
 import 'package:my_app/dashboards/widgets/post_attachments_preview.dart';
-import 'package:my_app/dashboards/widgets/post_media_utils.dart';
 import 'package:my_app/dashboards/widgets/post_view_count_chip.dart';
 import 'package:my_app/employee_dashboard/widget/device_specific/v2/employee_dashboard_v2_theme.dart';
 import 'package:my_app/employee_dashboard/widget/employee_avatar.dart';
@@ -255,7 +254,7 @@ class EmployeeSocialFeedCard extends StatelessWidget {
                   attachments: post.attachments,
                   onTap: (attachment) => _handleMediaTap(
                     context,
-                    resolvePostAttachmentUrl(attachment.file),
+                    attachment.resolvedUrl,
                     attachment.fileType,
                   ),
                 ),
